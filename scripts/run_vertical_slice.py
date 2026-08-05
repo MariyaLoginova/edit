@@ -76,6 +76,17 @@ def main() -> int:
     p = argparse.ArgumentParser(description="EDIT — прогон узлов/срезов")
     sub = p.add_subparsers(dest="cmd", required=True)
 
+    p_a1 = sub.add_parser("a1", help="Сегментация источника → SourceMap")
+    p_a1.add_argument("source", type=Path, help="Глава .txt/.md")
+    p_a1.add_argument("--source-id", default=None)
+    p_a1.add_argument("--language", default="ru", choices=["ru", "en"])
+    p_a1.add_argument(
+        "--strategy",
+        default=None,
+        choices=["paragraph", "semantic", "fixed_window"],
+        help="По умолчанию — segmentation.default_strategy из config/llm.yaml",
+    )
+
     p_a2 = sub.add_parser("a2", help="Майнер тезисов")
     p_a2.add_argument("source_map", type=Path)
 
@@ -151,6 +162,18 @@ def main() -> int:
     p_e7.add_argument("--e7-exclude", action="store_true", help="Без interrupt: исключить")
 
     args = p.parse_args()
+
+    if args.cmd == "a1":
+        from edit.a1_segment import segment_file
+
+        smap = segment_file(
+            args.source,
+            source_id=args.source_id,
+            language=args.language,
+            strategy=args.strategy,
+        )
+        print(json.dumps(smap.model_dump(mode="json"), ensure_ascii=False, indent=2))
+        return 0
 
     if args.cmd == "a2":
         source = SourceMap.model_validate(_load_json(args.source_map))

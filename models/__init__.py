@@ -22,7 +22,7 @@ from models.pipeline import ScoredClaim
 from models.retention import BeatRisk, DropReason, RetentionReport
 from models.scenario import Beat, BeatList, BeatRole, ScriptDraft, ScriptLine, ToneOfVoice
 from models.shots import ShotImage, ShotList, ShotPacket
-from models.source import SourceMap, SourceSegment
+from models.source import SegmentStrategy, SourceMap, SourceSegment
 from models.trace import TraceIssue, TraceReason, TraceReport
 
 __all__ = [
@@ -53,6 +53,7 @@ __all__ = [
     "ScoringWeights",
     "ScriptDraft",
     "ScriptLine",
+    "SegmentStrategy",
     "ShotImage",
     "ShotList",
     "ShotPacket",

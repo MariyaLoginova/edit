@@ -224,10 +224,12 @@ E2 не на чем работать. Нет таймкодов — блокер
 
 ## 8. Открытые вопросы (решить по ходу)
 
-- Формат `source_map` (A1): по главам, по абзацам или по смысловым блокам?
-  От этого зависит гранулярность тезисов A2. Тестировать на реальной книге.
-- Мультиязычность источников: часть теории моды — на английском. Решить, где
-  переводить — на A1 или оставлять цитаты в оригинале в `citation.quote`.
+- Формат `source_map` (A1): три стратегии реализованы
+  ([`docs/EDIT-A1-segmentation.md`](docs/EDIT-A1-segmentation.md));
+  **финальный default** — после ручной оценки матрицы на реальной главе
+  (`runs/*/NOTES.md`). Сейчас provisional: `semantic`.
+- Мультиязычность: на A1 перевод **не** делаем — цитаты в оригинале;
+  `SourceMap.language` только метка (`ru`/`en`).
 - Насколько мягкой должна быть проверка C3: только явные выдумки (даты/имена)
   или чуть шире. Калибруется на первых роликах, не умозрительно.
 
@@ -240,6 +242,8 @@ E2 не на чем работать. Нет таймкодов — блокер
 - [`docs/EDIT-ADR-001-langgraph-claimeai.md`](docs/EDIT-ADR-001-langgraph-claimeai.md) —
   ЗАМЕНЁН ADR-002, оставлен в истории (выбор ClaimeAI под строгий фактчек, от
   которого отказались).
+- [`docs/EDIT-A1-segmentation.md`](docs/EDIT-A1-segmentation.md) — сегментация
+  источника + KIE + матрица A1→A2.
 - [`docs/EDIT-A2-claim-miner.md`](docs/EDIT-A2-claim-miner.md) — майнер тезисов
   (актуален, Python/Pydantic).
 - [`docs/EDIT-E2-retention-critic.md`](docs/EDIT-E2-retention-critic.md) —
@@ -269,6 +273,14 @@ E2 не на чем работать. Нет таймкодов — блокер
   `RetentionReport` (E2), `IdeaProbe` (E7) и заготовки остальных сущностей
   из §5.
 - Пороги и веса — [`config/thresholds.yaml`](config/thresholds.yaml).
+
+### A1 + KIE (первый живой вход)
+- A1: [`edit/a1_segment.py`](edit/a1_segment.py) — `paragraph` / `semantic` /
+  `fixed_window` → `SourceMap`.
+- KIE: [`edit/kie_client.py`](edit/kie_client.py) + [`config/llm.yaml`](config/llm.yaml);
+  ключ `KIE_API_KEY` (`.env`).
+- Smoke: `scripts/smoke_kie.py`. Матрица: `scripts/run_a1_a2_matrix.py`.
+- Источники: [`sources/`](sources/). Артефакты прогона: `runs/`.
 
 ### Веха 1 (вертикальный срез)
 - Узлы [`edit/a2_claim_miner.py`](edit/a2_claim_miner.py) и

@@ -8,7 +8,8 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from edit.llm import ChatModel, content_text, get_chat_model, parse_json_payload
+from edit.kie_client import load_llm_config
+from edit.llm import ChatModel, get_chat_model, invoke_json
 from models import ClaimCard, SourceMap, SourceSegment
 
 logger = logging.getLogger(__name__)
@@ -75,21 +76,27 @@ def mine_claims_from_segment(
     segment: SourceSegment,
     *,
     llm: ChatModel | None = None,
+    model: str | None = None,
     require_quote_substring: bool = True,
+    json_retries: int | None = None,
 ) -> list[ClaimCard]:
-    model = llm or get_chat_model(temperature=0.0)
+    chat = llm or get_chat_model(temperature=0.0, model=model)
+    retries = json_retries
+    if retries is None:
+        retries = int((load_llm_config().get("a1_a2_matrix") or {}).get("json_retries", 2))
     user = (
         f"segment_id: {segment.segment_id}\n"
         f"locator: {segment.locator}\n\n"
         f"<segment>\n{segment.text}\n</segment>"
     )
-    response = model.invoke(
+    raw = invoke_json(
+        chat,
         [
             {"role": "system", "content": load_system_prompt()},
             {"role": "user", "content": user},
-        ]
+        ],
+        retries=retries,
     )
-    raw = parse_json_payload(content_text(response))
     cards, _rejected = validate_claim_payload(
         raw, segment, require_quote_substring=require_quote_substring
     )
@@ -100,7 +107,9 @@ def mine_claims(
     source_map: SourceMap,
     *,
     llm: ChatModel | None = None,
+    model: str | None = None,
     require_quote_substring: bool = True,
+    json_retries: int | None = None,
 ) -> list[ClaimCard]:
     """Прогон A2 по всем сегментам source_map."""
     out: list[ClaimCard] = []
@@ -109,7 +118,25 @@ def mine_claims(
             mine_claims_from_segment(
                 segment,
                 llm=llm,
+                model=model,
                 require_quote_substring=require_quote_substring,
+                json_retries=json_retries,
             )
         )
     return out
+
+
+def citation_hit_rate(
+    cards: list[ClaimCard],
+    source_map: SourceMap,
+) -> dict[str, float | int]:
+    """Доля карточек, чья quote дословно есть в исходном сегменте."""
+    by_id = {s.segment_id: s for s in source_map.segments}
+    if not cards:
+        return {"total": 0, "hits": 0, "rate": 1.0}
+    hits = 0
+    for card in cards:
+        seg = by_id.get(card.source_segment_id)
+        if seg and _quote_in_segment(card.citation.quote, seg.text):
+            hits += 1
+    return {"total": len(cards), "hits": hits, "rate": hits / len(cards)}
