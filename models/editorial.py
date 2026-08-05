@@ -109,6 +109,15 @@ class CritiqueReport(BaseModel):
     coda_quote: str = ""
     coda_is_quotable: bool = False
     retell_matches_coda: bool = False
+    virality_factors: list[str] = Field(
+        default_factory=list,
+        description="Неожиданный факт, эскалация и причина переслать.",
+    )
+    provocation: str = Field(
+        "",
+        max_length=280,
+        description="Маркированная как мнение гипотеза, а не мораль.",
+    )
 
     passes: bool
     summary: str = Field(..., max_length=500)

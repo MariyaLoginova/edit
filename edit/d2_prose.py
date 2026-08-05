@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from edit.config import load_thresholds
 from edit.llm import ChatModel, get_chat_model, invoke_json
@@ -24,6 +25,7 @@ DEFAULT_STOP = [
     "как сказано",
     "считывается как",
 ]
+_OPINION_MARKER = re.compile(r"^\s*а если\b|^\s*моя интерпретация\b", re.IGNORECASE)
 
 
 def _stop_phrases() -> list[str]:
@@ -108,8 +110,12 @@ def write_prose(
             raw.setdefault("claim_id", dossier.claim_id)
             raw["tov_applied"] = True  # голос заложен в D2 (бывш. D3)
             for line in raw.get("lines") or []:
-                if isinstance(line, dict) and not line.get("claim_id"):
-                    line["claim_id"] = dossier.claim_id
+                if isinstance(line, dict):
+                    # Гипотеза в финале должна быть слышна как мнение, не факт.
+                    if _OPINION_MARKER.search(str(line.get("text", ""))):
+                        line["claim_id"] = None
+                    elif not line.get("claim_id"):
+                        line["claim_id"] = dossier.claim_id
         try:
             script = ScriptDraft.model_validate(raw)
             _assert_claim_ids(script, dossier)
