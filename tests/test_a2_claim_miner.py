@@ -31,7 +31,7 @@ def test_validate_accepts_valid_and_drops_invalid(fashion_source):
         _good_card(
             segment,
             claim_id="bad-compound",
-            claim="Первая причина и вторая причина в одном",
+            claim="Первая причина; вторая причина в одном",
         ),
         _good_card(
             segment,

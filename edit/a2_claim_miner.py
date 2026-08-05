@@ -51,6 +51,11 @@ def validate_claim_payload(
                 raise TypeError(f"элемент [{i}] не объект")
             # жёстко привязываем к сегменту — модель не выбирает чужой id
             item = {**item, "source_segment_id": segment.segment_id}
+            # мягкие дефолты только для полей, которые модели часто забывают,
+            # при живом claim/counter_expectation/visual_hint/citation
+            item.setdefault("kind", "causal")
+            item.setdefault("confidence", 0.65)
+            item.setdefault("scope", {})
             if "citation" in item and isinstance(item["citation"], dict):
                 item["citation"] = {
                     **item["citation"],

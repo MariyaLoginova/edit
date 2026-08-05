@@ -31,7 +31,10 @@ def test_valid_claim_card():
 
 def test_compound_claim_rejected():
     with pytest.raises(ValidationError):
-        ClaimCard(**_valid_kwargs(claim="Первая причина и вторая причина сразу"))
+        ClaimCard(**_valid_kwargs(claim="Первая причина; вторая причина сразу"))
+    # обычное русское «и» внутри одной причины — ок
+    card = ClaimCard(**_valid_kwargs(claim="Чёрный маскировал пятна и износ лучше пастели"))
+    assert "и" in card.claim
 
 
 def test_missing_counter_expectation_rejected():

@@ -75,9 +75,11 @@ class ClaimCard(BaseModel):
     @field_validator("claim")
     @classmethod
     def _single_claim(cls, v: str) -> str:
-        # эвристика против составных тезисов; жёсткая проверка — на скоринге B1
-        for sep in [" и ", "; ", " также "]:
-            if sep in v.lower():
+        # «и» в русском слишком частотно — не режем. Ловим явные склейки.
+        # Жёсткая проверка составности — на скоринге B1.
+        lowered = v.lower()
+        for sep in ["; ", " а также ", " также ", " и при этом ", " и одновременно "]:
+            if sep in lowered:
                 raise ValueError(
                     f"claim выглядит составным (найдено '{sep.strip()}'). "
                     "Разбей на отдельные карточки."

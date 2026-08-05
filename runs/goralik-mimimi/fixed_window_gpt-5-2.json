@@ -1,0 +1,267 @@
+{
+  "source_id": "goralik-mimimi",
+  "strategy": "fixed_window",
+  "model": "gpt-5-2",
+  "segment_count": 3,
+  "citation_check": {
+    "total": 7,
+    "hits": 7,
+    "rate": 1.0
+  },
+  "cards": [
+    {
+      "claim_id": "cuteness-driven-by-pedomorphism",
+      "kind": "causal",
+      "claim": "Эстетика умиления возникает благодаря младенческим чертам объекта и ощущению беззащитной непосредственности.",
+      "counter_expectation": "Умиление кажется следствием общей «миловидности» или культурной условности.",
+      "visual_hint": "Пирожное с мордочкой из конфет",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "cuteness, kawaii, желание умиляться и защищать связаны с педоморфизмом, с наличием у объекта наблюдения младенческих черт в сочетании с пасторальной, ласковой младенческой непосредственностью"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.99
+    },
+    {
+      "claim_id": "cute-asks-to-be-taken-home",
+      "kind": "causal",
+      "claim": "Образы в эстетике «мими» устроены так, чтобы вызывать желание взять объект под опеку и забрать домой.",
+      "counter_expectation": "Милые изображения нужны лишь для приятного созерцания.",
+      "visual_hint": "Фотобанковская большеголовая собачка с поводком и подписью «Гулять пойдем?»",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "мими просит взять его под опеку, защитить, не оставлять одного, — то есть забрать с собой домой."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.94
+    },
+    {
+      "claim_id": "cuteness-built-on-fragility",
+      "kind": "causal",
+      "claim": "Умиление работает потому, что милый объект воспринимается как хрупкий и уязвимый.",
+      "counter_expectation": "Милое кажется беззаботной и исключительно приятной эмоцией.",
+      "visual_hint": "Мордочка из конфет на пирожном до того, как её съедят",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "все умиляющее — невыносимо хрупко"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Gary Baseman / Damien Hirst / Mark Ryden / Takashi Murakami / Simon Legno / Наталия Фабиа"
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.98
+    },
+    {
+      "claim_id": "reflection-breaks-cuteness",
+      "kind": "causal",
+      "claim": "Умиление избегает рефлексии, потому что представление объекта во времени раскрывает его уязвимость и тревогу.",
+      "counter_expectation": "Чем глубже размышление о милом образе, тем сильнее эффект умиления.",
+      "visual_hint": "Пирожное с мордочкой из конфет до и после того, как его съели",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "Умиление нерефлексивно еще и потому, что рефлексия требует воображения, привязанного ко времени: тот же объект до и после зафиксированного блаженного момента."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.89
+    },
+    {
+      "claim_id": "ryden-cute-through-aggression",
+      "kind": "causal",
+      "claim": "У Марка Райдена педоморфные персонажи выглядят тревожно, потому что их детская внешность сочетается с агрессией и двусмысленностью.",
+      "counter_expectation": "Чем более детскими выглядят персонажи, тем безопаснее и невиннее они воспринимаются.",
+      "visual_hint": "Картина Марка Райдена с большеглазыми детьми",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "сами его персонажи, — дети, педоморфированные до гротеска, — ведут жизнь, полную агрессии и двусмысленности"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Mark Ryden"
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.91
+    },
+    {
+      "claim_id": "cute-undermined-by-composition-and-color",
+      "kind": "causal",
+      "claim": "Даже «мимими»-сюжет перестает восприниматься как умилительный, если композиция и цветовая гамма создают тревожный эффект.",
+      "counter_expectation": "Если персонажи и сюжет выглядят милыми, изображение должно восприниматься как милое.",
+      "visual_hint": "Некоторые работы Сеонны Хонг с милыми персонажами и тревожной композицией",
+      "citation": {
+        "locator": "seg-2",
+        "quote": "Еще интереснее оказываются некоторые работы Сеонны Хонг: персонажи и сюжет могли бы вполне сойти за мими, если бы не специфика композиции и цветовой гаммы."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Сеонна Хонг"
+      },
+      "source_segment_id": "goralik-mimimi-0002",
+      "confidence": 0.98
+    },
+    {
+      "claim_id": "cuteness-collapses-through-scale",
+      "kind": "causal",
+      "claim": "Умилительность исчезает, когда милый объект многократно повторяется: количество превращает «милое» в источник тревоги.",
+      "counter_expectation": "Чем больше милых существ, тем сильнее ощущение умиления.",
+      "visual_hint": "Пятьдесят котов, одновременно остановившихся и смотрящих на зрителя",
+      "citation": {
+        "locator": "seg-2",
+        "quote": "Пятьдесят — ты останавливаешься и не знаешь, как идти дальше, потому что перед тобой пятьдесят, простите, хищных животных. Стоят, смотрят."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0002",
+      "confidence": 0.94
+    }
+  ],
+  "cards_raw_unfiltered": [
+    {
+      "claim_id": "cuteness-driven-by-pedomorphism",
+      "kind": "causal",
+      "claim": "Эстетика умиления возникает благодаря младенческим чертам объекта и ощущению беззащитной непосредственности.",
+      "counter_expectation": "Умиление кажется следствием общей «миловидности» или культурной условности.",
+      "visual_hint": "Пирожное с мордочкой из конфет",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "cuteness, kawaii, желание умиляться и защищать связаны с педоморфизмом, с наличием у объекта наблюдения младенческих черт в сочетании с пасторальной, ласковой младенческой непосредственностью"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.99
+    },
+    {
+      "claim_id": "cute-asks-to-be-taken-home",
+      "kind": "causal",
+      "claim": "Образы в эстетике «мими» устроены так, чтобы вызывать желание взять объект под опеку и забрать домой.",
+      "counter_expectation": "Милые изображения нужны лишь для приятного созерцания.",
+      "visual_hint": "Фотобанковская большеголовая собачка с поводком и подписью «Гулять пойдем?»",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "мими просит взять его под опеку, защитить, не оставлять одного, — то есть забрать с собой домой."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.94
+    },
+    {
+      "claim_id": "cuteness-built-on-fragility",
+      "kind": "causal",
+      "claim": "Умиление работает потому, что милый объект воспринимается как хрупкий и уязвимый.",
+      "counter_expectation": "Милое кажется беззаботной и исключительно приятной эмоцией.",
+      "visual_hint": "Мордочка из конфет на пирожном до того, как её съедят",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "все умиляющее — невыносимо хрупко"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Gary Baseman / Damien Hirst / Mark Ryden / Takashi Murakami / Simon Legno / Наталия Фабиа"
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.98
+    },
+    {
+      "claim_id": "reflection-breaks-cuteness",
+      "kind": "causal",
+      "claim": "Умиление избегает рефлексии, потому что представление объекта во времени раскрывает его уязвимость и тревогу.",
+      "counter_expectation": "Чем глубже размышление о милом образе, тем сильнее эффект умиления.",
+      "visual_hint": "Пирожное с мордочкой из конфет до и после того, как его съели",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "Умиление нерефлексивно еще и потому, что рефлексия требует воображения, привязанного ко времени: тот же объект до и после зафиксированного блаженного момента."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.89
+    },
+    {
+      "claim_id": "ryden-cute-through-aggression",
+      "kind": "causal",
+      "claim": "У Марка Райдена педоморфные персонажи выглядят тревожно, потому что их детская внешность сочетается с агрессией и двусмысленностью.",
+      "counter_expectation": "Чем более детскими выглядят персонажи, тем безопаснее и невиннее они воспринимаются.",
+      "visual_hint": "Картина Марка Райдена с большеглазыми детьми",
+      "citation": {
+        "locator": "seg-1",
+        "quote": "сами его персонажи, — дети, педоморфированные до гротеска, — ведут жизнь, полную агрессии и двусмысленности"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Mark Ryden"
+      },
+      "source_segment_id": "goralik-mimimi-0001",
+      "confidence": 0.91
+    },
+    {
+      "claim_id": "cute-undermined-by-composition-and-color",
+      "kind": "causal",
+      "claim": "Даже «мимими»-сюжет перестает восприниматься как умилительный, если композиция и цветовая гамма создают тревожный эффект.",
+      "counter_expectation": "Если персонажи и сюжет выглядят милыми, изображение должно восприниматься как милое.",
+      "visual_hint": "Некоторые работы Сеонны Хонг с милыми персонажами и тревожной композицией",
+      "citation": {
+        "locator": "seg-2",
+        "quote": "Еще интереснее оказываются некоторые работы Сеонны Хонг: персонажи и сюжет могли бы вполне сойти за мими, если бы не специфика композиции и цветовой гаммы."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Сеонна Хонг"
+      },
+      "source_segment_id": "goralik-mimimi-0002",
+      "confidence": 0.98
+    },
+    {
+      "claim_id": "cuteness-collapses-through-scale",
+      "kind": "causal",
+      "claim": "Умилительность исчезает, когда милый объект многократно повторяется: количество превращает «милое» в источник тревоги.",
+      "counter_expectation": "Чем больше милых существ, тем сильнее ощущение умиления.",
+      "visual_hint": "Пятьдесят котов, одновременно остановившихся и смотрящих на зрителя",
+      "citation": {
+        "locator": "seg-2",
+        "quote": "Пятьдесят — ты останавливаешься и не знаешь, как идти дальше, потому что перед тобой пятьдесят, простите, хищных животных. Стоят, смотрят."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0002",
+      "confidence": 0.94
+    }
+  ]
+}
