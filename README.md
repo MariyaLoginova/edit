@@ -251,8 +251,9 @@ E2 не на чем работать. Нет таймкодов — блокер
 
 ---
 
-## Состояние репозитория (веха 0)
+## Состояние репозитория
 
+### Веха 0
 - База `langchain-ai/content-writer` (Python) лежит в
   [`base/content-writer/`](base/content-writer/) **без изменений** — см.
   [`base/NOTES.md`](base/NOTES.md).
@@ -260,3 +261,11 @@ E2 не на чем работать. Нет таймкодов — блокер
   `RetentionReport` (E2), `IdeaProbe` (E7) и заготовки остальных сущностей
   из §5.
 - Пороги и веса — [`config/thresholds.yaml`](config/thresholds.yaml).
+
+### Веха 1 (вертикальный срез)
+- Узлы [`edit/a2_claim_miner.py`](edit/a2_claim_miner.py) и
+  [`edit/e2_retention_critic.py`](edit/e2_retention_critic.py) по тикетам.
+- Граф [`edit/graph.py`](edit/graph.py): `A2 → B2-stub → E2`. Слои B/C/D между
+  ними — ручные (`selected_claim_id` + `ScriptDraft` во входе).
+- CLI: `python scripts/run_vertical_slice.py {a2|e2|slice} ...` (нужен
+  `OPENAI_API_KEY` для живого прогона; юнит-тесты на FakeLLM).

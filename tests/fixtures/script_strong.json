@@ -1,0 +1,37 @@
+{
+  "script_id": "fixture-strong-hook",
+  "claim_id": "lbd-maintenance-not-luxury",
+  "duration_sec": 40.0,
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Маленькое чёрное стало иконой не из-за роскоши — из-за отсутствия горничной.",
+      "claim_id": "lbd-maintenance-not-luxury"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 12.0,
+      "text": "Зритель ждёт «вневременную элегантность». Источник говорит иначе.",
+      "claim_id": "lbd-maintenance-not-luxury"
+    },
+    {
+      "t_start": 12.0,
+      "t_end": 24.0,
+      "text": "Платье почти не требовало ухода и выглядело уместно с утра до вечера.",
+      "claim_id": "lbd-maintenance-not-luxury"
+    },
+    {
+      "t_start": 24.0,
+      "t_end": 32.0,
+      "text": "Чёрный прятал городскую грязь лучше пастельных шёлков салона.",
+      "claim_id": "lbd-maintenance-not-luxury"
+    },
+    {
+      "t_start": 32.0,
+      "t_end": 40.0,
+      "text": "Формула: статус часто маскирует сервис, который исчез.",
+      "claim_id": "lbd-maintenance-not-luxury"
+    }
+  ]
+}

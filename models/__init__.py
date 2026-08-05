@@ -17,6 +17,7 @@ from models.pipeline import (
     ShotPacket,
 )
 from models.retention import BeatRisk, DropReason, RetentionReport
+from models.source import SourceMap, SourceSegment
 
 __all__ = [
     "Beat",
@@ -37,4 +38,6 @@ __all__ = [
     "ScriptLine",
     "ShotList",
     "ShotPacket",
+    "SourceMap",
+    "SourceSegment",
 ]

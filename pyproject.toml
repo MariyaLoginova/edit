@@ -7,14 +7,6 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
   "pydantic>=2.5.2,<3.0.0",
   "pyyaml>=6.0",
-]
-
-[project.optional-dependencies]
-dev = [
-  "pytest>=7.3.0",
-  "ruff>=0.1.5",
-]
-langgraph = [
   # Пины под vendored content-writer (SharedValue в langgraph 0.2.x).
   "langgraph>=0.2.21,<0.3",
   "langchain-core>=0.3.0,<0.4",
@@ -23,12 +15,21 @@ langgraph = [
   "python-dotenv>=1.0.1",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.3.0",
+  "ruff>=0.1.5",
+]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["models*"]
+include = ["models*", "edit*"]
+
+[tool.setuptools.package-data]
+edit = ["prompts/*.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
