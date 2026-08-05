@@ -304,5 +304,7 @@ E2 не на чем работать. Нет таймкодов — блокер
 - B1: [`edit/b1_scoring.py`](edit/b1_scoring.py) — 5 осей, веса в конфиге.
 - F1: [`edit/f1_shotlist.py`](edit/f1_shotlist.py) — пачка картинок на фразу.
 - G1: [`edit/g1_post_analyst.py`](edit/g1_post_analyst.py) — метрики → веса B1 / порог E2.
-- Граф v5: `A2 → B1 → B2 → C → D → E → gate → F1`; learning-граф отдельно.
-- CLI: `…|f1|learn|v5`
+- E7: [`edit/e7_ideator.py`](edit/e7_ideator.py) — `IdeaProbe` + HITL `interrupt` на include/exclude.
+- Граф v5: `A2 → B1 → B2 → C → D → E → gate → E7(propose→interrupt→apply) → F1`;
+  learning-граф отдельно.
+- CLI: `…|f1|learn|v5|e7` (`v5 --e7-hitl` / `--e7-include` / `--e7-exclude`)

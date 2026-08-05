@@ -9,6 +9,7 @@ from models import (
     ClaimCard,
     CompressionReport,
     Dossier,
+    IdeaProbe,
     OpeningPick,
     RedCritique,
     RetentionReport,
@@ -45,6 +46,8 @@ class EditState(TypedDict, total=False):
     opening_pick: OpeningPick | None
     retell: RetellReport | None
     compression: CompressionReport | None
+    idea_probe: IdeaProbe | None
+    idea_probe_included: bool | None
     shot_list: ShotList | None
     # G1 (отдельный прогон / offline)
     rollout_metrics: list[RolloutMetrics]

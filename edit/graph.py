@@ -20,6 +20,11 @@ from edit.e3_red_critic import critique_content
 from edit.e4_openings import rewrite_openings
 from edit.e5_retell import evaluate_retell
 from edit.e6_compress import compress_script
+from edit.e7_ideator import (
+    apply_probe_to_script,
+    parse_include_decision,
+    propose_idea_probe,
+)
 from edit.f1_shotlist import build_shotlist
 from edit.g1_post_analyst import analyze_rollouts, apply_weight_update
 from edit.state import EditState
@@ -169,10 +174,55 @@ def node_editorial_gate(state: EditState) -> dict:
     return {"blocked_for_production": blocked}
 
 
-def _after_editorial_gate(state: EditState) -> Literal["f1_shots", "blocked"]:
+def _after_editorial_gate(state: EditState) -> Literal["e7_propose", "blocked"]:
     if state.get("blocked_for_production"):
         return "blocked"
-    return "f1_shots"
+    return "e7_propose"
+
+
+def node_e7_propose(state: EditState, *, llm: Any = None) -> dict:
+    """Всегда предлагает разгон (константа формата). Без interrupt — чтобы не дёргать LLM на resume."""
+    dossier = require_frozen_dossier(state.get("dossier"))
+    script = require_manual_script(state.get("script"))
+    probe = propose_idea_probe(dossier, script, llm=llm)
+    return {"idea_probe": probe, "idea_probe_included": None}
+
+
+def node_e7_gate(state: EditState, *, auto_decision: bool | None = None) -> dict:
+    """HITL: человек включает/выключает разгон. Требует checkpointer, если auto_decision is None."""
+    from langgraph.types import interrupt
+
+    probe = state.get("idea_probe")
+    if probe is None:
+        raise ValueError("E7 gate: нет idea_probe — сначала e7_propose")
+
+    if auto_decision is not None:
+        include = bool(auto_decision)
+    else:
+        resume_value = interrupt(
+            {
+                "type": "e7_include_probe",
+                "prompt": (
+                    "Включить идейный разгон в ролик? "
+                    "Ответьте include/exclude или {\"include\": true|false}."
+                ),
+                "probe": probe.model_dump(mode="json"),
+            }
+        )
+        include = parse_include_decision(resume_value)
+    return {"idea_probe_included": include}
+
+
+def node_e7_apply(state: EditState) -> dict:
+    """Если человек включил разгон — вшить маркированную реплику перед кодой."""
+    script = require_manual_script(state.get("script"))
+    probe = state.get("idea_probe")
+    included = state.get("idea_probe_included")
+    if not included:
+        return {"script": script}
+    if probe is None:
+        raise ValueError("E7 apply: нет idea_probe")
+    return {"script": apply_probe_to_script(script, probe)}
 
 
 def node_f1_shots(state: EditState, *, searcher: Any = None) -> dict:
@@ -364,8 +414,34 @@ def build_scenario_graph(*, llm: Any = None):
     return g.compile()
 
 
-def build_v5_slice_graph(*, llm: Any = None, searcher: Any = None):
-    """Веха 5: A2→B1→B2→C→D→E→gate→F1. G1 — отдельный learning-граф."""
+def _add_e7_nodes(
+    g: StateGraph,
+    *,
+    llm: Any,
+    searcher: Any,
+    e7_auto_decision: bool | None,
+) -> None:
+    g.add_node("e7_propose", lambda s: node_e7_propose(s, llm=llm))
+    g.add_node("e7_gate", lambda s: node_e7_gate(s, auto_decision=e7_auto_decision))
+    g.add_node("e7_apply", node_e7_apply)
+    g.add_node("f1_shots", lambda s: node_f1_shots(s, searcher=searcher))
+    g.add_node("prod_blocked", node_material_blocked)
+
+
+def build_v5_slice_graph(
+    *,
+    llm: Any = None,
+    searcher: Any = None,
+    checkpointer: Any = None,
+    e7_auto_decision: bool | None = None,
+):
+    """A2→B1→…→E→gate→E7(propose/interrupt/apply)→F1.
+
+    Для живого HITL нужен checkpointer (по умолчанию MemorySaver).
+    В тестах передайте e7_auto_decision=True|False — interrupt не вызывается.
+    """
+    from langgraph.checkpoint.memory import MemorySaver
+
     g = StateGraph(EditState)
     _add_abc_nodes(g, llm=llm, searcher=searcher)
     _add_d_nodes(g, llm=llm)
@@ -379,8 +455,7 @@ def build_v5_slice_graph(*, llm: Any = None, searcher: Any = None):
     g.add_node("e5_retell", lambda s: node_e5_retell(s, llm=llm))
     g.add_node("e6_compress", lambda s: node_e6_compress(s, llm=llm))
     g.add_node("editorial_gate", node_editorial_gate)
-    g.add_node("f1_shots", lambda s: node_f1_shots(s, searcher=searcher))
-    g.add_node("prod_blocked", node_material_blocked)
+    _add_e7_nodes(g, llm=llm, searcher=searcher, e7_auto_decision=e7_auto_decision)
 
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b1_score")
@@ -411,11 +486,41 @@ def build_v5_slice_graph(*, llm: Any = None, searcher: Any = None):
     g.add_conditional_edges(
         "editorial_gate",
         _after_editorial_gate,
-        {"f1_shots": "f1_shots", "blocked": "prod_blocked"},
+        {"e7_propose": "e7_propose", "blocked": "prod_blocked"},
     )
     g.add_edge("prod_blocked", END)
+    g.add_edge("e7_propose", "e7_gate")
+    g.add_edge("e7_gate", "e7_apply")
+    g.add_edge("e7_apply", "f1_shots")
     g.add_edge("f1_shots", END)
-    return g.compile()
+
+    cp = checkpointer
+    if cp is None and e7_auto_decision is None:
+        cp = MemorySaver()
+    return g.compile(checkpointer=cp)
+
+
+def build_e7_graph(
+    *,
+    llm: Any = None,
+    checkpointer: Any = None,
+    e7_auto_decision: bool | None = None,
+):
+    """Изолированный E7: propose → interrupt-gate → apply. Вход: dossier+script."""
+    from langgraph.checkpoint.memory import MemorySaver
+
+    g = StateGraph(EditState)
+    g.add_node("e7_propose", lambda s: node_e7_propose(s, llm=llm))
+    g.add_node("e7_gate", lambda s: node_e7_gate(s, auto_decision=e7_auto_decision))
+    g.add_node("e7_apply", node_e7_apply)
+    g.add_edge(START, "e7_propose")
+    g.add_edge("e7_propose", "e7_gate")
+    g.add_edge("e7_gate", "e7_apply")
+    g.add_edge("e7_apply", END)
+    cp = checkpointer
+    if cp is None and e7_auto_decision is None:
+        cp = MemorySaver()
+    return g.compile(checkpointer=cp)
 
 
 def build_learning_graph(*, persist: bool = False):
@@ -435,9 +540,20 @@ def build_f1_only_graph(*, searcher: Any = None):
     return g.compile()
 
 
-def build_edit_graph(*, llm: Any = None, searcher: Any = None):
-    """Актуальный полный срез — веха 5."""
-    return build_v5_slice_graph(llm=llm, searcher=searcher)
+def build_edit_graph(
+    *,
+    llm: Any = None,
+    searcher: Any = None,
+    checkpointer: Any = None,
+    e7_auto_decision: bool | None = None,
+):
+    """Актуальный полный срез — веха 5 + E7 HITL."""
+    return build_v5_slice_graph(
+        llm=llm,
+        searcher=searcher,
+        checkpointer=checkpointer,
+        e7_auto_decision=e7_auto_decision,
+    )
 
 
 def build_a2_only_graph(*, llm: Any = None):

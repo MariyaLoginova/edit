@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
-"""Прогоны EDIT: A2 / C / D / E / F / G / срезы вех 1–5."""
+"""Прогоны EDIT: A2 / C / D / E / F / G / срезы вех 1–5 + E7 HITL."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from langgraph.types import Command
+
 from edit.graph import (
     build_a2_only_graph,
     build_e1_only_graph,
     build_e2_only_graph,
+    build_e7_graph,
     build_editorial_graph,
     build_f1_only_graph,
     build_learning_graph,
@@ -27,6 +31,41 @@ from edit.graph import (
     build_vertical_slice_graph,
 )
 from models import ClaimCard, Dossier, RolloutMetrics, ScriptDraft, SourceMap
+
+
+def _e7_pending_probe(graph, thread) -> dict | None:
+    snap = graph.get_state(thread)
+    if not snap.next:
+        return None
+    for task in snap.tasks:
+        for item in task.interrupts or ():
+            payload = item.value
+            if isinstance(payload, dict) and payload.get("type") == "e7_include_probe":
+                return payload
+    return None
+
+
+def _run_with_e7_hitl(graph, initial: dict, *, auto: bool | None, include_flag: bool | None) -> dict:
+    """HITL: interrupt на e7_gate; без TTY — exclude, если не задан --e7-include/--e7-exclude."""
+    if auto is not None:
+        return graph.invoke(initial)
+
+    thread = {"configurable": {"thread_id": str(uuid.uuid4())}}
+    out = graph.invoke(initial, config=thread)
+    probe_payload = _e7_pending_probe(graph, thread)
+    if probe_payload is None:
+        return out
+
+    print(json.dumps(probe_payload, ensure_ascii=False, indent=2), file=sys.stderr)
+    if include_flag is not None:
+        decision = "include" if include_flag else "exclude"
+    elif sys.stdin.isatty():
+        answer = input("E7: включить разгон? [include/exclude]: ").strip() or "exclude"
+        decision = answer
+    else:
+        print("E7: non-interactive → exclude", file=sys.stderr)
+        decision = "exclude"
+    return graph.invoke(Command(resume=decision), config=thread)
 
 
 def _load_json(path: Path):
@@ -83,9 +122,33 @@ def main() -> int:
     p_g1.add_argument("metrics_json", type=Path, help="JSON list[RolloutMetrics]")
     p_g1.add_argument("--persist", action="store_true", help="Записать config/thresholds.yaml")
 
-    p_v5 = sub.add_parser("v5", help="Веха 5: полный срез до F1")
+    p_v5 = sub.add_parser("v5", help="Веха 5: полный срез до F1 (+ E7 HITL)")
     p_v5.add_argument("--source", type=Path, required=True)
     p_v5.add_argument("--claim-id", default=None)
+    p_v5.add_argument(
+        "--e7-include",
+        action="store_true",
+        help="Без interrupt: сразу включить IdeaProbe",
+    )
+    p_v5.add_argument(
+        "--e7-exclude",
+        action="store_true",
+        help="Без interrupt: исключить IdeaProbe (дефолт для CI/non-TTY)",
+    )
+    p_v5.add_argument(
+        "--e7-hitl",
+        action="store_true",
+        help="Живой interrupt на e7_gate (stdin / --e7-include|--e7-exclude как resume)",
+    )
+
+    p_e7 = sub.add_parser(
+        "e7",
+        help="E7: propose → interrupt → apply (без флагов — HITL / non-TTY exclude)",
+    )
+    p_e7.add_argument("--script", type=Path, required=True)
+    p_e7.add_argument("--dossier", type=Path, required=True)
+    p_e7.add_argument("--e7-include", action="store_true", help="Без interrupt: включить")
+    p_e7.add_argument("--e7-exclude", action="store_true", help="Без interrupt: исключить")
 
     args = p.parse_args()
 
@@ -250,10 +313,48 @@ def main() -> int:
         print(json.dumps(out["weight_update"].model_dump(mode="json"), ensure_ascii=False, indent=2))
         return 0
 
+    if args.cmd == "e7":
+        if args.e7_include and args.e7_exclude:
+            print("укажите только один из --e7-include / --e7-exclude", file=sys.stderr)
+            return 2
+        script = ScriptDraft.model_validate(_load_json(args.script))
+        dossier = Dossier.model_validate(_load_json(args.dossier))
+        auto = True if args.e7_include else False if args.e7_exclude else None
+        # e7 по умолчанию HITL; --e7-include/--e7-exclude отключают interrupt
+        graph = build_e7_graph(e7_auto_decision=auto)
+        out = _run_with_e7_hitl(
+            graph,
+            {"dossier": dossier, "script": script},
+            auto=auto,
+            include_flag=True if args.e7_include else False if args.e7_exclude else None,
+        )
+        payload = {
+            "idea_probe": out["idea_probe"].model_dump(mode="json") if out.get("idea_probe") else None,
+            "idea_probe_included": out.get("idea_probe_included"),
+            "script": out["script"].model_dump(mode="json") if out.get("script") else None,
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
     # v5
+    if args.e7_include and args.e7_exclude:
+        print("укажите только один из --e7-include / --e7-exclude", file=sys.stderr)
+        return 2
     source = SourceMap.model_validate(_load_json(args.source))
-    out = build_v5_slice_graph().invoke(
-        {"source_map": source, "selected_claim_id": args.claim_id}
+    if args.e7_hitl:
+        auto = None
+        include_flag = True if args.e7_include else False if args.e7_exclude else None
+    elif args.e7_include:
+        auto, include_flag = True, True
+    else:
+        # CI / batch: без HITL разгон не вшиваем
+        auto, include_flag = False, False
+    graph = build_v5_slice_graph(e7_auto_decision=auto)
+    out = _run_with_e7_hitl(
+        graph,
+        {"source_map": source, "selected_claim_id": args.claim_id},
+        auto=auto,
+        include_flag=include_flag,
     )
     payload = {
         "scored_claims": [
@@ -267,6 +368,8 @@ def main() -> int:
         ],
         "dossier": out["dossier"].model_dump(mode="json") if out.get("dossier") else None,
         "script": out["script"].model_dump(mode="json") if out.get("script") else None,
+        "idea_probe": out["idea_probe"].model_dump(mode="json") if out.get("idea_probe") else None,
+        "idea_probe_included": out.get("idea_probe_included"),
         "shot_list": out["shot_list"].model_dump(mode="json") if out.get("shot_list") else None,
         "blocked_for_production": out.get("blocked_for_production"),
     }

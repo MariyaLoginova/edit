@@ -34,11 +34,12 @@ G1 живёт в отдельном графе `build_learning_graph` (offline �
 ## Граф вехи 5
 
 ```
-A2 → B1 → B2 → C → D → E1…E6 → gate → F1
+A2 → B1 → B2 → C → D → E1…E6 → gate → E7(propose → interrupt → apply) → F1
                                       ↘ blocked
 ```
 
-F2 (вычитка вслух) — человек, вне графа. E7 — отдельный человеческий гейт.
+E7 всегда предлагает разгон; include/exclude — только человек через
+`langgraph.types.interrupt` (+ checkpointer). F2 (вычитка вслух) — вне графа.
 
 ---
 

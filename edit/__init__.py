@@ -4,6 +4,7 @@ __all__ = [
     "build_a2_only_graph",
     "build_e1_only_graph",
     "build_e2_only_graph",
+    "build_e7_graph",
     "build_edit_graph",
     "build_editorial_graph",
     "build_f1_only_graph",
