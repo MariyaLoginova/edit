@@ -41,6 +41,8 @@ def apply_tov(
         ]
     )
     raw = parse_json_payload(content_text(response))
+    if isinstance(raw, dict) and "lines" not in raw and isinstance(raw.get("script"), dict):
+        raw = raw["script"]
     if isinstance(raw, dict):
         raw["script_id"] = script.script_id
         raw["claim_id"] = script.claim_id

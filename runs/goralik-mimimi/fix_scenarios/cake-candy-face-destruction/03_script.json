@@ -1,0 +1,43 @@
+{
+  "script_id": "script-cake-candy-face-destruction",
+  "claim_id": "cake-candy-face-destruction",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Лицо из конфет на пирожном читается сразу: детали собраны в одно лицо.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 10.0,
+      "text": "Ждём, что эта милота держится сама по себе, независимо от того, что дальше происходит с пирожным.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 10.0,
+      "t_end": 27.0,
+      "text": "Слева — целое пирожное: глаза и рот складываются в лицо. Справа — после укусов: рисунок распался, лицо исчезло. В сниппете: «выложенная конфетами мордочка на пирожном рано или поздно будет съедена».",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 27.0,
+      "t_end": 39.0,
+      "text": "Механизм «хрупкость-как-таймер»: пока композиция целая — есть объект; части разрушены — образ не считывается.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 39.0,
+      "t_end": 45.0,
+      "text": "Формула: чем ценнее целая мордочка из конфет на пирожном, тем сильнее ощущается неизбежность её исчезновения.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b5"
+    }
+  ],
+  "duration_sec": 45.0,
+  "tov_applied": true
+}

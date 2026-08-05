@@ -1,0 +1,47 @@
+{
+  "script_id": "script-cats-crowd-predator-threshold",
+  "claim_id": "cats-crowd-predator-threshold",
+  "beats": [
+    {
+      "beat_id": "b1",
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "role": "hook_evidence",
+      "claim_id": "cats-crowd-predator-threshold",
+      "intent": "Зафиксировать объект-якорь: котики перед человеком и аномалию восприятия при их плотном присутствии."
+    },
+    {
+      "beat_id": "b2",
+      "t_start": 3.0,
+      "t_end": 10.0,
+      "role": "false_explanation",
+      "claim_id": "cats-crowd-predator-threshold",
+      "intent": "Показать ожидаемую зрителем версию: увеличение количества милых объектов должно усиливать умиление."
+    },
+    {
+      "beat_id": "b3",
+      "t_start": 10.0,
+      "t_end": 26.0,
+      "role": "contrast_ab",
+      "claim_id": "cats-crowd-predator-threshold",
+      "intent": "Сопоставить состояния одного объекта: shift от одного котика перед человеком к пятидесяти котикам, где умиление сменяется настороженностью перед стаей."
+    },
+    {
+      "beat_id": "b4",
+      "t_start": 26.0,
+      "t_end": 38.0,
+      "role": "mechanism",
+      "claim_id": "cats-crowd-predator-threshold",
+      "intent": "Объяснить механизм «порог-количества» через признаки массы, плотности и коллективного присутствия вместо восприятия отдельных котиков."
+    },
+    {
+      "beat_id": "b5",
+      "t_start": 38.0,
+      "t_end": 45.0,
+      "role": "coda",
+      "claim_id": "cats-crowd-predator-threshold",
+      "intent": "Сформулировать финальную идею: количество одинаковых фигур может переключить чтение образа с милоты на скрытую угрозу."
+    }
+  ],
+  "duration_sec": 45.0
+}

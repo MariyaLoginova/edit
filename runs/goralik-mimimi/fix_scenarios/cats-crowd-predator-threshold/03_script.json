@@ -1,0 +1,43 @@
+{
+  "script_id": "script-cats-crowd-predator-threshold",
+  "claim_id": "cats-crowd-predator-threshold",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Котики стоят перед человеком. Уже сама плотная группа меняет ощущение сцены.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 10.0,
+      "text": "Ждёшь: больше котиков — больше умиления. Но работает не так.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 10.0,
+      "t_end": 26.0,
+      "text": "Один котик — взгляд держится за одного персонажа. Пятьдесят котиков — взгляд уже считывает плотную стаю. Как сказано в материале: «Пятьдесят — ты останавливаешься и не знаешь, как идти дальше, потому что перед тобой пятьдесят, простите, хищных животных. Стоят, смотрят.»",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 26.0,
+      "t_end": 38.0,
+      "text": "Ждали отдельных котиков — получили массу. Внимание перестаёт различать каждого и видит плотность и коллективное присутствие.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 38.0,
+      "t_end": 45.0,
+      "text": "Формула: один котик — милота. Пятьдесят котиков — ощущение скрытой угрозы.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b5"
+    }
+  ],
+  "duration_sec": 45.0,
+  "tov_applied": true
+}

@@ -110,6 +110,20 @@ def _assert_no_stop_phrases(script: ScriptDraft, stop: list[str]) -> None:
             raise ValueError(f"D2: стоп-фраза мета-связки в озвучке: {phrase!r}")
 
 
+def _token_overlap(text: str, anchors: set[str]) -> bool:
+    """Пересечение с учётом русских окончаний (как в ClaimCard)."""
+    words = {t.strip("«»\"',.:;!?()") for t in text.lower().split() if len(t) >= 3}
+    for w in words:
+        for a in anchors:
+            if w == a:
+                return True
+            if len(w) >= 4 and len(a) >= 4 and (
+                w.startswith(a[:4]) or a.startswith(w[:4])
+            ):
+                return True
+    return False
+
+
 def _assert_object_grounding(script: ScriptDraft, dossier: Dossier) -> None:
     """Каждая реплика должна цепляться к object_anchor или state_a/state_b."""
     claim = dossier.claim
@@ -119,11 +133,9 @@ def _assert_object_grounding(script: ScriptDraft, dossier: Dossier) -> None:
         *claim.contrast_pair.state_b.lower().split(),
         *claim.visual_hint.lower().split(),
     }
-    # содержательные токены ≥3
-    anchors = {t.strip("«»\",.:;") for t in anchors if len(t) >= 3}
+    anchors = {t.strip("«»\"',.:;!?()") for t in anchors if len(t) >= 3}
     for i, line in enumerate(script.lines):
-        words = {t.strip("«»\",.:;") for t in line.text.lower().split() if len(t) >= 3}
-        if not (words & anchors):
+        if not _token_overlap(line.text, anchors):
             raise ValueError(
                 f"D2: line[{i}] не привязана к object_anchor/A/B: {line.text!r}"
             )
