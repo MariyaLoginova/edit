@@ -25,7 +25,7 @@ class ScoringWeights(BaseModel):
     """5 осей B1 — в конфиг, калибруется G1."""
 
     surprise: float = 1.0
-    visuality: float = 1.0
+    specificity: float = 1.0
     causal_clarity: float = 1.0
     evidence: float = 1.0
     shareability: float = 1.0

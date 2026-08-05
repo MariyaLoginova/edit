@@ -1,4 +1,4 @@
-"""LangGraph EDIT (FIX-4): A2→C→D2→E1→E-критик→E4→[E7]→F1."""
+"""LangGraph EDIT: темы→факты→вирусный ролик→E-критик→[E7]."""
 
 from __future__ import annotations
 
@@ -206,18 +206,15 @@ def _add_abc_nodes(g: StateGraph, *, llm: Any, searcher: Any) -> None:
     g.add_node("a2_mine", lambda s: node_a2_mine(s, llm=llm))
     g.add_node("b2_select_stub", node_b2_select_stub)
     g.add_node("c1_material", lambda s: node_c1_material(s, llm=llm, searcher=searcher))
-    g.add_node("c2_images", lambda s: node_c2_images(s, searcher=searcher))
     g.add_node("c3_factcheck", lambda s: node_c3_factcheck(s, llm=llm))
 
 
 def build_material_graph(*, llm: Any = None, searcher: Any = None):
     g = StateGraph(EditState)
     g.add_node("c1_material", lambda s: node_c1_material(s, llm=llm, searcher=searcher))
-    g.add_node("c2_images", lambda s: node_c2_images(s, searcher=searcher))
     g.add_node("c3_factcheck", lambda s: node_c3_factcheck(s, llm=llm))
     g.add_edge(START, "c1_material")
-    g.add_edge("c1_material", "c2_images")
-    g.add_edge("c2_images", "c3_factcheck")
+    g.add_edge("c1_material", "c3_factcheck")
     g.add_edge("c3_factcheck", END)
     return g.compile()
 
@@ -246,8 +243,7 @@ def build_v2_slice_graph(*, llm: Any = None, searcher: Any = None):
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b2_select_stub")
     g.add_edge("b2_select_stub", "c1_material")
-    g.add_edge("c1_material", "c2_images")
-    g.add_edge("c2_images", "c3_factcheck")
+    g.add_edge("c1_material", "c3_factcheck")
     g.add_conditional_edges(
         "c3_factcheck",
         lambda s: "d_manual_script" if (s.get("dossier") and s["dossier"].frozen) else "blocked",
@@ -278,8 +274,7 @@ def build_v3_slice_graph(*, llm: Any = None, searcher: Any = None):
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b2_select_stub")
     g.add_edge("b2_select_stub", "c1_material")
-    g.add_edge("c1_material", "c2_images")
-    g.add_edge("c2_images", "c3_factcheck")
+    g.add_edge("c1_material", "c3_factcheck")
     g.add_conditional_edges(
         "c3_factcheck",
         _after_c3,
@@ -312,8 +307,7 @@ def build_v4_slice_graph(*, llm: Any = None, searcher: Any = None):
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b2_select_stub")
     g.add_edge("b2_select_stub", "c1_material")
-    g.add_edge("c1_material", "c2_images")
-    g.add_edge("c2_images", "c3_factcheck")
+    g.add_edge("c1_material", "c3_factcheck")
     g.add_conditional_edges(
         "c3_factcheck",
         _after_c3,
@@ -359,13 +353,11 @@ def _add_e7_nodes(
     g: StateGraph,
     *,
     llm: Any,
-    searcher: Any,
     e7_auto_decision: bool | None,
 ) -> None:
     g.add_node("e7_propose", lambda s: node_e7_propose(s, llm=llm))
     g.add_node("e7_gate", lambda s: node_e7_gate(s, auto_decision=e7_auto_decision))
     g.add_node("e7_apply", node_e7_apply)
-    g.add_node("f1_shots", lambda s: node_f1_shots(s, searcher=searcher))
     g.add_node("prod_blocked", node_material_blocked)
 
 
@@ -388,14 +380,13 @@ def build_v5_slice_graph(
     g.add_node("e_critic", lambda s: node_e_critic(s, llm=llm, set_block=False))
     g.add_node("e4_openings", lambda s: node_e4_openings(s, llm=llm))
     g.add_node("editorial_gate", node_editorial_gate)
-    _add_e7_nodes(g, llm=llm, searcher=searcher, e7_auto_decision=e7_auto_decision)
+    _add_e7_nodes(g, llm=llm, e7_auto_decision=e7_auto_decision)
 
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b1_score")
     g.add_edge("b1_score", "b2_select_stub")
     g.add_edge("b2_select_stub", "c1_material")
-    g.add_edge("c1_material", "c2_images")
-    g.add_edge("c2_images", "c3_factcheck")
+    g.add_edge("c1_material", "c3_factcheck")
     g.add_conditional_edges(
         "c3_factcheck",
         _after_c3,
@@ -419,8 +410,7 @@ def build_v5_slice_graph(
     g.add_edge("prod_blocked", END)
     g.add_edge("e7_propose", "e7_gate")
     g.add_edge("e7_gate", "e7_apply")
-    g.add_edge("e7_apply", "f1_shots")
-    g.add_edge("f1_shots", END)
+    g.add_edge("e7_apply", END)
 
     cp = checkpointer
     if cp is None and e7_auto_decision is None:

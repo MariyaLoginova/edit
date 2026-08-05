@@ -40,10 +40,6 @@ def _duration_bounds() -> tuple[float, float, float]:
     )
 
 
-def _min_images() -> int:
-    return int(load_thresholds().get("material", {}).get("min_images_per_state", 3))
-
-
 def write_prose(
     dossier: Dossier,
     beats=None,  # noqa: ANN001 — совместимость со старыми вызовами; игнорируется
@@ -54,7 +50,7 @@ def write_prose(
     """Пишет озвучку сразу голосом; сам расставляет таймкоды (FIX-4)."""
     if not dossier.frozen:
         raise ValueError("D2 пишет только из замороженного досье")
-    ok, problems = can_freeze(dossier, min_images_per_state=_min_images())
+    ok, problems = can_freeze(dossier, require_images=False)
     if not ok:
         raise ValueError(
             "D2: досье неполное (обход freeze?) — " + "; ".join(problems)
@@ -70,9 +66,6 @@ def write_prose(
             "claim_id": dossier.claim_id,
             "claim": claim.claim,
             "counter_expectation": claim.counter_expectation,
-            "visual_hint": claim.visual_hint,
-            "object_anchor": claim.object_anchor,
-            "contrast_pair": claim.contrast_pair.model_dump(mode="json"),
             "mechanism_term": claim.mechanism_term,
             "mechanism_explain": claim.mechanism_explain,
             "citation": claim.citation.model_dump(mode="json"),
@@ -122,7 +115,6 @@ def write_prose(
             _assert_claim_ids(script, dossier)
             _assert_duration(script, d_min, d_max)
             _assert_no_stop_phrases(script, stop)
-            _assert_object_grounding(script, dossier)
             return script
         except (ValueError, Exception) as exc:
             last_err = exc
@@ -156,30 +148,3 @@ def _assert_no_stop_phrases(script: ScriptDraft, stop: list[str]) -> None:
             raise ValueError(f"D2: стоп-фраза мета-связки в озвучке: {phrase!r}")
 
 
-def _token_overlap(text: str, anchors: set[str]) -> bool:
-    words = {t.strip("«»\"',.:;!?()") for t in text.lower().split() if len(t) >= 3}
-    for w in words:
-        for a in anchors:
-            if w == a:
-                return True
-            if len(w) >= 4 and len(a) >= 4 and (
-                w.startswith(a[:4]) or a.startswith(w[:4])
-            ):
-                return True
-    return False
-
-
-def _assert_object_grounding(script: ScriptDraft, dossier: Dossier) -> None:
-    claim = dossier.claim
-    anchors = {
-        *claim.object_anchor.lower().split(),
-        *claim.contrast_pair.state_a.lower().split(),
-        *claim.contrast_pair.state_b.lower().split(),
-        *claim.visual_hint.lower().split(),
-    }
-    anchors = {t.strip("«»\"',.:;!?()") for t in anchors if len(t) >= 3}
-    for i, line in enumerate(script.lines):
-        if not _token_overlap(line.text, anchors):
-            raise ValueError(
-                f"D2: line[{i}] не привязана к object_anchor/A/B: {line.text!r}"
-            )

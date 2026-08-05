@@ -41,8 +41,8 @@ def analyze_rollouts(metrics: list[RolloutMetrics]) -> WeightUpdate:
 
     if avg_drop3 > 0.35:
         w.surprise = round(min(2.0, w.surprise * 1.15), 4)
-        w.visuality = round(min(2.0, w.visuality * 1.1), 4)
-        notes.append("Высокий отвал 0–3с → подняли surprise/visuality.")
+        w.specificity = round(min(2.0, w.specificity * 1.1), 4)
+        notes.append("Высокий отвал 0–3с → подняли surprise/specificity.")
 
     if avg_watch < 0.45:
         w.causal_clarity = round(min(2.0, w.causal_clarity * 1.12), 4)

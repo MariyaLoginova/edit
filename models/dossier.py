@@ -93,7 +93,7 @@ class Dossier(BaseModel):
                 "Dossier заморожен после C3 — мутация запрещена (инвариант 1)"
             )
 
-    def freeze(self) -> Dossier:
+    def freeze(self, *, require_images: bool = True) -> Dossier:
         """Заморозка SSOT. Только после успешного C3 + can_freeze."""
         if self.frozen:
             return self
@@ -104,7 +104,7 @@ class Dossier(BaseModel):
                 "нельзя заморозить досье: soft_factcheck.ok=False "
                 f"({self.soft_factcheck.invented_items})"
             )
-        ok, problems = can_freeze(self)
+        ok, problems = can_freeze(self, require_images=require_images)
         if not ok:
             raise ValueError(
                 "нельзя заморозить досье — неполный материал: " + "; ".join(problems)
@@ -118,26 +118,32 @@ class Dossier(BaseModel):
         )
 
 
-def can_freeze(d: Dossier, *, min_images_per_state: int = 3) -> tuple[bool, list[str]]:
-    """Гейт FIX-2: пустое/полупустое досье не едет в D."""
+def can_freeze(
+    d: Dossier,
+    *,
+    min_images_per_state: int = 3,
+    require_images: bool = True,
+) -> tuple[bool, list[str]]:
+    """Гейт материала: факты обязательны; картинки — только для visual/F1 режима."""
     problems: list[str] = []
     if not (d.material_notes or "").strip():
         problems.append("material_notes пусто")
     if not d.web_confirmations:
         problems.append("нет ни одного web_confirmation")
-    buckets = d.image_candidates
-    if buckets.search_status == "unavailable":
-        problems.append(
-            f"поиск картинок не отработал: {buckets.search_error or 'unknown'}"
-        )
-    if len(buckets.for_state_a) < min_images_per_state:
-        problems.append(
-            f"нет картинок под state_a "
-            f"({len(buckets.for_state_a)}<{min_images_per_state})"
-        )
-    if len(buckets.for_state_b) < min_images_per_state:
-        problems.append(
-            f"нет картинок под state_b "
-            f"({len(buckets.for_state_b)}<{min_images_per_state})"
-        )
+    if require_images:
+        buckets = d.image_candidates
+        if buckets.search_status == "unavailable":
+            problems.append(
+                f"поиск картинок не отработал: {buckets.search_error or 'unknown'}"
+            )
+        if len(buckets.for_state_a) < min_images_per_state:
+            problems.append(
+                f"нет картинок под state_a "
+                f"({len(buckets.for_state_a)}<{min_images_per_state})"
+            )
+        if len(buckets.for_state_b) < min_images_per_state:
+            problems.append(
+                f"нет картинок под state_b "
+                f"({len(buckets.for_state_b)}<{min_images_per_state})"
+            )
     return (not problems, problems)

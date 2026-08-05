@@ -11,17 +11,13 @@ from models import Dossier, SoftFactcheckResult, can_freeze
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "c3_soft_factcheck.txt"
 
 
-def _min_images() -> int:
-    return int(load_thresholds().get("material", {}).get("min_images_per_state", 3))
-
-
 def soft_factcheck(
     dossier: Dossier,
     *,
     llm: ChatModel | None = None,
     auto_freeze: bool = True,
 ) -> Dossier:
-    """C3: не видит сценарий. Freeze только если soft_ok И can_freeze."""
+    """C3: проверяет источник+поиск и freeze по фактическому материалу."""
     dossier.ensure_mutable()
     model = llm or get_chat_model(temperature=0.0)
 
@@ -48,7 +44,8 @@ def soft_factcheck(
     )
     raw = parse_json_payload(content_text(response))
     result = SoftFactcheckResult.model_validate(raw)
-    ready, problems = can_freeze(dossier, min_images_per_state=_min_images())
+    # FIX-5: картинки больше не гейтят фактологический ролик.
+    ready, problems = can_freeze(dossier, require_images=False)
     updated = dossier.model_copy(
         update={
             "soft_factcheck": result,
@@ -58,5 +55,5 @@ def soft_factcheck(
         }
     )
     if auto_freeze and result.ok and ready:
-        return updated.freeze()
+        return updated.freeze(require_images=False)
     return updated

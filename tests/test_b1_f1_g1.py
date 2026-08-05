@@ -57,7 +57,7 @@ def test_b1_scores_and_ranks():
     assert ranked[0].claim.claim_id == "lbd-maintenance-not-luxury"
     assert set(ranked[0].scores) == {
         "surprise",
-        "visuality",
+        "specificity",
         "causal_clarity",
         "evidence",
         "shareability",

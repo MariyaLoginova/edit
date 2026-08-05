@@ -35,7 +35,7 @@ def test_editorial_graph_happy_path():
 
     def router(messages):
         sys_msg = messages[0]["content"]
-        if "критик короткого видео" in sys_msg:
+        if "критик вирусного короткого видео" in sys_msg:
             return json.dumps(_critique_ok(script))
         if "первых ~3 секунд" in sys_msg or "OpeningPick" in sys_msg:
             return json.dumps(
@@ -71,7 +71,7 @@ def test_editorial_gate_blocks_on_red_fail():
 
     def router(messages):
         sys_msg = messages[0]["content"]
-        if "критик короткого видео" in sys_msg:
+        if "критик вирусного короткого видео" in sys_msg:
             return json.dumps(
                 _critique_ok(
                     script,

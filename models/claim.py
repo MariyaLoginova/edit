@@ -88,47 +88,47 @@ class ClaimCard(BaseModel):
         ...,
         min_length=1,
         max_length=240,
-        description="ОДНО утверждение о причине визуального решения. Не универсальный закон.",
+        description="Одна проверяемая мысль или неожиданный факт. Не универсальный закон.",
     )
     counter_expectation: str = Field(
         ...,
         min_length=1,
         max_length=240,
         description=(
-            "Что аудитория по умолчанию думает. "
-            "Контраст claim vs counter_expectation даёт крючок."
+            "Привычная версия истории, которую ломает claim. "
+            "Контраст даёт крючок."
         ),
     )
     visual_hint: str = Field(
         ...,
         min_length=1,
         max_length=200,
-        description="Кадр/объект для экрана (часто = object_anchor).",
+        description="Конкретная деталь, персонаж, предмет или ситуация из источника.",
     )
     object_anchor: str = Field(
         ...,
         min_length=1,
         max_length=200,
         description=(
-            "КОНКРЕТНЫЙ объект из источника. Не категория ('милые вещи'), "
-            "а вещь ('мордочка из конфет на пирожном')."
+            "Конкретный якорь истории из источника. Это может быть вещь, персонаж, "
+            "эпизод или факт — не абстрактная тема."
         ),
     )
     contrast_pair: ContrastPair = Field(
         ...,
-        description="ОБЯЗАТЕЛЬНО. Без A/B середина ролика = пересказ тезиса.",
+        description="Обязательный поворот: до/после, старая/новая версия или два контекста.",
     )
     mechanism_term: str = Field(
         ...,
         min_length=1,
         max_length=80,
-        description="Один термин-механизм: 'педоморфизм', 'хрупкость-как-таймер', 'счётность'.",
+        description="Короткое имя переноса мысли, которое зритель унесёт.",
     )
     mechanism_explain: str = Field(
         ...,
         min_length=1,
         max_length=300,
-        description="Как механизм работает — через признаки, не через имена авторов.",
+        description="Как работает поворот: через факты, контекст и последствия.",
     )
 
     citation: Citation
@@ -170,7 +170,7 @@ class ClaimCard(BaseModel):
 
     @model_validator(mode="after")
     def _anchor_grounded_in_claim(self) -> ClaimCard:
-        """Тезис привязан к вещи: пересечение токенов (с учётом русских окончаний)."""
+        """Тезис привязан к конкретной детали истории, а не парит над источником."""
 
         def overlaps(a: str, b: str) -> bool:
             ta, tb = _tokens(a), _tokens(b)
@@ -189,7 +189,7 @@ class ClaimCard(BaseModel):
             or overlaps(self.visual_hint, self.claim)
         ):
             raise ValueError(
-                "object_anchor не отражён в claim — тезис должен быть "
-                "привязан к конкретной вещи, а не парить над ней"
+                "object_anchor не отражён в claim — мысль должна быть "
+                "привязана к конкретному факту или истории, а не парить над ней"
             )
         return self
