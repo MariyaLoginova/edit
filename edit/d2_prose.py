@@ -25,7 +25,9 @@ DEFAULT_STOP = [
     "как сказано",
     "считывается как",
 ]
-_OPINION_MARKER = re.compile(r"^\s*а если\b|^\s*моя интерпретация\b", re.IGNORECASE)
+_OPINION_MARKER = re.compile(
+    r"^\s*а если\b|^\s*я бы\b|^\s*моя интерпретация\b", re.IGNORECASE
+)
 
 
 def _stop_phrases() -> list[str]:

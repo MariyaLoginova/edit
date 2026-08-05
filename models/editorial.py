@@ -118,6 +118,10 @@ class CritiqueReport(BaseModel):
         max_length=280,
         description="Маркированная как мнение гипотеза, а не мораль.",
     )
+    missing_evidence: list[str] = Field(
+        default_factory=list,
+        description="Каких конкретных доказательств или нюансов не хватает.",
+    )
 
     passes: bool
     summary: str = Field(..., max_length=500)
