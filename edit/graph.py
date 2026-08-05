@@ -1,4 +1,4 @@
-"""LangGraph: вехи 1–4 (добыча → материал → сценарий → редактура E1–E6)."""
+"""LangGraph: вехи 1–5 (добыча → скоринг → материал → сценарий → редактура → F1/G1)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import Any, Literal
 from langgraph.graph import END, START, StateGraph
 
 from edit.a2_claim_miner import mine_claims
+from edit.b1_scoring import score_claims
 from edit.c1_material import collect_material
 from edit.c2_images import collect_images
 from edit.c3_soft_factcheck import soft_factcheck
@@ -19,6 +20,8 @@ from edit.e3_red_critic import critique_content
 from edit.e4_openings import rewrite_openings
 from edit.e5_retell import evaluate_retell
 from edit.e6_compress import compress_script
+from edit.f1_shotlist import build_shotlist
+from edit.g1_post_analyst import analyze_rollouts, apply_weight_update
 from edit.state import EditState
 from edit.stubs import require_frozen_dossier, require_manual_script, resolve_selected_claim
 
@@ -27,8 +30,16 @@ def node_a2_mine(state: EditState, *, llm: Any = None) -> dict:
     return {"claims": mine_claims(state["source_map"], llm=llm)}
 
 
+def node_b1_score(state: EditState) -> dict:
+    claims = state.get("claims") or []
+    return {"scored_claims": score_claims(claims)}
+
+
 def node_b2_select_stub(state: EditState) -> dict:
-    resolve_selected_claim(state.get("claims") or [], state.get("selected_claim_id"))
+    # предпочитаем ранжированный список B1, если есть
+    ranked = state.get("scored_claims") or []
+    pool = [s.claim for s in ranked] if ranked else (state.get("claims") or [])
+    resolve_selected_claim(pool, state.get("selected_claim_id"))
     return {}
 
 
@@ -156,6 +167,26 @@ def node_editorial_gate(state: EditState) -> dict:
         checks.append(state["retell"].passes)
     blocked = any(ok is False for ok in checks)
     return {"blocked_for_production": blocked}
+
+
+def _after_editorial_gate(state: EditState) -> Literal["f1_shots", "blocked"]:
+    if state.get("blocked_for_production"):
+        return "blocked"
+    return "f1_shots"
+
+
+def node_f1_shots(state: EditState, *, searcher: Any = None) -> dict:
+    dossier = require_frozen_dossier(state.get("dossier"))
+    script = require_manual_script(state.get("script"))
+    return {"shot_list": build_shotlist(script, dossier, searcher=searcher)}
+
+
+def node_g1_learn(state: EditState, *, persist: bool = False) -> dict:
+    metrics = state.get("rollout_metrics") or []
+    update = analyze_rollouts(list(metrics))
+    apply_weight_update(update, persist=persist)
+    return {"weight_update": update}
+
 
 
 def _add_abc_nodes(g: StateGraph, *, llm: Any, searcher: Any) -> None:
@@ -333,9 +364,80 @@ def build_scenario_graph(*, llm: Any = None):
     return g.compile()
 
 
+def build_v5_slice_graph(*, llm: Any = None, searcher: Any = None):
+    """Веха 5: A2→B1→B2→C→D→E→gate→F1. G1 — отдельный learning-граф."""
+    g = StateGraph(EditState)
+    _add_abc_nodes(g, llm=llm, searcher=searcher)
+    _add_d_nodes(g, llm=llm)
+    g.add_node("b1_score", node_b1_score)
+    g.add_node("material_blocked", node_material_blocked)
+    g.add_node("e1_trace", node_e1_trace)
+    g.add_node("e1_blocked", node_material_blocked)
+    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm, set_block=False))
+    g.add_node("e3_red", lambda s: node_e3_red(s, llm=llm))
+    g.add_node("e4_openings", lambda s: node_e4_openings(s, llm=llm))
+    g.add_node("e5_retell", lambda s: node_e5_retell(s, llm=llm))
+    g.add_node("e6_compress", lambda s: node_e6_compress(s, llm=llm))
+    g.add_node("editorial_gate", node_editorial_gate)
+    g.add_node("f1_shots", lambda s: node_f1_shots(s, searcher=searcher))
+    g.add_node("prod_blocked", node_material_blocked)
+
+    g.add_edge(START, "a2_mine")
+    g.add_edge("a2_mine", "b1_score")
+    g.add_edge("b1_score", "b2_select_stub")
+    g.add_edge("b2_select_stub", "c1_material")
+    g.add_edge("c1_material", "c2_images")
+    g.add_edge("c2_images", "c3_factcheck")
+    g.add_conditional_edges(
+        "c3_factcheck",
+        _after_c3,
+        {"d_layer": "d1_architect", "blocked": "material_blocked"},
+    )
+    g.add_edge("material_blocked", END)
+    g.add_edge("d1_architect", "d2_prose")
+    g.add_edge("d2_prose", "d3_tov")
+    g.add_edge("d3_tov", "e1_trace")
+    g.add_conditional_edges(
+        "e1_trace",
+        _after_e1,
+        {"e2_critique": "e2_critique", "blocked": "e1_blocked"},
+    )
+    g.add_edge("e1_blocked", END)
+    g.add_edge("e2_critique", "e3_red")
+    g.add_edge("e3_red", "e4_openings")
+    g.add_edge("e4_openings", "e5_retell")
+    g.add_edge("e5_retell", "e6_compress")
+    g.add_edge("e6_compress", "editorial_gate")
+    g.add_conditional_edges(
+        "editorial_gate",
+        _after_editorial_gate,
+        {"f1_shots": "f1_shots", "blocked": "prod_blocked"},
+    )
+    g.add_edge("prod_blocked", END)
+    g.add_edge("f1_shots", END)
+    return g.compile()
+
+
+def build_learning_graph(*, persist: bool = False):
+    """G1 offline: rollout_metrics → weight_update (+ опционально persist YAML)."""
+    g = StateGraph(EditState)
+    g.add_node("g1_learn", lambda s: node_g1_learn(s, persist=persist))
+    g.add_edge(START, "g1_learn")
+    g.add_edge("g1_learn", END)
+    return g.compile()
+
+
+def build_f1_only_graph(*, searcher: Any = None):
+    g = StateGraph(EditState)
+    g.add_node("f1_shots", lambda s: node_f1_shots(s, searcher=searcher))
+    g.add_edge(START, "f1_shots")
+    g.add_edge("f1_shots", END)
+    return g.compile()
+
+
 def build_edit_graph(*, llm: Any = None, searcher: Any = None):
-    """Актуальный полный срез — веха 4."""
-    return build_v4_slice_graph(llm=llm, searcher=searcher)
+    """Актуальный полный срез — веха 5."""
+    return build_v5_slice_graph(llm=llm, searcher=searcher)
 
 
 def build_a2_only_graph(*, llm: Any = None):

@@ -17,9 +17,11 @@ from models.editorial import (
     RetellReport,
 )
 from models.idea import GenerationBrief, IdeaProbe, ProbeRegister
-from models.pipeline import ScoredClaim, ShotList, ShotPacket
+from models.learning import RolloutMetrics, ScoringWeights, WeightUpdate
+from models.pipeline import ScoredClaim
 from models.retention import BeatRisk, DropReason, RetentionReport
 from models.scenario import Beat, BeatList, BeatRole, ScriptDraft, ScriptLine, ToneOfVoice
+from models.shots import ShotImage, ShotList, ShotPacket
 from models.source import SourceMap, SourceSegment
 from models.trace import TraceIssue, TraceReason, TraceReport
 
@@ -45,10 +47,13 @@ __all__ = [
     "RedCritique",
     "RetentionReport",
     "RetellReport",
+    "RolloutMetrics",
     "Scope",
     "ScoredClaim",
+    "ScoringWeights",
     "ScriptDraft",
     "ScriptLine",
+    "ShotImage",
     "ShotList",
     "ShotPacket",
     "SoftFactcheckResult",
@@ -59,4 +64,5 @@ __all__ = [
     "TraceReason",
     "TraceReport",
     "WebConfirmation",
+    "WeightUpdate",
 ]

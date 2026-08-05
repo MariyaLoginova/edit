@@ -252,6 +252,8 @@ E2 не на чем работать. Нет таймкодов — блокер
   архитектор / прозаик / ToV с таймкодами.
 - [`docs/EDIT-E-editorial.md`](docs/EDIT-E-editorial.md) — слой E3–E6 (веха 4):
   красный критик, открытия, пересказ, сжатие.
+- [`docs/EDIT-F-G-loop.md`](docs/EDIT-F-G-loop.md) — F1 раскадровка + G1 петля
+  (веха 5).
 - Конкурентное исследование сегмента — обоснование позиционирования и списка
   «что забрать / чего не делать».
 
@@ -297,4 +299,10 @@ E2 не на чем работать. Нет таймкодов — блокер
   [`edit/e6_compress.py`](edit/e6_compress.py).
 - E2 остаётся диагностикой; E4/E6 правят по его отчёту; E3 бьёт по содержанию.
 - Граф v4: `… → E1 → E2 → E3 → E4 → E5 → E6 → editorial_gate`.
-- CLI: `…|editorial|v4`
+
+### Веха 5 (петля)
+- B1: [`edit/b1_scoring.py`](edit/b1_scoring.py) — 5 осей, веса в конфиге.
+- F1: [`edit/f1_shotlist.py`](edit/f1_shotlist.py) — пачка картинок на фразу.
+- G1: [`edit/g1_post_analyst.py`](edit/g1_post_analyst.py) — метрики → веса B1 / порог E2.
+- Граф v5: `A2 → B1 → B2 → C → D → E → gate → F1`; learning-граф отдельно.
+- CLI: `…|f1|learn|v5`

@@ -6,11 +6,14 @@ __all__ = [
     "build_e2_only_graph",
     "build_edit_graph",
     "build_editorial_graph",
+    "build_f1_only_graph",
+    "build_learning_graph",
     "build_material_graph",
     "build_scenario_graph",
     "build_v2_slice_graph",
     "build_v3_slice_graph",
     "build_v4_slice_graph",
+    "build_v5_slice_graph",
     "build_vertical_slice_graph",
 ]
 

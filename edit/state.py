@@ -1,4 +1,4 @@
-"""Типизированный state EDIT (вехи 1–4)."""
+"""Типизированный state EDIT (вехи 1–5)."""
 
 from __future__ import annotations
 
@@ -13,9 +13,13 @@ from models import (
     RedCritique,
     RetentionReport,
     RetellReport,
+    RolloutMetrics,
+    ScoredClaim,
     ScriptDraft,
+    ShotList,
     SourceMap,
     TraceReport,
+    WeightUpdate,
 )
 
 
@@ -29,6 +33,7 @@ def _merge_claims(left: list[ClaimCard], right: list[ClaimCard]) -> list[ClaimCa
 class EditState(TypedDict, total=False):
     source_map: SourceMap
     claims: Annotated[list[ClaimCard], _merge_claims]
+    scored_claims: list[ScoredClaim]
     rejected_notes: list[str]
     selected_claim_id: str | None
     dossier: Dossier | None
@@ -40,4 +45,8 @@ class EditState(TypedDict, total=False):
     opening_pick: OpeningPick | None
     retell: RetellReport | None
     compression: CompressionReport | None
+    shot_list: ShotList | None
+    # G1 (отдельный прогон / offline)
+    rollout_metrics: list[RolloutMetrics]
+    weight_update: WeightUpdate | None
     blocked_for_production: bool

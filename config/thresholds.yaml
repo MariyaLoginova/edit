@@ -22,6 +22,19 @@ editorial:
   compress_min_ratio: 0.20
   compress_max_ratio: 0.25
 
+shots:
+  # F1: сколько картинок на фразу
+  images_per_phrase: 5
+
 scoring:
-  # B1: оси скоринга — заполняются позже
-  axes: []
+  # B1: 5 осей (веха 5). G1 двигает weights по метрикам.
+  weights:
+    surprise: 1.0
+    visuality: 1.0
+    causal_clarity: 1.0
+    evidence: 1.0
+    shareability: 1.0
+
+learning:
+  # После стольких роликов hypothesis=false (пока ориентир)
+  min_rollouts_for_calibration: 15

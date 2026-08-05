@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Прогоны EDIT: A2 / C / D / E / срезы вех 1–4."""
+"""Прогоны EDIT: A2 / C / D / E / F / G / срезы вех 1–5."""
 
 from __future__ import annotations
 
@@ -16,14 +16,17 @@ from edit.graph import (
     build_e1_only_graph,
     build_e2_only_graph,
     build_editorial_graph,
+    build_f1_only_graph,
+    build_learning_graph,
     build_material_graph,
     build_scenario_graph,
     build_v2_slice_graph,
     build_v3_slice_graph,
     build_v4_slice_graph,
+    build_v5_slice_graph,
     build_vertical_slice_graph,
 )
-from models import ClaimCard, Dossier, ScriptDraft, SourceMap
+from models import ClaimCard, Dossier, RolloutMetrics, ScriptDraft, SourceMap
 
 
 def _load_json(path: Path):
@@ -71,6 +74,18 @@ def main() -> int:
     p_v4 = sub.add_parser("v4", help="Веха 4: полный срез до E6")
     p_v4.add_argument("--source", type=Path, required=True)
     p_v4.add_argument("--claim-id", default=None)
+
+    p_f1 = sub.add_parser("f1", help="Раскадровка ShotList")
+    p_f1.add_argument("--script", type=Path, required=True)
+    p_f1.add_argument("--dossier", type=Path, required=True)
+
+    p_g1 = sub.add_parser("learn", help="G1: метрики → веса B1 / порог E2")
+    p_g1.add_argument("metrics_json", type=Path, help="JSON list[RolloutMetrics]")
+    p_g1.add_argument("--persist", action="store_true", help="Записать config/thresholds.yaml")
+
+    p_v5 = sub.add_parser("v5", help="Веха 5: полный срез до F1")
+    p_v5.add_argument("--source", type=Path, required=True)
+    p_v5.add_argument("--claim-id", default=None)
 
     args = p.parse_args()
 
@@ -196,26 +211,63 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if not out.get("blocked_for_production") else 2
 
-    # v4
+    if args.cmd == "v4":
+        source = SourceMap.model_validate(_load_json(args.source))
+        out = build_v4_slice_graph().invoke(
+            {"source_map": source, "selected_claim_id": args.claim_id}
+        )
+        payload = {
+            "claims": [c.model_dump(mode="json") for c in out.get("claims") or []],
+            "dossier": out["dossier"].model_dump(mode="json") if out.get("dossier") else None,
+            "beats": out["beats"].model_dump(mode="json") if out.get("beats") else None,
+            "script": out["script"].model_dump(mode="json") if out.get("script") else None,
+            "trace": out["trace"].model_dump(mode="json") if out.get("trace") else None,
+            "retention": out["retention"].model_dump(mode="json") if out.get("retention") else None,
+            "red_critique": out["red_critique"].model_dump(mode="json") if out.get("red_critique") else None,
+            "retell": out["retell"].model_dump(mode="json") if out.get("retell") else None,
+            "compression": {
+                "reduction_ratio": out["compression"].reduction_ratio,
+                "passes": out["compression"].passes,
+            }
+            if out.get("compression")
+            else None,
+            "blocked_for_production": out.get("blocked_for_production"),
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if not out.get("blocked_for_production") else 2
+
+    if args.cmd == "f1":
+        script = ScriptDraft.model_validate(_load_json(args.script))
+        dossier = Dossier.model_validate(_load_json(args.dossier))
+        out = build_f1_only_graph().invoke({"script": script, "dossier": dossier})
+        print(json.dumps(out["shot_list"].model_dump(mode="json"), ensure_ascii=False, indent=2))
+        return 0
+
+    if args.cmd == "learn":
+        raw = _load_json(args.metrics_json)
+        metrics = [RolloutMetrics.model_validate(m) for m in raw]
+        out = build_learning_graph(persist=args.persist).invoke({"rollout_metrics": metrics})
+        print(json.dumps(out["weight_update"].model_dump(mode="json"), ensure_ascii=False, indent=2))
+        return 0
+
+    # v5
     source = SourceMap.model_validate(_load_json(args.source))
-    out = build_v4_slice_graph().invoke(
+    out = build_v5_slice_graph().invoke(
         {"source_map": source, "selected_claim_id": args.claim_id}
     )
     payload = {
-        "claims": [c.model_dump(mode="json") for c in out.get("claims") or []],
+        "scored_claims": [
+            {
+                "claim_id": s.claim.claim_id,
+                "total": s.total,
+                "rank": s.rank,
+                "scores": s.scores,
+            }
+            for s in (out.get("scored_claims") or [])
+        ],
         "dossier": out["dossier"].model_dump(mode="json") if out.get("dossier") else None,
-        "beats": out["beats"].model_dump(mode="json") if out.get("beats") else None,
         "script": out["script"].model_dump(mode="json") if out.get("script") else None,
-        "trace": out["trace"].model_dump(mode="json") if out.get("trace") else None,
-        "retention": out["retention"].model_dump(mode="json") if out.get("retention") else None,
-        "red_critique": out["red_critique"].model_dump(mode="json") if out.get("red_critique") else None,
-        "retell": out["retell"].model_dump(mode="json") if out.get("retell") else None,
-        "compression": {
-            "reduction_ratio": out["compression"].reduction_ratio,
-            "passes": out["compression"].passes,
-        }
-        if out.get("compression")
-        else None,
+        "shot_list": out["shot_list"].model_dump(mode="json") if out.get("shot_list") else None,
         "blocked_for_production": out.get("blocked_for_production"),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))

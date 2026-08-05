@@ -1,9 +1,9 @@
-"""Сквозные сущности пайплайна (B/F) + реэкспорт сценария."""
+"""Сквозные сущности пайплайна (B) + реэкспорт сценария/шотов."""
 
 from pydantic import BaseModel, Field
 
 from models.claim import ClaimCard
-from models.scenario import (  # noqa: F401 — стабильный импорт-путь
+from models.scenario import (  # noqa: F401
     Beat,
     BeatList,
     BeatRole,
@@ -11,6 +11,7 @@ from models.scenario import (  # noqa: F401 — стабильный импор�
     ScriptLine,
     ToneOfVoice,
 )
+from models.shots import ShotImage, ShotList, ShotPacket  # noqa: F401
 
 
 class ScoredClaim(BaseModel):
@@ -18,20 +19,6 @@ class ScoredClaim(BaseModel):
 
     claim: ClaimCard
     scores: dict[str, float] = Field(default_factory=dict, description="Оси скоринга B1")
+    total: float = 0.0
     rank: int | None = None
     selected: bool = False
-
-
-class ShotPacket(BaseModel):
-    """F1: пачка картинок на фразу; отбор слоёв — человек на монтаже."""
-
-    t_start: float = Field(..., ge=0)
-    t_end: float = Field(..., ge=0)
-    phrase: str
-    claim_id: str | None = None
-    image_urls: list[str] = Field(default_factory=list)
-
-
-class ShotList(BaseModel):
-    script_id: str
-    shots: list[ShotPacket]
