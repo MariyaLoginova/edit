@@ -26,7 +26,8 @@ DEFAULT_STOP = [
     "считывается как",
 ]
 _OPINION_MARKER = re.compile(
-    r"^\s*а если\b|^\s*я бы\b|^\s*моя интерпретация\b", re.IGNORECASE
+    r"^\s*а если\b|^\s*я бы\b|^\s*для меня\b|^\s*моя интерпретация\b",
+    re.IGNORECASE,
 )
 
 
