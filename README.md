@@ -248,6 +248,8 @@ E2 не на чем работать. Нет таймкодов — блокер
   разгон (текст сейчас, генерация отложена; вкл/выкл — человек).
 - [`docs/EDIT-C-material-E1.md`](docs/EDIT-C-material-E1.md) — слой C + E1
   (веха 2): материал, мягкий фактчек, заморозка досье, трассируемость.
+- [`docs/EDIT-D-scenario.md`](docs/EDIT-D-scenario.md) — слой D (веха 3):
+  архитектор / прозаик / ToV с таймкодами.
 - Конкурентное исследование сегмента — обоснование позиционирования и списка
   «что забрать / чего не делать».
 
@@ -278,4 +280,11 @@ E2 не на чем работать. Нет таймкодов — блокер
   `claim_id` / при незамороженном досье.
 - Граф v2: `A2 → B2 → C1 → C2 → C3(freeze) → D-stub → E1 → E2`.
 - Поиск: Brave при `BRAVE_API_KEY`, иначе injectable/Null; тесты на FakeSearcher.
-- CLI: `python scripts/run_vertical_slice.py {a2|material|e1|e2|slice|v2} ...`
+
+### Веха 3 (генерация сценария)
+- D1/D2/D3: [`edit/d1_architect.py`](edit/d1_architect.py),
+  [`edit/d2_prose.py`](edit/d2_prose.py), [`edit/d3_tov.py`](edit/d3_tov.py).
+- `BeatList` с обязательными таймкодами (блокер E2); проза только из досье;
+  ToV — отдельный проход (`config/tov.yaml`).
+- Граф v3: `A2 → B2 → C → D1 → D2 → D3 → E1 → E2`.
+- CLI: `python scripts/run_vertical_slice.py {a2|material|scenario|e1|e2|slice|v2|v3} ...`

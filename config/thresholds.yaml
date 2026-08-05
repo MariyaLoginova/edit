@@ -10,6 +10,12 @@ material:
   web_results: 5
   image_results: 8
 
+scenario:
+  # целевая длина короткого ролика (сек)
+  target_duration_sec: 75
+  min_duration_sec: 55
+  max_duration_sec: 95
+
 scoring:
   # B1: оси скоринга — заполняются позже
   axes: []

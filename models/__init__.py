@@ -1,8 +1,4 @@
-"""Сквозные Pydantic-контракты пайплайна EDIT.
-
-Порядок — снизу вверх по зависимостям (см. README §5).
-Контракты A2 / E2 / E7 — как в тикетах, без изменений.
-"""
+"""Сквозные Pydantic-контракты пайплайна EDIT."""
 
 from models.claim import Citation, ClaimCard, ClaimKind, Scope
 from models.dossier import (
@@ -12,16 +8,9 @@ from models.dossier import (
     WebConfirmation,
 )
 from models.idea import GenerationBrief, IdeaProbe, ProbeRegister
-from models.pipeline import (
-    Beat,
-    BeatList,
-    ScoredClaim,
-    ScriptDraft,
-    ScriptLine,
-    ShotList,
-    ShotPacket,
-)
+from models.pipeline import ScoredClaim, ShotList, ShotPacket
 from models.retention import BeatRisk, DropReason, RetentionReport
+from models.scenario import Beat, BeatList, BeatRole, ScriptDraft, ScriptLine, ToneOfVoice
 from models.source import SourceMap, SourceSegment
 from models.trace import TraceIssue, TraceReason, TraceReport
 
@@ -29,6 +18,7 @@ __all__ = [
     "Beat",
     "BeatList",
     "BeatRisk",
+    "BeatRole",
     "Citation",
     "ClaimCard",
     "ClaimKind",
@@ -48,6 +38,7 @@ __all__ = [
     "SoftFactcheckResult",
     "SourceMap",
     "SourceSegment",
+    "ToneOfVoice",
     "TraceIssue",
     "TraceReason",
     "TraceReport",

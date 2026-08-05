@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""Прогоны EDIT: A2 / материал C / E1 / E2 / полный срез вехи 2.
-
-Примеры:
-  python scripts/run_vertical_slice.py a2 tests/fixtures/fashion_theory_segment.json
-  python scripts/run_vertical_slice.py e2 tests/fixtures/script_weak.json
-  python scripts/run_vertical_slice.py material --claim-json claim.json
-  python scripts/run_vertical_slice.py v2 \\
-      --source tests/fixtures/fashion_theory_segment.json \\
-      --script tests/fixtures/script_strong.json \\
-      --claim-id lbd-maintenance-not-luxury
-"""
+"""Прогоны EDIT: A2 / C / D / E / срезы вех 1–3."""
 
 from __future__ import annotations
 
@@ -26,7 +16,9 @@ from edit.graph import (
     build_e1_only_graph,
     build_e2_only_graph,
     build_material_graph,
+    build_scenario_graph,
     build_v2_slice_graph,
+    build_v3_slice_graph,
     build_vertical_slice_graph,
 )
 from models import ClaimCard, Dossier, ScriptDraft, SourceMap
@@ -48,20 +40,27 @@ def main() -> int:
 
     p_e1 = sub.add_parser("e1", help="Аудитор трассируемости")
     p_e1.add_argument("script", type=Path)
-    p_e1.add_argument("dossier", type=Path, help="JSON замороженного Dossier")
+    p_e1.add_argument("dossier", type=Path)
 
     p_mat = sub.add_parser("material", help="C1→C2→C3(+freeze)")
     p_mat.add_argument("--claim-json", type=Path, required=True)
+
+    p_sc = sub.add_parser("scenario", help="D1→D2→D3 из frozen dossier JSON")
+    p_sc.add_argument("dossier", type=Path)
 
     p_v1 = sub.add_parser("slice", help="Веха 1: A2→B2→E2")
     p_v1.add_argument("--source", type=Path, required=True)
     p_v1.add_argument("--script", type=Path, required=True)
     p_v1.add_argument("--claim-id", default=None)
 
-    p_v2 = sub.add_parser("v2", help="Веха 2: A2→C→E1→E2")
+    p_v2 = sub.add_parser("v2", help="Веха 2: A2→C→D-stub→E1→E2")
     p_v2.add_argument("--source", type=Path, required=True)
     p_v2.add_argument("--script", type=Path, required=True)
     p_v2.add_argument("--claim-id", default=None)
+
+    p_v3 = sub.add_parser("v3", help="Веха 3: A2→C→D1–D3→E1→E2")
+    p_v3.add_argument("--source", type=Path, required=True)
+    p_v3.add_argument("--claim-id", default=None)
 
     args = p.parse_args()
 
@@ -94,6 +93,16 @@ def main() -> int:
         print(json.dumps(d.model_dump(mode="json"), ensure_ascii=False, indent=2))
         return 0 if d.frozen else 2
 
+    if args.cmd == "scenario":
+        dossier = Dossier.model_validate(_load_json(args.dossier))
+        out = build_scenario_graph().invoke({"dossier": dossier})
+        payload = {
+            "beats": out["beats"].model_dump(mode="json"),
+            "script": out["script"].model_dump(mode="json"),
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
     if args.cmd == "slice":
         source = SourceMap.model_validate(_load_json(args.source))
         script = ScriptDraft.model_validate(_load_json(args.script))
@@ -112,19 +121,36 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if not out.get("blocked_for_production") else 2
 
-    # v2
-    source = SourceMap.model_validate(_load_json(args.source))
-    script = ScriptDraft.model_validate(_load_json(args.script))
-    out = build_v2_slice_graph().invoke(
-        {
-            "source_map": source,
-            "script": script,
-            "selected_claim_id": args.claim_id,
+    if args.cmd == "v2":
+        source = SourceMap.model_validate(_load_json(args.source))
+        script = ScriptDraft.model_validate(_load_json(args.script))
+        out = build_v2_slice_graph().invoke(
+            {
+                "source_map": source,
+                "script": script,
+                "selected_claim_id": args.claim_id,
+            }
+        )
+        payload = {
+            "claims": [c.model_dump(mode="json") for c in out.get("claims") or []],
+            "dossier": out["dossier"].model_dump(mode="json") if out.get("dossier") else None,
+            "trace": out["trace"].model_dump(mode="json") if out.get("trace") else None,
+            "retention": out["retention"].model_dump(mode="json") if out.get("retention") else None,
+            "blocked_for_production": out.get("blocked_for_production"),
         }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if not out.get("blocked_for_production") else 2
+
+    # v3
+    source = SourceMap.model_validate(_load_json(args.source))
+    out = build_v3_slice_graph().invoke(
+        {"source_map": source, "selected_claim_id": args.claim_id}
     )
     payload = {
         "claims": [c.model_dump(mode="json") for c in out.get("claims") or []],
         "dossier": out["dossier"].model_dump(mode="json") if out.get("dossier") else None,
+        "beats": out["beats"].model_dump(mode="json") if out.get("beats") else None,
+        "script": out["script"].model_dump(mode="json") if out.get("script") else None,
         "trace": out["trace"].model_dump(mode="json") if out.get("trace") else None,
         "retention": out["retention"].model_dump(mode="json") if out.get("retention") else None,
         "blocked_for_production": out.get("blocked_for_production"),

@@ -1,8 +1,4 @@
-"""EDIT — редакционный конвейер (LangGraph-узлы).
-
-Импортируйте узлы/графы из подмодулей напрямую, например:
-`from edit.graph import build_v2_slice_graph` — чтобы не плодить циклы.
-"""
+"""EDIT — редакционный конвейер (LangGraph-узлы)."""
 
 __all__ = [
     "build_a2_only_graph",
@@ -10,7 +6,9 @@ __all__ = [
     "build_e2_only_graph",
     "build_edit_graph",
     "build_material_graph",
+    "build_scenario_graph",
     "build_v2_slice_graph",
+    "build_v3_slice_graph",
     "build_vertical_slice_graph",
 ]
 

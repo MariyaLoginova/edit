@@ -1,10 +1,11 @@
-"""Типизированный state EDIT (вехи 1–2)."""
+"""Типизированный state EDIT (вехи 1–3)."""
 
 from __future__ import annotations
 
 from typing import Annotated, TypedDict
 
 from models import (
+    BeatList,
     ClaimCard,
     Dossier,
     RetentionReport,
@@ -27,9 +28,8 @@ class EditState(TypedDict, total=False):
     rejected_notes: list[str]
     selected_claim_id: str | None
     dossier: Dossier | None
-    # ручной сценарий (заглушка D)
+    beats: BeatList | None
     script: ScriptDraft | None
     trace: TraceReport | None
     retention: RetentionReport | None
-    # True, если E1 или E2 блокирует выход в F
     blocked_for_production: bool
