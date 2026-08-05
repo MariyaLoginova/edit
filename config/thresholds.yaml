@@ -5,6 +5,11 @@ retention:
   # E2: выше = хуже. passes=false если score >= threshold ИЛИ есть severity>=4
   dropoff_score_threshold: 40
 
+material:
+  # C1/C2: размеры пачек поиска
+  web_results: 5
+  image_results: 8
+
 scoring:
-  # B1: оси скоринга — заполняются на вехе 1+, пока заглушка
+  # B1: оси скоринга — заполняются позже
   axes: []

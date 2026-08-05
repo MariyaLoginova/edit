@@ -246,6 +246,8 @@ E2 не на чем работать. Нет таймкодов — блокер
   критик удержания (актуален, Python/Pydantic).
 - [`docs/EDIT-E7-ideator.md`](docs/EDIT-E7-ideator.md) — идеатор/концептуальный
   разгон (текст сейчас, генерация отложена; вкл/выкл — человек).
+- [`docs/EDIT-C-material-E1.md`](docs/EDIT-C-material-E1.md) — слой C + E1
+  (веха 2): материал, мягкий фактчек, заморозка досье, трассируемость.
 - Конкурентное исследование сегмента — обоснование позиционирования и списка
   «что забрать / чего не делать».
 
@@ -265,7 +267,15 @@ E2 не на чем работать. Нет таймкодов — блокер
 ### Веха 1 (вертикальный срез)
 - Узлы [`edit/a2_claim_miner.py`](edit/a2_claim_miner.py) и
   [`edit/e2_retention_critic.py`](edit/e2_retention_critic.py) по тикетам.
-- Граф [`edit/graph.py`](edit/graph.py): `A2 → B2-stub → E2`. Слои B/C/D между
-  ними — ручные (`selected_claim_id` + `ScriptDraft` во входе).
-- CLI: `python scripts/run_vertical_slice.py {a2|e2|slice} ...` (нужен
-  `OPENAI_API_KEY` для живого прогона; юнит-тесты на FakeLLM).
+- Граф v1: `A2 → B2-stub → E2`.
+
+### Веха 2 (материал + трассируемость)
+- C1/C2/C3: [`edit/c1_material.py`](edit/c1_material.py),
+  [`edit/c2_images.py`](edit/c2_images.py),
+  [`edit/c3_soft_factcheck.py`](edit/c3_soft_factcheck.py) — по ADR-002.
+- Заморозка `Dossier` после успешного C3 (`models/dossier.py`).
+- E1: [`edit/e1_traceability.py`](edit/e1_traceability.py) — hard fail без
+  `claim_id` / при незамороженном досье.
+- Граф v2: `A2 → B2 → C1 → C2 → C3(freeze) → D-stub → E1 → E2`.
+- Поиск: Brave при `BRAVE_API_KEY`, иначе injectable/Null; тесты на FakeSearcher.
+- CLI: `python scripts/run_vertical_slice.py {a2|material|e1|e2|slice|v2} ...`

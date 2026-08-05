@@ -5,11 +5,16 @@
 """
 
 from models.claim import Citation, ClaimCard, ClaimKind, Scope
+from models.dossier import (
+    Dossier,
+    ImageCandidate,
+    SoftFactcheckResult,
+    WebConfirmation,
+)
 from models.idea import GenerationBrief, IdeaProbe, ProbeRegister
 from models.pipeline import (
     Beat,
     BeatList,
-    Dossier,
     ScoredClaim,
     ScriptDraft,
     ScriptLine,
@@ -18,6 +23,7 @@ from models.pipeline import (
 )
 from models.retention import BeatRisk, DropReason, RetentionReport
 from models.source import SourceMap, SourceSegment
+from models.trace import TraceIssue, TraceReason, TraceReport
 
 __all__ = [
     "Beat",
@@ -30,6 +36,7 @@ __all__ = [
     "DropReason",
     "GenerationBrief",
     "IdeaProbe",
+    "ImageCandidate",
     "ProbeRegister",
     "RetentionReport",
     "Scope",
@@ -38,6 +45,11 @@ __all__ = [
     "ScriptLine",
     "ShotList",
     "ShotPacket",
+    "SoftFactcheckResult",
     "SourceMap",
     "SourceSegment",
+    "TraceIssue",
+    "TraceReason",
+    "TraceReport",
+    "WebConfirmation",
 ]

@@ -1,10 +1,17 @@
-"""Типизированный state вертикального среза EDIT (веха 1)."""
+"""Типизированный state EDIT (вехи 1–2)."""
 
 from __future__ import annotations
 
 from typing import Annotated, TypedDict
 
-from models import ClaimCard, RetentionReport, ScriptDraft, SourceMap
+from models import (
+    ClaimCard,
+    Dossier,
+    RetentionReport,
+    ScriptDraft,
+    SourceMap,
+    TraceReport,
+)
 
 
 def _merge_claims(left: list[ClaimCard], right: list[ClaimCard]) -> list[ClaimCard]:
@@ -19,8 +26,10 @@ class EditState(TypedDict, total=False):
     claims: Annotated[list[ClaimCard], _merge_claims]
     rejected_notes: list[str]
     selected_claim_id: str | None
-    # ручной сценарий (заглушка D) — вход для E2
+    dossier: Dossier | None
+    # ручной сценарий (заглушка D)
     script: ScriptDraft | None
+    trace: TraceReport | None
     retention: RetentionReport | None
-    # True, если E2 блокирует выход в F
+    # True, если E1 или E2 блокирует выход в F
     blocked_for_production: bool
