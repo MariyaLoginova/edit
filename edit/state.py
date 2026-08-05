@@ -1,4 +1,4 @@
-"""Типизированный state EDIT (вехи 1–5)."""
+"""Типизированный state EDIT (FIX-4)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from models import (
     BeatList,
     ClaimCard,
     CompressionReport,
+    CritiqueReport,
     Dossier,
     IdeaProbe,
     OpeningPick,
@@ -38,9 +39,11 @@ class EditState(TypedDict, total=False):
     rejected_notes: list[str]
     selected_claim_id: str | None
     dossier: Dossier | None
-    beats: BeatList | None
+    beats: BeatList | None  # legacy; D1 удалён из графа
     script: ScriptDraft | None
     trace: TraceReport | None
+    critique: CritiqueReport | None
+    # legacy поля (старые узлы/тесты) — не пишутся новым графом
     retention: RetentionReport | None
     red_critique: RedCritique | None
     opening_pick: OpeningPick | None
@@ -49,7 +52,6 @@ class EditState(TypedDict, total=False):
     idea_probe: IdeaProbe | None
     idea_probe_included: bool | None
     shot_list: ShotList | None
-    # G1 (отдельный прогон / offline)
     rollout_metrics: list[RolloutMetrics]
     weight_update: WeightUpdate | None
     blocked_for_production: bool

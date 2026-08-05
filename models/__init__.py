@@ -11,6 +11,7 @@ from models.dossier import (
 )
 from models.editorial import (
     CompressionReport,
+    CritiqueReport,
     OpeningPick,
     OpeningVariant,
     RedAttack,
@@ -37,6 +38,7 @@ __all__ = [
     "ClaimKind",
     "CompressionReport",
     "ContrastPair",
+    "CritiqueReport",
     "Dossier",
     "DropReason",
     "GenerationBrief",

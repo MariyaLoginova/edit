@@ -24,12 +24,21 @@ scenario:
     - "через миг"
     - "на самом деле всё просто"
     - "а теперь представь"
+    - "механизм:"
+    - "формула:"
+    - "в материале"
+    - "в сниппете"
+    - "как сказано"
+    - "считывается как"
 
 editorial:
   opening_variants_min: 5
   opening_variants_max: 8
+  # E6 удалён (FIX-4); пороги оставлены на случай offline-утилит
   compress_min_ratio: 0.20
   compress_max_ratio: 0.25
+  dropoff_score_threshold: 40
+  attack_severity_block: 4
 
 shots:
   # F1: сколько картинок на фразу

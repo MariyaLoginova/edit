@@ -48,6 +48,8 @@ def apply_tov(
         raw["claim_id"] = script.claim_id
         raw["duration_sec"] = script.duration_sec
         raw["tov_applied"] = True
+        if "lines" in raw and len(raw["lines"]) != len(script.lines):
+            raise ValueError("D3: нельзя менять число строк — только wording")
         # жёстко сохраняем таймкоды и claim_id исходника
         if "lines" in raw and len(raw["lines"]) == len(script.lines):
             for i, src in enumerate(script.lines):

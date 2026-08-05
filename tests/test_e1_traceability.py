@@ -27,7 +27,7 @@ def test_e1_passes_when_all_facts_traced():
     script = ScriptDraft(
         script_id="s1",
         claim_id="lbd-maintenance-not-luxury",
-        duration_sec=20,
+        duration_sec=10,
         lines=[
             ScriptLine(t_start=0, t_end=5, text="Не роскошь, а отсутствие горничной.", claim_id="lbd-maintenance-not-luxury"),
             ScriptLine(t_start=5, t_end=10, text="Платье почти не требовало ухода.", claim_id="lbd-maintenance-not-luxury"),
@@ -42,7 +42,7 @@ def test_e1_fails_missing_claim_id():
     script = ScriptDraft(
         script_id="s2",
         claim_id="lbd-maintenance-not-luxury",
-        duration_sec=10,
+        duration_sec=5,
         lines=[
             ScriptLine(
                 t_start=0,
@@ -61,7 +61,7 @@ def test_e1_fails_unknown_claim_id():
     script = ScriptDraft(
         script_id="s3",
         claim_id="lbd-maintenance-not-luxury",
-        duration_sec=10,
+        duration_sec=5,
         lines=[
             ScriptLine(
                 t_start=0,

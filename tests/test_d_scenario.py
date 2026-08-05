@@ -101,6 +101,7 @@ def _valid_beats_payload(claim_id: str = "lbd-maintenance-not-luxury") -> dict:
 
 
 def _script_from_beats(beats: BeatList, claim=None) -> dict:
+    """VO без стоп-фраз D2 (`формула:` / `механизм:`)."""
     claim = claim or make_claim()
     texts = {
         "hook_evidence": f"На экране {claim.object_anchor} — little black dress с обложки.",
@@ -110,10 +111,10 @@ def _script_from_beats(beats: BeatList, claim=None) -> dict:
             f"{claim.contrast_pair.shift}."
         ),
         "mechanism": (
-            f"Механизм «{claim.mechanism_term}»: {claim.mechanism_explain} "
-            f"для {claim.object_anchor}."
+            f"Прямой крой little black dress держит {claim.mechanism_term}: "
+            f"{claim.mechanism_explain}"
         ),
-        "coda": f"Формула: {claim.object_anchor} работает как сервис дня, не как витрина.",
+        "coda": f"{claim.object_anchor} работает как сервис дня, не как витрина.",
     }
     lines = []
     for b in beats.beats:
@@ -130,9 +131,14 @@ def _script_from_beats(beats: BeatList, claim=None) -> dict:
         "script_id": beats.script_id,
         "claim_id": beats.claim_id,
         "duration_sec": beats.duration_sec,
-        "tov_applied": False,
+        "tov_applied": True,
         "lines": lines,
     }
+
+
+def _valid_script_payload(claim_id: str = "lbd-maintenance-not-luxury", claim=None) -> dict:
+    beats = BeatList.model_validate(_valid_beats_payload(claim_id))
+    return _script_from_beats(beats, claim)
 
 
 def test_beatlist_requires_timecodes_and_roles():
@@ -196,29 +202,28 @@ def test_d1_rejects_unfrozen_dossier():
 
 def test_d2_writes_script_grounded_in_dossier():
     dossier = _frozen_dossier()
-    beats = BeatList.model_validate(_valid_beats_payload())
-    llm = FakeLLM(_script_from_beats(beats, dossier.claim))
-    script = write_prose(dossier, beats, llm=llm)
-    assert len(script.lines) == len(beats.beats)
+    llm = FakeLLM(_valid_script_payload(dossier.claim_id, dossier.claim))
+    script = write_prose(dossier, llm=llm)
+    assert len(script.lines) >= 3
+    assert script.duration_sec == 45.0
+    assert script.tov_applied is True
     assert all(line.claim_id == dossier.claim_id for line in script.lines)
 
 
 def test_d2_rejects_stop_phrase():
     dossier = _frozen_dossier()
-    beats = BeatList.model_validate(_valid_beats_payload())
-    bad = _script_from_beats(beats, dossier.claim)
+    bad = _valid_script_payload(dossier.claim_id, dossier.claim)
     bad["lines"][0]["text"] = "Странно, но little black dress просто милый."
     with pytest.raises(ValueError, match="стоп-фраза"):
-        write_prose(dossier, beats, llm=FakeLLM(bad))
+        write_prose(dossier, llm=FakeLLM(bad))
 
 
 def test_d2_rejects_foreign_claim_id():
     dossier = _frozen_dossier()
-    beats = BeatList.model_validate(_valid_beats_payload())
-    bad = _script_from_beats(beats, dossier.claim)
+    bad = _valid_script_payload(dossier.claim_id, dossier.claim)
     bad["lines"][1]["claim_id"] = "other-claim"
     with pytest.raises(ValueError, match="чужим claim_id"):
-        write_prose(dossier, beats, llm=FakeLLM(bad))
+        write_prose(dossier, llm=FakeLLM(bad))
 
 
 def test_d3_preserves_timecodes_and_sets_tov_flag():
@@ -242,5 +247,6 @@ def test_d3_rejects_line_count_change():
     script = ScriptDraft.model_validate(_script_from_beats(beats, dossier.claim))
     bad = _script_from_beats(beats, dossier.claim)
     bad["lines"] = bad["lines"][:2]
+    bad["duration_sec"] = bad["lines"][-1]["t_end"]
     with pytest.raises(ValueError, match="число строк"):
         apply_tov(script, llm=FakeLLM(bad))

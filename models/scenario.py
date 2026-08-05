@@ -105,9 +105,21 @@ class ScriptDraft(BaseModel):
     tov_applied: bool = False
 
     @model_validator(mode="after")
-    def _non_empty(self) -> ScriptDraft:
+    def _non_empty_and_timecodes(self) -> ScriptDraft:
         if not self.lines:
             raise ValueError("ScriptDraft.lines пуст")
+        ordered = sorted(self.lines, key=lambda ln: ln.t_start)
+        if ordered[0].t_start > 0.05:
+            raise ValueError("первая реплика должна начинаться с t_start≈0")
+        prev_end = ordered[0].t_start
+        for ln in ordered:
+            if ln.t_start < prev_end - 0.05:
+                raise ValueError(f"перекрытие реплик около {ln.t_start}s")
+            if ln.t_start > prev_end + 0.51:
+                raise ValueError(f"разрыв таймкодов перед {ln.t_start}s")
+            prev_end = ln.t_end
+        if abs(self.duration_sec - ordered[-1].t_end) > 0.51:
+            raise ValueError("duration_sec должен совпадать с концом последней реплики")
         return self
 
 

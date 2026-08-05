@@ -31,13 +31,14 @@ def soft_factcheck(
         "kind": dossier.claim.kind.value,
         "object_anchor": dossier.claim.object_anchor,
         "mechanism_term": dossier.claim.mechanism_term,
-        "citation": dossier.claim.citation.model_dump(),
+        "source_citation": dossier.claim.citation.model_dump(),
         "scope": dossier.claim.scope.model_dump(),
         "counter_expectation": dossier.claim.counter_expectation,
         "material_notes": dossier.material_notes,
-        "web_confirmations": [
-            c.model_dump() for c in dossier.web_confirmations if c.supports_claim
+        "search_findings": [
+            c.model_dump() for c in dossier.web_confirmations
         ],
+        "check_both": "source_citation + search_findings — оставь только реальное",
     }
     response = model.invoke(
         [

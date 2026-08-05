@@ -1,4 +1,4 @@
-"""D2 · Прозаик: пишет ТОЛЬКО из досье по BeatList → ScriptDraft (FIX-3)."""
+"""D2 · Голос за кадром: озвучка + таймкоды из досье (FIX-4, без D1/D3)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 from edit.config import load_thresholds
 from edit.llm import ChatModel, get_chat_model, invoke_json
-from models import BeatList, Dossier, ScriptDraft, can_freeze
+from models import Dossier, ScriptDraft, can_freeze
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "d2_prose.txt"
 
@@ -17,12 +17,27 @@ DEFAULT_STOP = [
     "через миг",
     "на самом деле всё просто",
     "а теперь представь",
+    "механизм:",
+    "формула:",
+    "в материале",
+    "в сниппете",
+    "как сказано",
+    "считывается как",
 ]
 
 
 def _stop_phrases() -> list[str]:
     cfg = load_thresholds().get("scenario", {}).get("meta_stop_phrases") or []
-    return list(dict.fromkeys([*DEFAULT_STOP, *[str(x) for x in cfg]]))
+    return list(dict.fromkeys([*DEFAULT_STOP, *[str(x).lower() for x in cfg]]))
+
+
+def _duration_bounds() -> tuple[float, float, float]:
+    cfg = load_thresholds().get("scenario", {})
+    return (
+        float(cfg.get("min_duration_sec", 38)),
+        float(cfg.get("target_duration_sec", 45)),
+        float(cfg.get("max_duration_sec", 52)),
+    )
 
 
 def _min_images() -> int:
@@ -31,10 +46,12 @@ def _min_images() -> int:
 
 def write_prose(
     dossier: Dossier,
-    beats: BeatList,
+    beats=None,  # noqa: ANN001 — совместимость со старыми вызовами; игнорируется
     *,
     llm: ChatModel | None = None,
+    script_id: str | None = None,
 ) -> ScriptDraft:
+    """Пишет озвучку сразу голосом; сам расставляет таймкоды (FIX-4)."""
     if not dossier.frozen:
         raise ValueError("D2 пишет только из замороженного досье")
     ok, problems = can_freeze(dossier, min_images_per_state=_min_images())
@@ -42,11 +59,11 @@ def write_prose(
         raise ValueError(
             "D2: досье неполное (обход freeze?) — " + "; ".join(problems)
         )
-    if beats.claim_id != dossier.claim_id:
-        raise ValueError("D2: BeatList.claim_id != dossier.claim_id")
 
     claim = dossier.claim
     stop = _stop_phrases()
+    d_min, d_target, d_max = _duration_bounds()
+    sid = script_id or f"script-{dossier.claim_id}"
     model = llm or get_chat_model(temperature=0.2)
     user = {
         "dossier": {
@@ -67,19 +84,19 @@ def write_prose(
                 if c.supports_claim
             ],
         },
-        "beats": beats.model_dump(mode="json"),
-        "meta_stop_phrases": stop,
+        "target_duration_sec": d_target,
+        "min_duration_sec": d_min,
+        "max_duration_sec": d_max,
     }
     last_err: Exception | None = None
-    for attempt in range(3):
+    for _attempt in range(3):
         payload = user
         if last_err is not None:
             payload = {
                 **user,
                 "revision_note": (
-                    f"Предыдущий черновик отклонён: {last_err}. "
-                    "Перепиши озвучку живым голосом за кадром, без стоп-фраз и без "
-                    "докладного тона."
+                    f"Отклонено валидатором: {last_err}. "
+                    "Перепиши без этой проблемы; сохрани живой голос и таймкоды."
                 ),
             }
         raw = invoke_json(
@@ -94,12 +111,16 @@ def write_prose(
             retries=2,
         )
         if isinstance(raw, dict):
-            raw.setdefault("script_id", beats.script_id)
+            raw.setdefault("script_id", sid)
             raw.setdefault("claim_id", dossier.claim_id)
-            raw["tov_applied"] = False
+            raw["tov_applied"] = True  # голос заложен в D2 (бывш. D3)
+            for line in raw.get("lines") or []:
+                if isinstance(line, dict) and not line.get("claim_id"):
+                    line["claim_id"] = dossier.claim_id
         try:
             script = ScriptDraft.model_validate(raw)
-            _assert_grounded(script, dossier, beats)
+            _assert_claim_ids(script, dossier)
+            _assert_duration(script, d_min, d_max)
             _assert_no_stop_phrases(script, stop)
             _assert_object_grounding(script, dossier)
             return script
@@ -109,11 +130,9 @@ def write_prose(
     raise last_err
 
 
-def _assert_grounded(script: ScriptDraft, dossier: Dossier, beats: BeatList) -> None:
+def _assert_claim_ids(script: ScriptDraft, dossier: Dossier) -> None:
     if script.claim_id != dossier.claim_id:
         raise ValueError("D2: script.claim_id не из досье")
-    if abs(script.duration_sec - beats.duration_sec) > 1.0:
-        raise ValueError("D2: duration_sec сценария заметно разошёлся с BeatList")
     for line in script.lines:
         if line.claim_id is None:
             continue
@@ -121,6 +140,13 @@ def _assert_grounded(script: ScriptDraft, dossier: Dossier, beats: BeatList) -> 
             raise ValueError(
                 f"D2: line с чужим claim_id={line.claim_id!r} — факт вне досье"
             )
+
+
+def _assert_duration(script: ScriptDraft, d_min: float, d_max: float) -> None:
+    if not (d_min - 0.5 <= script.duration_sec <= d_max + 0.5):
+        raise ValueError(
+            f"D2: duration_sec={script.duration_sec} вне [{d_min}, {d_max}]"
+        )
 
 
 def _assert_no_stop_phrases(script: ScriptDraft, stop: list[str]) -> None:
@@ -131,7 +157,6 @@ def _assert_no_stop_phrases(script: ScriptDraft, stop: list[str]) -> None:
 
 
 def _token_overlap(text: str, anchors: set[str]) -> bool:
-    """Пересечение с учётом русских окончаний (как в ClaimCard)."""
     words = {t.strip("«»\"',.:;!?()") for t in text.lower().split() if len(t) >= 3}
     for w in words:
         for a in anchors:
@@ -145,7 +170,6 @@ def _token_overlap(text: str, anchors: set[str]) -> bool:
 
 
 def _assert_object_grounding(script: ScriptDraft, dossier: Dossier) -> None:
-    """Каждая реплика должна цепляться к object_anchor или state_a/state_b."""
     claim = dossier.claim
     anchors = {
         *claim.object_anchor.lower().split(),
