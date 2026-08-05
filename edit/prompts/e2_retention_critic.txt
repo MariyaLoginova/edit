@@ -30,4 +30,28 @@ fix_hint — это НАПРАВЛЕНИЕ («перенеси раскрыти�
 Поле passes вычисли так: true только если dropoff_score строго ниже порога
 из входа И нет ни одного risk с severity >= 4.
 
-Верни ТОЛЬКО JSON по схеме RetentionReport, без преамбулы.
+Верни ТОЛЬКО JSON по схеме RetentionReport, без преамбулы. Пример каркаса:
+
+{
+  "script_id": "…",
+  "duration_sec": 40,
+  "first3_has_hook": true,
+  "open_strength": 4,
+  "risks": [
+    {
+      "t_start": 12.0,
+      "t_end": 18.0,
+      "quote": "фрагмент из сценария",
+      "reason": "no_forward",
+      "forward_question": null,
+      "severity": 3,
+      "fix_hint": "добавь новый виток / объект"
+    }
+  ],
+  "dropoff_score": 35,
+  "passes": true,
+  "summary": "где теряем зрителя, 2-3 фразы"
+}
+
+Поля риска — именно t_start / t_end (не start_sec). reason — одно из enum
+DropReason. summary обязателен.

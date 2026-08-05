@@ -6,13 +6,37 @@ import logging
 from pathlib import Path
 
 from edit.config import dropoff_score_threshold
-from edit.llm import ChatModel, content_text, get_chat_model, parse_json_payload
+from edit.llm import ChatModel, get_chat_model, invoke_json
 from models import RetentionReport, ScriptDraft
 
 logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e2_retention_critic.txt"
 SEVERITY_BLOCK = 4
+
+
+def _normalize_retention_payload(raw: object) -> dict:
+    """Терпимость к алиасам полей (start_sec→t_start), без «починки» смысла."""
+    if not isinstance(raw, dict):
+        raise TypeError(f"E2: ожидался объект RetentionReport, получено {type(raw).__name__}")
+    data = dict(raw)
+    risks_in = data.get("risks") or []
+    risks_out: list[dict] = []
+    for item in risks_in:
+        if not isinstance(item, dict):
+            continue
+        r = dict(item)
+        if "t_start" not in r and "start_sec" in r:
+            r["t_start"] = r.pop("start_sec")
+        if "t_end" not in r and "end_sec" in r:
+            r["t_end"] = r.pop("end_sec")
+        if "reason" not in r and "drop_reason" in r:
+            r["reason"] = r.pop("drop_reason")
+        risks_out.append(r)
+    data["risks"] = risks_out
+    if "summary" not in data or not data["summary"]:
+        data["summary"] = data.get("overview") or data.get("notes") or "См. risks."
+    return data
 
 
 def load_system_prompt() -> str:
@@ -85,15 +109,19 @@ def critique_retention(
         f"duration_sec: {script.duration_sec}\n"
         f"dropoff_score_threshold: {thr}\n"
         f"claim_id: {script.claim_id}\n\n"
-        f"<script>\n{script_as_timed_text(script)}\n</script>"
+        f"<script>\n{script_as_timed_text(script)}\n</script>\n\n"
+        "Верни JSON RetentionReport. В каждом risk обязательны поля: "
+        "t_start, t_end, quote, reason, severity, fix_hint "
+        "(и опционально forward_question). Не используй start_sec/end_sec."
     )
-    response = model.invoke(
+    raw = invoke_json(
+        model,
         [
             {"role": "system", "content": load_system_prompt()},
             {"role": "user", "content": user},
-        ]
+        ],
+        retries=2,
     )
-    raw = parse_json_payload(content_text(response))
-    report = RetentionReport.model_validate(raw)
+    report = RetentionReport.model_validate(_normalize_retention_payload(raw))
     attach_quote_checks(report, script)
     return finalize_report(report, script, threshold=thr)
