@@ -7,7 +7,7 @@ from pathlib import Path
 
 from edit.config import dropoff_score_threshold
 from edit.llm import ChatModel, get_chat_model, invoke_json
-from models import RetentionReport, ScriptDraft
+from models import BeatRisk, DropReason, RetentionReport, ScriptDraft
 
 logger = logging.getLogger(__name__)
 
@@ -76,21 +76,49 @@ def attach_quote_checks(report: RetentionReport, script: ScriptDraft) -> list[st
     return warnings
 
 
+def abstract_object_risks(
+    script: ScriptDraft,
+    *,
+    object_anchors: set[str] | None = None,
+) -> list[BeatRisk]:
+    """FIX-3: реплика без названного объекта/состояния → abstract severity≥4."""
+    anchors = {a.lower() for a in (object_anchors or set()) if len(a) >= 3}
+    risks: list[BeatRisk] = []
+    for line in script.lines:
+        words = {w.strip("«»\",.:;").lower() for w in line.text.split() if len(w) >= 3}
+        if anchors and not (words & anchors):
+            risks.append(
+                BeatRisk(
+                    t_start=line.t_start,
+                    t_end=line.t_end,
+                    quote=line.text,
+                    reason=DropReason.abstract,
+                    forward_question=None,
+                    severity=4,
+                    fix_hint="Назови объект/состояние на экране (object_anchor или A/B).",
+                )
+            )
+    return risks
+
+
 def finalize_report(
     report: RetentionReport,
     script: ScriptDraft,
     *,
     threshold: int | None = None,
+    object_anchors: set[str] | None = None,
 ) -> RetentionReport:
-    """Нормализует id/duration и пересчитывает passes (не доверяем LLM на вердикте)."""
-    passes = compute_passes(report, threshold=threshold)
-    return report.model_copy(
+    """Нормализует id/duration, добавляет abstract-риски, пересчитывает passes."""
+    risks = list(report.risks) + abstract_object_risks(script, object_anchors=object_anchors)
+    draft = report.model_copy(
         update={
             "script_id": script.script_id,
             "duration_sec": script.duration_sec,
-            "passes": passes,
+            "risks": risks,
         }
     )
+    passes = compute_passes(draft, threshold=threshold)
+    return draft.model_copy(update={"passes": passes})
 
 
 def critique_retention(
@@ -98,6 +126,7 @@ def critique_retention(
     *,
     llm: ChatModel | None = None,
     threshold: int | None = None,
+    object_anchors: set[str] | None = None,
 ) -> RetentionReport:
     if not script.lines:
         raise ValueError("ScriptDraft.lines пуст — E2 не на чем работать (нужны таймкоды D1)")
@@ -124,4 +153,6 @@ def critique_retention(
     )
     report = RetentionReport.model_validate(_normalize_retention_payload(raw))
     attach_quote_checks(report, script)
-    return finalize_report(report, script, threshold=thr)
+    return finalize_report(
+        report, script, threshold=thr, object_anchors=object_anchors
+    )

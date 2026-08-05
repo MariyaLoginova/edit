@@ -1,11 +1,13 @@
 """Сквозные Pydantic-контракты пайплайна EDIT."""
 
-from models.claim import Citation, ClaimCard, ClaimKind, Scope
+from models.claim import Citation, ClaimCard, ClaimKind, ContrastPair, Scope
 from models.dossier import (
     Dossier,
+    ImageBuckets,
     ImageCandidate,
     SoftFactcheckResult,
     WebConfirmation,
+    can_freeze,
 )
 from models.editorial import (
     CompressionReport,
@@ -34,10 +36,12 @@ __all__ = [
     "ClaimCard",
     "ClaimKind",
     "CompressionReport",
+    "ContrastPair",
     "Dossier",
     "DropReason",
     "GenerationBrief",
     "IdeaProbe",
+    "ImageBuckets",
     "ImageCandidate",
     "OpeningPick",
     "OpeningVariant",
@@ -66,4 +70,5 @@ __all__ = [
     "TraceReport",
     "WebConfirmation",
     "WeightUpdate",
+    "can_freeze",
 ]

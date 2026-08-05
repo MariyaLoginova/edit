@@ -127,7 +127,18 @@ def _after_e1(state: EditState) -> Literal["e2_critique", "blocked"]:
 
 def node_e2_critique(state: EditState, *, llm: Any = None, set_block: bool = False) -> dict:
     script = require_manual_script(state.get("script"))
-    report = critique_retention(script, llm=llm)
+    anchors: set[str] = set()
+    dossier = state.get("dossier")
+    if dossier is not None:
+        c = dossier.claim
+        for blob in (
+            c.object_anchor,
+            c.visual_hint,
+            c.contrast_pair.state_a,
+            c.contrast_pair.state_b,
+        ):
+            anchors.update(w for w in blob.split() if len(w) >= 3)
+    report = critique_retention(script, llm=llm, object_anchors=anchors or None)
     out: dict[str, Any] = {"retention": report}
     # v1–v3: E2 сразу влияет на blocked; v4 — только диагностика, гейт в конце
     if set_block:

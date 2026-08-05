@@ -12,44 +12,21 @@ from edit.search import SearchHit
 from models import (
     Citation,
     ClaimCard,
-    ClaimKind,
     Dossier,
     RolloutMetrics,
-    Scope,
     ScriptDraft,
     ScriptLine,
-    SoftFactcheckResult,
 )
+from tests.claim_factory import make_claim, make_frozen_dossier
 from tests.fakes import FakeSearcher
 
 
 def _card(**overrides) -> ClaimCard:
-    data = {
-        "claim_id": "lbd-maintenance-not-luxury",
-        "kind": ClaimKind.causal,
-        "claim": "Маленькое чёрное взлетело из-за дешёвого ухода",
-        "counter_expectation": "Считают, что LBD — про вневременную элегантность и статус",
-        "visual_hint": "Chanel little black dress Vogue 1926",
-        "citation": Citation(
-            locator="гл.2",
-            quote="the little black dress succeeded because it required almost no maintenance",
-        ),
-        "scope": Scope(period="1920s", author_or_work="Chanel"),
-        "source_segment_id": "ch2-s1",
-        "confidence": 0.9,
-    }
-    data.update(overrides)
-    return ClaimCard.model_validate(data)
+    return make_claim(**overrides)
 
 
 def _dossier(card: ClaimCard | None = None) -> Dossier:
-    claim = card or _card()
-    return Dossier(
-        claim_id=claim.claim_id,
-        claim=claim,
-        material_notes="ok",
-        soft_factcheck=SoftFactcheckResult(ok=True, rationale="ok"),
-    ).freeze()
+    return make_frozen_dossier(card or _card())
 
 
 def _script(claim_id: str = "lbd-maintenance-not-luxury") -> ScriptDraft:

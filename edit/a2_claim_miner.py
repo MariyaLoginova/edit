@@ -56,6 +56,8 @@ def validate_claim_payload(
             item.setdefault("kind", "causal")
             item.setdefault("confidence", 0.65)
             item.setdefault("scope", {})
+            if not item.get("object_anchor") and item.get("visual_hint"):
+                item["object_anchor"] = item["visual_hint"]
             if "citation" in item and isinstance(item["citation"], dict):
                 item["citation"] = {
                     **item["citation"],

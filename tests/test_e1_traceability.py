@@ -2,37 +2,25 @@ from __future__ import annotations
 
 from edit.e1_traceability import audit_traceability
 from models import (
-    Citation,
-    ClaimCard,
-    ClaimKind,
     Dossier,
-    Scope,
     ScriptDraft,
     ScriptLine,
     SoftFactcheckResult,
     TraceReason,
 )
+from tests.claim_factory import make_claim, make_frozen_dossier
 
 
 def _dossier(*, frozen: bool = True) -> Dossier:
-    claim = ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело как наряд без ухода",
-        counter_expectation="Думают, что это про роскошь",
-        visual_hint="Chanel LBD Vogue 1926",
-        citation=Citation(locator="гл.2", quote="required almost no maintenance"),
-        scope=Scope(period="1920s", author_or_work="Chanel"),
-        source_segment_id="ch2-s1",
-        confidence=0.9,
-    )
-    d = Dossier(
+    if frozen:
+        return make_frozen_dossier()
+    claim = make_claim()
+    return Dossier(
         claim_id=claim.claim_id,
         claim=claim,
         material_notes="ok",
         soft_factcheck=SoftFactcheckResult(ok=True, invented_items=[], rationale="ok"),
     )
-    return d.freeze() if frozen else d
 
 
 def test_e1_passes_when_all_facts_traced():

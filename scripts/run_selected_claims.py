@@ -49,7 +49,13 @@ def run_one(claim_path: Path, out_dir: Path, *, model: str) -> int:
     if dossier is None or not dossier.frozen:
         print(f"  BLOCKED: dossier not frozen ({dossier and dossier.soft_factcheck})")
         return 2
-    print(f"  frozen ok; images={len(dossier.image_candidates)} web={len(dossier.web_confirmations)}")
+    imgs = dossier.image_candidates.all_images()
+    print(
+        f"  frozen ok; images={len(imgs)} "
+        f"(a={len(dossier.image_candidates.for_state_a)} "
+        f"b={len(dossier.image_candidates.for_state_b)}) "
+        f"web={len(dossier.web_confirmations)}"
+    )
 
     print(f"== {stem}: D1–D3 ==")
     sc = build_scenario_graph(llm=llm).invoke({"dossier": dossier})

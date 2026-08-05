@@ -3,36 +3,20 @@ from __future__ import annotations
 import json
 
 from edit.graph import build_scenario_graph, build_v3_slice_graph
-from edit.search import SearchHit
-from models import ClaimCard, Dossier, SoftFactcheckResult
-from tests.fakes import FakeLLM, FakeSearcher
+from models import ClaimCard, Dossier
+from tests.claim_factory import abundant_searcher, make_claim, make_frozen_dossier
+from tests.fakes import FakeLLM
 from tests.test_a2_claim_miner import _good_card
 from tests.test_d_scenario import _script_from_beats, _valid_beats_payload
 
 
 def _frozen_from_card(card: dict) -> Dossier:
-    claim = ClaimCard.model_validate(card)
-    return Dossier(
-        claim_id=claim.claim_id,
-        claim=claim,
-        material_notes="ok",
-        soft_factcheck=SoftFactcheckResult(ok=True, rationale="ok"),
-    ).freeze()
+    return make_frozen_dossier(ClaimCard.model_validate(card))
 
 
 def test_scenario_graph_d1_d2_d3():
-    card = {
-        "claim_id": "lbd-maintenance-not-luxury",
-        "kind": "causal",
-        "claim": "Маленькое чёрное взлетело как наряд без ухода",
-        "counter_expectation": "Думают про роскошь",
-        "visual_hint": "Chanel LBD Vogue 1926",
-        "citation": {"locator": "гл.2", "quote": "required almost no maintenance"},
-        "scope": {"period": "1920s", "author_or_work": "Chanel"},
-        "source_segment_id": "ch2-s1",
-        "confidence": 0.9,
-    }
-    dossier = _frozen_from_card(card)
+    card = make_claim().model_dump(mode="json")
+    dossier = make_frozen_dossier(ClaimCard.model_validate(card))
     beats_payload = _valid_beats_payload()
     step = {"n": 0}
 
@@ -53,7 +37,7 @@ def test_scenario_graph_d1_d2_d3():
         return json.dumps(rewritten)
 
     out = build_scenario_graph(llm=FakeLLM(router)).invoke({"dossier": dossier})
-    assert out["beats"].duration_sec == 40.0
+    assert out["beats"].duration_sec == 45.0
     assert out["script"].tov_applied is True
     assert out["script"].lines[0].t_start == 0.0
 
@@ -61,16 +45,7 @@ def test_scenario_graph_d1_d2_d3():
 def test_v3_slice_generates_script_then_e2(fashion_source):
     segment = fashion_source.segments[0]
     card = _good_card(segment)
-    searcher = FakeSearcher(
-        web=[SearchHit(url="https://ex.com/a", title="LBD", snippet="maintenance")],
-        images=[
-            SearchHit(
-                url="https://img/ex.jpg",
-                title="Chanel little black dress Vogue 1926",
-                snippet="dress",
-            )
-        ],
-    )
+    searcher = abundant_searcher()
     beats_payload = _valid_beats_payload(card["claim_id"])
     step = {"n": 0}
 
@@ -80,7 +55,9 @@ def test_v3_slice_generates_script_then_e2(fashion_source):
         if "редактор-разведчик" in sys_msg:
             return json.dumps([card], ensure_ascii=False)
         if "сборщик материала" in sys_msg:
-            return json.dumps({"material_notes": "ok", "support_flags": [True]})
+            return json.dumps(
+                {"material_notes": "подтверждение ухода", "support_flags": [True]}
+            )
         if "мягкий фактчекер" in sys_msg or "ВЫДУМАННЫХ" in sys_msg:
             return json.dumps({"ok": True, "invented_items": [], "rationale": "ok"})
         if "архитектор структуры" in sys_msg:

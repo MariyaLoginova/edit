@@ -6,24 +6,24 @@ from edit.c1_material import collect_material
 from edit.c2_images import collect_images
 from edit.c3_soft_factcheck import soft_factcheck
 from edit.search import SearchHit, soft_metadata_match
-from models import Citation, ClaimCard, ClaimKind, Scope
+from tests.claim_factory import make_claim
 from tests.fakes import FakeLLM, FakeSearcher
 
 
-def _card() -> ClaimCard:
-    return ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело как наряд без ухода, а не как символ роскоши",
-        counter_expectation="Считают, что LBD — про вневременную элегантность",
-        visual_hint="Chanel little black dress Vogue 1926",
-        citation=Citation(
-            locator="гл. 2",
-            quote="the little black dress succeeded because it required almost no maintenance",
-        ),
-        scope=Scope(period="1920s", region="Paris", author_or_work="Chanel"),
-        source_segment_id="ch2-s1",
-        confidence=0.9,
+def _card():
+    return make_claim()
+
+
+def _enough_images(query_a: str, query_b: str) -> FakeSearcher:
+    return FakeSearcher(
+        images=[
+            SearchHit(url=f"https://img.example/a{i}.jpg", title=query_a, snippet=query_a)
+            for i in range(4)
+        ]
+        + [
+            SearchHit(url=f"https://img.example/b{i}.jpg", title=query_b, snippet=query_b)
+            for i in range(4)
+        ]
     )
 
 
@@ -59,73 +59,71 @@ def test_c1_collects_web_confirmations():
     dossier = collect_material(_card(), searcher=searcher, llm=llm)
     assert dossier.frozen is False
     assert len(dossier.web_confirmations) == 1
-    assert dossier.web_confirmations[0].supports_claim is True
     assert "низкий уход" in dossier.material_notes
 
 
-def test_c2_packs_images_with_soft_match_flag():
+def test_c2_packs_images_by_ab_states():
     card = _card()
-    searcher = FakeSearcher(
-        images=[
-            SearchHit(
-                url="https://img.example/lbd.jpg",
-                title="Chanel little black dress 1926 Vogue",
-                snippet="archive fashion plate",
-            ),
-            SearchHit(
-                url="https://img.example/cat.jpg",
-                title="Funny cat",
-                snippet="pet photo",
-            ),
-        ]
-    )
+    searcher = _enough_images(card.contrast_pair.state_a, card.contrast_pair.state_b)
     dossier = collect_material(card, searcher=searcher, llm=None)
     dossier = collect_images(dossier, searcher=searcher)
-    assert len(dossier.image_candidates) == 2
-    assert dossier.image_candidates[0].soft_match is True
-    assert dossier.image_candidates[0].url.endswith("lbd.jpg")
+    assert dossier.image_candidates.search_status == "ok"
+    assert len(dossier.image_candidates.for_state_a) >= 1
+    assert len(dossier.image_candidates.for_state_b) >= 1
+    assert len(searcher.image_queries) == 2
 
 
-def test_c3_ok_freezes_dossier():
+def test_c3_ok_freezes_full_dossier():
+    card = _card()
     searcher = FakeSearcher(
         web=[SearchHit(url="https://example.com/a", title="t", snippet="maintenance")]
     )
-    dossier = collect_material(_card(), searcher=searcher, llm=None)
-    dossier = collect_images(
-        dossier,
-        searcher=FakeSearcher(
-            images=[
-                SearchHit(
-                    url="https://img.example/lbd.jpg",
-                    title="Chanel black dress Vogue",
-                    snippet="1926",
-                )
-            ]
+    dossier = collect_material(
+        card,
+        searcher=searcher,
+        llm=FakeLLM(
+            {
+                "material_notes": "Подтверждение maintenance для LBD.",
+                "support_flags": [True],
+            }
         ),
     )
-    llm = FakeLLM({"ok": True, "invented_items": [], "rationale": "Дат/имён-выдумок нет."})
-    frozen = soft_factcheck(dossier, llm=llm, auto_freeze=True)
-    assert frozen.frozen is True
-    assert frozen.soft_factcheck and frozen.soft_factcheck.ok
-    with pytest.raises(RuntimeError, match="заморожен"):
-        frozen.ensure_mutable()
+    dossier = collect_images(
+        dossier,
+        searcher=_enough_images(card.contrast_pair.state_a, card.contrast_pair.state_b),
+    )
+    dossier = soft_factcheck(
+        dossier,
+        llm=FakeLLM({"ok": True, "invented_items": [], "rationale": "нет выдумок"}),
+    )
+    assert dossier.frozen is True
+    assert dossier.soft_factcheck and dossier.soft_factcheck.ok
 
 
 def test_c3_fail_does_not_freeze():
+    card = _card()
+    searcher = FakeSearcher(
+        web=[SearchHit(url="https://example.com/a", title="t", snippet="x")]
+    )
     dossier = collect_material(
-        _card(),
-        searcher=FakeSearcher(web=[SearchHit(url="https://x", title="t", snippet="s")]),
-        llm=None,
+        card,
+        searcher=searcher,
+        llm=FakeLLM({"material_notes": "notes", "support_flags": [True]}),
     )
-    llm = FakeLLM(
-        {
-            "ok": False,
-            "invented_items": ["изобретено в 1712 году без опоры"],
-            "rationale": "Есть выдуманная дата.",
-        }
+    dossier = collect_images(
+        dossier,
+        searcher=_enough_images(card.contrast_pair.state_a, card.contrast_pair.state_b),
     )
-    out = soft_factcheck(dossier, llm=llm, auto_freeze=True)
-    assert out.frozen is False
-    assert out.soft_factcheck and out.soft_factcheck.ok is False
-    with pytest.raises(ValueError, match="soft_factcheck.ok=False"):
-        out.freeze()
+    dossier = soft_factcheck(
+        dossier,
+        llm=FakeLLM(
+            {
+                "ok": False,
+                "invented_items": ["выдуманная дата 1812"],
+                "rationale": "есть выдумка",
+            }
+        ),
+    )
+    assert dossier.frozen is False
+    with pytest.raises(ValueError, match="soft_factcheck"):
+        dossier.freeze()

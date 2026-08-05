@@ -3,38 +3,8 @@ from __future__ import annotations
 import json
 
 from edit.graph import build_editorial_graph
-from models import (
-    Citation,
-    ClaimCard,
-    ClaimKind,
-    Dossier,
-    Scope,
-    ScriptDraft,
-    ScriptLine,
-    SoftFactcheckResult,
-)
 from tests.fakes import FakeLLM
-from tests.test_editorial_e3_e6 import _script
-
-
-def _dossier() -> Dossier:
-    claim = ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело как наряд без ухода",
-        counter_expectation="Думают про роскошь",
-        visual_hint="Chanel LBD Vogue 1926",
-        citation=Citation(locator="гл.2", quote="required almost no maintenance"),
-        scope=Scope(period="1920s", author_or_work="Chanel"),
-        source_segment_id="ch2-s1",
-        confidence=0.9,
-    )
-    return Dossier(
-        claim_id=claim.claim_id,
-        claim=claim,
-        material_notes="ok",
-        soft_factcheck=SoftFactcheckResult(ok=True, rationale="ok"),
-    ).freeze()
+from tests.test_editorial_e3_e6 import _dossier, _script
 
 
 def test_editorial_graph_happy_path():
@@ -63,7 +33,7 @@ def test_editorial_graph_happy_path():
                     "first3_has_hook": False,
                     "open_strength": 2,
                     "risks": [],
-                    "dropoff_score": 15,
+                    "dropoff_score": 5,
                     "passes": True,
                     "summary": "почти ок, opening слабый",
                 }

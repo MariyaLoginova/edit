@@ -109,12 +109,17 @@ def collect_material(
         )
 
     confirmations = _hits_to_confirmations(hits, query, flags)
+    from models import ImageBuckets
+
+    prev_images = (
+        existing.image_candidates if existing is not None else ImageBuckets()
+    )
     dossier = Dossier(
         claim_id=claim.claim_id,
         claim=claim,
         material_notes=notes,
         web_confirmations=confirmations,
-        image_candidates=list(existing.image_candidates) if existing else [],
+        image_candidates=prev_images,
         soft_factcheck=None,
         frozen=False,
     )
