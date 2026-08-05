@@ -1,0 +1,43 @@
+{
+  "script_id": "script-barbie-lilli-steal-like-artist",
+  "claim_id": "barbie-lilli-steal-like-artist",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 6.5,
+      "text": "Слева — Лилли. Справа — первая Барби OSS в полосатом купальнике. Поставь их рядом и взгляд цепляется не за название, а за силуэт.",
+      "claim_id": "barbie-lilli-steal-like-artist",
+      "beat_id": null
+    },
+    {
+      "t_start": 6.5,
+      "t_end": 13.5,
+      "text": "У Лилли — та же тонкая талия, тот же высокий лоб, похожая причёска. Только Лилли продавали в магазинах для взрослых.",
+      "claim_id": "barbie-lilli-steal-like-artist",
+      "beat_id": null
+    },
+    {
+      "t_start": 13.5,
+      "t_end": 22.5,
+      "text": "Теперь снова смотри на первую Барби OSS в полосатом купальнике. Фигура почти не меняется. Исчезают только заострённые соски — и куклу уже ставят на полку с детскими игрушками.",
+      "claim_id": "barbie-lilli-steal-like-artist",
+      "beat_id": null
+    },
+    {
+      "t_start": 22.5,
+      "t_end": 33.5,
+      "text": "Полосатый купальник остаётся. Та же талия остаётся. Та же форма головы остаётся. Перед тобой всё ещё почти тот же силуэт — только вокруг него уже другой мир.",
+      "claim_id": "barbie-lilli-steal-like-artist",
+      "beat_id": null
+    },
+    {
+      "t_start": 33.5,
+      "t_end": 45.0,
+      "text": "Иногда самый сильный дизайн — не новый. Ты просто переносишь тот же силуэт на другую полку, и люди начинают видеть совсем другого героя.",
+      "claim_id": "barbie-lilli-steal-like-artist",
+      "beat_id": null
+    }
+  ],
+  "duration_sec": 45.0,
+  "tov_applied": true
+}
