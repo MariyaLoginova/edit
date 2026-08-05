@@ -1,0 +1,56 @@
+[
+  {
+    "strategy": "paragraph",
+    "model": "gpt-5-2",
+    "segments": 9,
+    "cards_accepted": 6,
+    "cards_raw": 6,
+    "citation_rate": 1.0,
+    "path": "runs/goralik-mimimi/paragraph_gpt-5-2.json"
+  },
+  {
+    "strategy": "paragraph",
+    "model": "gemini-2.5-flash",
+    "segments": 9,
+    "cards_accepted": 9,
+    "cards_raw": 9,
+    "citation_rate": 1.0,
+    "path": "runs/goralik-mimimi/paragraph_gemini-2.5-flash.json"
+  },
+  {
+    "strategy": "semantic",
+    "model": "gpt-5-2",
+    "segments": 7,
+    "cards_accepted": 7,
+    "cards_raw": 7,
+    "citation_rate": 1.0,
+    "path": "runs/goralik-mimimi/semantic_gpt-5-2.json"
+  },
+  {
+    "strategy": "semantic",
+    "model": "gemini-2.5-flash",
+    "segments": 7,
+    "cards_accepted": 7,
+    "cards_raw": 8,
+    "citation_rate": 0.875,
+    "path": "runs/goralik-mimimi/semantic_gemini-2.5-flash.json"
+  },
+  {
+    "strategy": "fixed_window",
+    "model": "gpt-5-2",
+    "segments": 3,
+    "cards_accepted": 7,
+    "cards_raw": 7,
+    "citation_rate": 1.0,
+    "path": "runs/goralik-mimimi/fixed_window_gpt-5-2.json"
+  },
+  {
+    "strategy": "fixed_window",
+    "model": "gemini-2.5-flash",
+    "segments": 3,
+    "cards_accepted": 5,
+    "cards_raw": 5,
+    "citation_rate": 1.0,
+    "path": "runs/goralik-mimimi/fixed_window_gemini-2.5-flash.json"
+  }
+]

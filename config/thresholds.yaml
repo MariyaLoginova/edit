@@ -1,0 +1,40 @@
+# Пороги и веса — в конфиг, не в код (см. EDIT-00 §7).
+# До ~15-20 роликов это гипотеза; калибруется G1 на реальных отвалах.
+
+retention:
+  # E2: выше = хуже. passes=false если score >= threshold ИЛИ есть severity>=4
+  dropoff_score_threshold: 40
+
+material:
+  # C1/C2: размеры пачек поиска
+  web_results: 5
+  image_results: 8
+
+scenario:
+  # целевая длина короткого ролика (сек)
+  target_duration_sec: 75
+  min_duration_sec: 55
+  max_duration_sec: 95
+
+editorial:
+  opening_variants_min: 5
+  opening_variants_max: 8
+  compress_min_ratio: 0.20
+  compress_max_ratio: 0.25
+
+shots:
+  # F1: сколько картинок на фразу
+  images_per_phrase: 5
+
+scoring:
+  # B1: 5 осей (веха 5). G1 двигает weights по метрикам.
+  weights:
+    surprise: 1.0
+    visuality: 1.0
+    causal_clarity: 1.0
+    evidence: 1.0
+    shareability: 1.0
+
+learning:
+  # После стольких роликов hypothesis=false (пока ориентир)
+  min_rollouts_for_calibration: 15

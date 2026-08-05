@@ -1,0 +1,50 @@
+{
+  "script_id": "script-cute-asks-to-be-taken-home",
+  "claim_id": "cute-asks-to-be-taken-home",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Эта собачка будто просит не лайк, а забрать её домой.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 15.0,
+      "text": "Ждёшь милую картинку. Но здесь работает другой механизм.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 15.0,
+      "t_end": 33.0,
+      "text": "Эстетика «мими» вызывает желание взять объект под опеку, защитить и не оставлять одного.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 33.0,
+      "t_end": 60.0,
+      "text": "Как сказано в досье: «мими просит взять его под опеку, защитить, не оставлять одного — то есть забрать домой». В этом и сила образа.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 60.0,
+      "t_end": 69.0,
+      "text": "Встретишь похожий образ — заметь, какое желание возникает первым.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b5"
+    },
+    {
+      "t_start": 69.0,
+      "t_end": 75.0,
+      "text": "Формула: дело не в милом виде, а в желании взять под опеку и забрать домой.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b6"
+    }
+  ],
+  "duration_sec": 75.0,
+  "tov_applied": true
+}

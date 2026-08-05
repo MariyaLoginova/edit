@@ -1,0 +1,31 @@
+{
+  "claim_id": "cuteness-built-on-fragility",
+  "claim": {
+    "claim_id": "cuteness-built-on-fragility",
+    "kind": "causal",
+    "claim": "Умиление возникает как многомерная эмоция, потому что любой «милый» объект воспринимается как неизбежно хрупкий.",
+    "counter_expectation": "Милое кажется простой, беззаботной и одномерной эмоцией без внутреннего конфликта.",
+    "visual_hint": "Пирожное с мордочкой, выложенной из конфет, до того как его съедят.",
+    "citation": {
+      "locator": "seg-4",
+      "quote": "все умиляющее — невыносимо хрупко."
+    },
+    "scope": {
+      "period": null,
+      "region": null,
+      "author_or_work": "Gary Baseman / Damien Hirst / Mark Ryden / Takashi Murakami / Simon Legno / Natalia Fabia"
+    },
+    "source_segment_id": "goralik-mimimi-0004",
+    "confidence": 0.99
+  },
+  "material_notes": "",
+  "web_confirmations": [],
+  "image_candidates": [],
+  "soft_factcheck": {
+    "ok": true,
+    "invented_items": [],
+    "rationale": "В тезисе отсутствуют конкретные даты, годы или атрибуции, которые можно было бы счесть выдуманными. Перечисленные имена находятся в поле scope и не используются для неподтверждённой атрибуции самого утверждения."
+  },
+  "frozen": true,
+  "frozen_at": "2026-08-05T11:05:52.698343+00:00"
+}

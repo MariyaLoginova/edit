@@ -1,0 +1,31 @@
+{
+  "claim_id": "cute-asks-to-be-taken-home",
+  "claim": {
+    "claim_id": "cute-asks-to-be-taken-home",
+    "kind": "causal",
+    "claim": "Образы в эстетике «мими» устроены так, чтобы вызывать желание взять объект под опеку и забрать домой.",
+    "counter_expectation": "Милые изображения нужны лишь для приятного созерцания.",
+    "visual_hint": "Фотобанковская большеголовая собачка с поводком и подписью «Гулять пойдем?»",
+    "citation": {
+      "locator": "seg-1",
+      "quote": "мими просит взять его под опеку, защитить, не оставлять одного, — то есть забрать с собой домой."
+    },
+    "scope": {
+      "period": null,
+      "region": null,
+      "author_or_work": null
+    },
+    "source_segment_id": "goralik-mimimi-0001",
+    "confidence": 0.94
+  },
+  "material_notes": "",
+  "web_confirmations": [],
+  "image_candidates": [],
+  "soft_factcheck": {
+    "ok": true,
+    "invented_items": [],
+    "rationale": "В тезисе нет конкретных дат, имён или атрибуций, которые можно было бы считать выдуманными. Формулировка опирается на предоставленную цитату и не содержит неподтверждённых фактических деталей."
+  },
+  "frozen": true,
+  "frozen_at": "2026-08-05T11:09:27.065318+00:00"
+}
