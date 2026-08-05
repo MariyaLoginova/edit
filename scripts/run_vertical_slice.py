@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Прогоны EDIT: A2 / C / D / E / срезы вех 1–3."""
+"""Прогоны EDIT: A2 / C / D / E / срезы вех 1–4."""
 
 from __future__ import annotations
 
@@ -15,10 +15,12 @@ from edit.graph import (
     build_a2_only_graph,
     build_e1_only_graph,
     build_e2_only_graph,
+    build_editorial_graph,
     build_material_graph,
     build_scenario_graph,
     build_v2_slice_graph,
     build_v3_slice_graph,
+    build_v4_slice_graph,
     build_vertical_slice_graph,
 )
 from models import ClaimCard, Dossier, ScriptDraft, SourceMap
@@ -61,6 +63,14 @@ def main() -> int:
     p_v3 = sub.add_parser("v3", help="Веха 3: A2→C→D1–D3→E1→E2")
     p_v3.add_argument("--source", type=Path, required=True)
     p_v3.add_argument("--claim-id", default=None)
+
+    p_ed = sub.add_parser("editorial", help="E2→E6 на готовых script+dossier")
+    p_ed.add_argument("--script", type=Path, required=True)
+    p_ed.add_argument("--dossier", type=Path, required=True)
+
+    p_v4 = sub.add_parser("v4", help="Веха 4: полный срез до E6")
+    p_v4.add_argument("--source", type=Path, required=True)
+    p_v4.add_argument("--claim-id", default=None)
 
     args = p.parse_args()
 
@@ -141,9 +151,54 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if not out.get("blocked_for_production") else 2
 
-    # v3
+    if args.cmd == "v3":
+        source = SourceMap.model_validate(_load_json(args.source))
+        out = build_v3_slice_graph().invoke(
+            {"source_map": source, "selected_claim_id": args.claim_id}
+        )
+        payload = {
+            "claims": [c.model_dump(mode="json") for c in out.get("claims") or []],
+            "dossier": out["dossier"].model_dump(mode="json") if out.get("dossier") else None,
+            "beats": out["beats"].model_dump(mode="json") if out.get("beats") else None,
+            "script": out["script"].model_dump(mode="json") if out.get("script") else None,
+            "trace": out["trace"].model_dump(mode="json") if out.get("trace") else None,
+            "retention": out["retention"].model_dump(mode="json") if out.get("retention") else None,
+            "blocked_for_production": out.get("blocked_for_production"),
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if not out.get("blocked_for_production") else 2
+
+    if args.cmd == "editorial":
+        script = ScriptDraft.model_validate(_load_json(args.script))
+        dossier = Dossier.model_validate(_load_json(args.dossier))
+        out = build_editorial_graph().invoke({"script": script, "dossier": dossier})
+        payload = {
+            "script": out["script"].model_dump(mode="json") if out.get("script") else None,
+            "retention": out["retention"].model_dump(mode="json") if out.get("retention") else None,
+            "red_critique": out["red_critique"].model_dump(mode="json") if out.get("red_critique") else None,
+            "opening_pick": {
+                "chosen_index": out["opening_pick"].chosen_index,
+                "chosen_text": out["opening_pick"].chosen_text,
+                "variants": [v.model_dump(mode="json") for v in out["opening_pick"].variants],
+            }
+            if out.get("opening_pick")
+            else None,
+            "retell": out["retell"].model_dump(mode="json") if out.get("retell") else None,
+            "compression": {
+                "reduction_ratio": out["compression"].reduction_ratio,
+                "passes": out["compression"].passes,
+                "summary": out["compression"].summary,
+            }
+            if out.get("compression")
+            else None,
+            "blocked_for_production": out.get("blocked_for_production"),
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if not out.get("blocked_for_production") else 2
+
+    # v4
     source = SourceMap.model_validate(_load_json(args.source))
-    out = build_v3_slice_graph().invoke(
+    out = build_v4_slice_graph().invoke(
         {"source_map": source, "selected_claim_id": args.claim_id}
     )
     payload = {
@@ -153,6 +208,14 @@ def main() -> int:
         "script": out["script"].model_dump(mode="json") if out.get("script") else None,
         "trace": out["trace"].model_dump(mode="json") if out.get("trace") else None,
         "retention": out["retention"].model_dump(mode="json") if out.get("retention") else None,
+        "red_critique": out["red_critique"].model_dump(mode="json") if out.get("red_critique") else None,
+        "retell": out["retell"].model_dump(mode="json") if out.get("retell") else None,
+        "compression": {
+            "reduction_ratio": out["compression"].reduction_ratio,
+            "passes": out["compression"].passes,
+        }
+        if out.get("compression")
+        else None,
         "blocked_for_production": out.get("blocked_for_production"),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))

@@ -1,4 +1,4 @@
-"""Типизированный state EDIT (вехи 1–3)."""
+"""Типизированный state EDIT (вехи 1–4)."""
 
 from __future__ import annotations
 
@@ -7,8 +7,12 @@ from typing import Annotated, TypedDict
 from models import (
     BeatList,
     ClaimCard,
+    CompressionReport,
     Dossier,
+    OpeningPick,
+    RedCritique,
     RetentionReport,
+    RetellReport,
     ScriptDraft,
     SourceMap,
     TraceReport,
@@ -32,4 +36,8 @@ class EditState(TypedDict, total=False):
     script: ScriptDraft | None
     trace: TraceReport | None
     retention: RetentionReport | None
+    red_critique: RedCritique | None
+    opening_pick: OpeningPick | None
+    retell: RetellReport | None
+    compression: CompressionReport | None
     blocked_for_production: bool

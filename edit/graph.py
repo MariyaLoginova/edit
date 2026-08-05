@@ -1,4 +1,4 @@
-"""LangGraph: вехи 1–3 (A2, C, D1–D3, E1–E2)."""
+"""LangGraph: вехи 1–4 (добыча → материал → сценарий → редактура E1–E6)."""
 
 from __future__ import annotations
 
@@ -15,6 +15,10 @@ from edit.d2_prose import write_prose
 from edit.d3_tov import apply_tov
 from edit.e1_traceability import audit_traceability
 from edit.e2_retention_critic import critique_retention
+from edit.e3_red_critic import critique_content
+from edit.e4_openings import rewrite_openings
+from edit.e5_retell import evaluate_retell
+from edit.e6_compress import compress_script
 from edit.state import EditState
 from edit.stubs import require_frozen_dossier, require_manual_script, resolve_selected_claim
 
@@ -63,7 +67,6 @@ def _after_c3(state: EditState) -> Literal["d_layer", "blocked"]:
 
 
 def node_d_manual_script(state: EditState) -> dict:
-    """Заглушка D для вехи 2: ручной ScriptDraft."""
     require_frozen_dossier(state.get("dossier"))
     require_manual_script(state.get("script"))
     return {}
@@ -106,13 +109,53 @@ def _after_e1(state: EditState) -> Literal["e2_critique", "blocked"]:
     return "e2_critique"
 
 
-def node_e2_critique(state: EditState, *, llm: Any = None) -> dict:
+def node_e2_critique(state: EditState, *, llm: Any = None, set_block: bool = False) -> dict:
     script = require_manual_script(state.get("script"))
     report = critique_retention(script, llm=llm)
-    return {
-        "retention": report,
-        "blocked_for_production": not report.passes,
-    }
+    out: dict[str, Any] = {"retention": report}
+    # v1–v3: E2 сразу влияет на blocked; v4 — только диагностика, гейт в конце
+    if set_block:
+        out["blocked_for_production"] = not report.passes
+    return out
+
+
+def node_e3_red(state: EditState, *, llm: Any = None) -> dict:
+    dossier = require_frozen_dossier(state.get("dossier"))
+    script = require_manual_script(state.get("script"))
+    return {"red_critique": critique_content(script, dossier, llm=llm)}
+
+
+def node_e4_openings(state: EditState, *, llm: Any = None) -> dict:
+    dossier = require_frozen_dossier(state.get("dossier"))
+    script = require_manual_script(state.get("script"))
+    pick = rewrite_openings(script, dossier, state.get("retention"), llm=llm)
+    return {"opening_pick": pick, "script": pick.script}
+
+
+def node_e5_retell(state: EditState, *, llm: Any = None) -> dict:
+    script = require_manual_script(state.get("script"))
+    return {"retell": evaluate_retell(script, llm=llm)}
+
+
+def node_e6_compress(state: EditState, *, llm: Any = None) -> dict:
+    script = require_manual_script(state.get("script"))
+    report = compress_script(script, state.get("retention"), llm=llm)
+    return {"compression": report, "script": report.script}
+
+
+def node_editorial_gate(state: EditState) -> dict:
+    """Финальный прод-гейт: учитывает только присутствующие отчёты E1/E2/E3/E5."""
+    checks: list[bool] = []
+    if state.get("trace") is not None:
+        checks.append(state["trace"].passes)
+    if state.get("retention") is not None:
+        checks.append(state["retention"].passes)
+    if state.get("red_critique") is not None:
+        checks.append(state["red_critique"].passes)
+    if state.get("retell") is not None:
+        checks.append(state["retell"].passes)
+    blocked = any(ok is False for ok in checks)
+    return {"blocked_for_production": blocked}
 
 
 def _add_abc_nodes(g: StateGraph, *, llm: Any, searcher: Any) -> None:
@@ -121,6 +164,12 @@ def _add_abc_nodes(g: StateGraph, *, llm: Any, searcher: Any) -> None:
     g.add_node("c1_material", lambda s: node_c1_material(s, llm=llm, searcher=searcher))
     g.add_node("c2_images", lambda s: node_c2_images(s, searcher=searcher))
     g.add_node("c3_factcheck", lambda s: node_c3_factcheck(s, llm=llm))
+
+
+def _add_d_nodes(g: StateGraph, *, llm: Any) -> None:
+    g.add_node("d1_architect", lambda s: node_d1_architect(s, llm=llm))
+    g.add_node("d2_prose", lambda s: node_d2_prose(s, llm=llm))
+    g.add_node("d3_tov", lambda s: node_d3_tov(s, llm=llm))
 
 
 def build_material_graph(*, llm: Any = None, searcher: Any = None):
@@ -136,11 +185,10 @@ def build_material_graph(*, llm: Any = None, searcher: Any = None):
 
 
 def build_vertical_slice_graph(*, llm: Any = None, searcher: Any = None):
-    """Веха 1: A2 → B2-stub → E2."""
     g = StateGraph(EditState)
     g.add_node("a2_mine", lambda s: node_a2_mine(s, llm=llm))
     g.add_node("b2_select_stub", node_b2_select_stub)
-    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm))
+    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm, set_block=True))
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b2_select_stub")
     g.add_edge("b2_select_stub", "e2_critique")
@@ -149,14 +197,13 @@ def build_vertical_slice_graph(*, llm: Any = None, searcher: Any = None):
 
 
 def build_v2_slice_graph(*, llm: Any = None, searcher: Any = None):
-    """Веха 2: … → C3 → D-stub(manual) → E1 → E2."""
     g = StateGraph(EditState)
     _add_abc_nodes(g, llm=llm, searcher=searcher)
     g.add_node("d_manual_script", node_d_manual_script)
     g.add_node("material_blocked", node_material_blocked)
     g.add_node("e1_trace", node_e1_trace)
     g.add_node("e1_blocked", node_material_blocked)
-    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm))
+    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm, set_block=True))
 
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b2_select_stub")
@@ -181,16 +228,13 @@ def build_v2_slice_graph(*, llm: Any = None, searcher: Any = None):
 
 
 def build_v3_slice_graph(*, llm: Any = None, searcher: Any = None):
-    """Веха 3: … → C3 → D1 → D2 → D3 → E1 → E2."""
     g = StateGraph(EditState)
     _add_abc_nodes(g, llm=llm, searcher=searcher)
-    g.add_node("d1_architect", lambda s: node_d1_architect(s, llm=llm))
-    g.add_node("d2_prose", lambda s: node_d2_prose(s, llm=llm))
-    g.add_node("d3_tov", lambda s: node_d3_tov(s, llm=llm))
+    _add_d_nodes(g, llm=llm)
     g.add_node("material_blocked", node_material_blocked)
     g.add_node("e1_trace", node_e1_trace)
     g.add_node("e1_blocked", node_material_blocked)
-    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm))
+    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm, set_block=True))
 
     g.add_edge(START, "a2_mine")
     g.add_edge("a2_mine", "b2_select_stub")
@@ -216,12 +260,72 @@ def build_v3_slice_graph(*, llm: Any = None, searcher: Any = None):
     return g.compile()
 
 
-def build_scenario_graph(*, llm: Any = None):
-    """Только D1→D2→D3. Вход: frozen dossier."""
+def build_v4_slice_graph(*, llm: Any = None, searcher: Any = None):
+    """Веха 4: … → E1 → E2 → E3 → E4 → E5 → E6 → gate."""
     g = StateGraph(EditState)
-    g.add_node("d1_architect", lambda s: node_d1_architect(s, llm=llm))
-    g.add_node("d2_prose", lambda s: node_d2_prose(s, llm=llm))
-    g.add_node("d3_tov", lambda s: node_d3_tov(s, llm=llm))
+    _add_abc_nodes(g, llm=llm, searcher=searcher)
+    _add_d_nodes(g, llm=llm)
+    g.add_node("material_blocked", node_material_blocked)
+    g.add_node("e1_trace", node_e1_trace)
+    g.add_node("e1_blocked", node_material_blocked)
+    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm, set_block=False))
+    g.add_node("e3_red", lambda s: node_e3_red(s, llm=llm))
+    g.add_node("e4_openings", lambda s: node_e4_openings(s, llm=llm))
+    g.add_node("e5_retell", lambda s: node_e5_retell(s, llm=llm))
+    g.add_node("e6_compress", lambda s: node_e6_compress(s, llm=llm))
+    g.add_node("editorial_gate", node_editorial_gate)
+
+    g.add_edge(START, "a2_mine")
+    g.add_edge("a2_mine", "b2_select_stub")
+    g.add_edge("b2_select_stub", "c1_material")
+    g.add_edge("c1_material", "c2_images")
+    g.add_edge("c2_images", "c3_factcheck")
+    g.add_conditional_edges(
+        "c3_factcheck",
+        _after_c3,
+        {"d_layer": "d1_architect", "blocked": "material_blocked"},
+    )
+    g.add_edge("material_blocked", END)
+    g.add_edge("d1_architect", "d2_prose")
+    g.add_edge("d2_prose", "d3_tov")
+    g.add_edge("d3_tov", "e1_trace")
+    g.add_conditional_edges(
+        "e1_trace",
+        _after_e1,
+        {"e2_critique": "e2_critique", "blocked": "e1_blocked"},
+    )
+    g.add_edge("e1_blocked", END)
+    g.add_edge("e2_critique", "e3_red")
+    g.add_edge("e3_red", "e4_openings")
+    g.add_edge("e4_openings", "e5_retell")
+    g.add_edge("e5_retell", "e6_compress")
+    g.add_edge("e6_compress", "editorial_gate")
+    g.add_edge("editorial_gate", END)
+    return g.compile()
+
+
+def build_editorial_graph(*, llm: Any = None):
+    """Только E2→E6. Вход: frozen dossier + script."""
+    g = StateGraph(EditState)
+    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm))
+    g.add_node("e3_red", lambda s: node_e3_red(s, llm=llm))
+    g.add_node("e4_openings", lambda s: node_e4_openings(s, llm=llm))
+    g.add_node("e5_retell", lambda s: node_e5_retell(s, llm=llm))
+    g.add_node("e6_compress", lambda s: node_e6_compress(s, llm=llm))
+    g.add_node("editorial_gate", node_editorial_gate)
+    g.add_edge(START, "e2_critique")
+    g.add_edge("e2_critique", "e3_red")
+    g.add_edge("e3_red", "e4_openings")
+    g.add_edge("e4_openings", "e5_retell")
+    g.add_edge("e5_retell", "e6_compress")
+    g.add_edge("e6_compress", "editorial_gate")
+    g.add_edge("editorial_gate", END)
+    return g.compile()
+
+
+def build_scenario_graph(*, llm: Any = None):
+    g = StateGraph(EditState)
+    _add_d_nodes(g, llm=llm)
     g.add_edge(START, "d1_architect")
     g.add_edge("d1_architect", "d2_prose")
     g.add_edge("d2_prose", "d3_tov")
@@ -230,8 +334,8 @@ def build_scenario_graph(*, llm: Any = None):
 
 
 def build_edit_graph(*, llm: Any = None, searcher: Any = None):
-    """Актуальный полный срез — веха 3."""
-    return build_v3_slice_graph(llm=llm, searcher=searcher)
+    """Актуальный полный срез — веха 4."""
+    return build_v4_slice_graph(llm=llm, searcher=searcher)
 
 
 def build_a2_only_graph(*, llm: Any = None):
@@ -244,7 +348,7 @@ def build_a2_only_graph(*, llm: Any = None):
 
 def build_e2_only_graph(*, llm: Any = None):
     g = StateGraph(EditState)
-    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm))
+    g.add_node("e2_critique", lambda s: node_e2_critique(s, llm=llm, set_block=True))
     g.add_edge(START, "e2_critique")
     g.add_edge("e2_critique", END)
     return g.compile()

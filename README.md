@@ -250,6 +250,8 @@ E2 не на чем работать. Нет таймкодов — блокер
   (веха 2): материал, мягкий фактчек, заморозка досье, трассируемость.
 - [`docs/EDIT-D-scenario.md`](docs/EDIT-D-scenario.md) — слой D (веха 3):
   архитектор / прозаик / ToV с таймкодами.
+- [`docs/EDIT-E-editorial.md`](docs/EDIT-E-editorial.md) — слой E3–E6 (веха 4):
+  красный критик, открытия, пересказ, сжатие.
 - Конкурентное исследование сегмента — обоснование позиционирования и списка
   «что забрать / чего не делать».
 
@@ -287,4 +289,12 @@ E2 не на чем работать. Нет таймкодов — блокер
 - `BeatList` с обязательными таймкодами (блокер E2); проза только из досье;
   ToV — отдельный проход (`config/tov.yaml`).
 - Граф v3: `A2 → B2 → C → D1 → D2 → D3 → E1 → E2`.
-- CLI: `python scripts/run_vertical_slice.py {a2|material|scenario|e1|e2|slice|v2|v3} ...`
+
+### Веха 4 (полная редактура)
+- E3–E6: [`edit/e3_red_critic.py`](edit/e3_red_critic.py),
+  [`edit/e4_openings.py`](edit/e4_openings.py),
+  [`edit/e5_retell.py`](edit/e5_retell.py),
+  [`edit/e6_compress.py`](edit/e6_compress.py).
+- E2 остаётся диагностикой; E4/E6 правят по его отчёту; E3 бьёт по содержанию.
+- Граф v4: `… → E1 → E2 → E3 → E4 → E5 → E6 → editorial_gate`.
+- CLI: `…|editorial|v4`

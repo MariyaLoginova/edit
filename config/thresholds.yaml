@@ -16,6 +16,12 @@ scenario:
   min_duration_sec: 55
   max_duration_sec: 95
 
+editorial:
+  opening_variants_min: 5
+  opening_variants_max: 8
+  compress_min_ratio: 0.20
+  compress_max_ratio: 0.25
+
 scoring:
   # B1: оси скоринга — заполняются позже
   axes: []
