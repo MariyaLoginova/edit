@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Целая глава → одна озвучка → E1–E6 (без нарезки на подтезисы).
+"""Глава целиком → одна озвучка → E1–E6 (без нарезки на подтезисы).
 
-A2 не дробит статью. Полный текст кладётся в досье как material_notes.
-Один сквозной claim_id для трассируемости. Картинки — заглушка под A/B
-(не курация). Цель прогона — редактура E.
+Полный текст главы в material_notes. Один сквозной claim_id.
+Картинки — заглушка под A/B (не курация). Цель — редактура E.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -36,32 +36,107 @@ from models import (
 
 load_dotenv()
 
-SOURCE = ROOT / "sources/goralik-mimimi.txt"
-OUT = ROOT / "runs/goralik-mimimi/article_editorial"
+PROFILES = {
+    "mimimi": {
+        "source": ROOT / "sources/goralik-mimimi.txt",
+        "out": ROOT / "runs/goralik-mimimi/article_editorial",
+        "claim": {
+            "claim_id": "goralik-mimimi-whole",
+            "claim": (
+                "Котик на улице даёт микроумиление без вовлечения — "
+                "пока тех же котиков не станет пятьдесят и милота не перевернётся в тревогу."
+            ),
+            "counter_expectation": (
+                "Чем больше милых картинок в ленте, тем теплее и безопаснее становится фон."
+            ),
+            "visual_hint": "один котик на улице → пятьдесят котиков",
+            "object_anchor": "котик на улице",
+            "contrast_pair": {
+                "state_a": "перед тобой один котик",
+                "state_b": "перед тобой пятьдесят котиков",
+                "shift": "микроумиление сменяется замиранием перед хищной массой",
+            },
+            "mechanism_term": "порог-количества",
+            "mechanism_explain": (
+                "При росте числа одинаковых фигур взгляд перестаёт держать одну мордочку "
+                "и начинает читать плотность стаи."
+            ),
+            "quote": (
+                "Пятьдесят — ты останавливаешься и не знаешь, как идти дальше, "
+                "потому что перед тобой пятьдесят, простите, хищных животных"
+            ),
+            "locator": "эссе целиком, финал",
+            "author": "Линор Горалик",
+        },
+        "arc": (
+            "1) хук — сток-щенок / минимальная социальная монета\n"
+            "2) педоморфизм — защитить и «забрать домой»\n"
+            "3) хрупкость — мордочка из конфет: целое → надкушенное\n"
+            "4) порог количества — один котик → пятьдесят\n"
+            "5) кода — одна уносимая фраза"
+        ),
+    },
+    "barbie-ch03": {
+        "source": ROOT / "sources/goralik-barbie-ch03-appearance.txt",
+        "out": ROOT / "runs/goralik-barbie/ch03_editorial",
+        "claim": {
+            "claim_id": "barbie-face-must-stay-recognizable",
+            "claim": (
+                "Лицо Барби меняли много раз — от OSS с косым взглядом до улыбки Малибу — "
+                "но кукла обязана оставаться узнаваемой: лучше, но не другой."
+            ),
+            "counter_expectation": (
+                "Считают, что лицо Барби в каждый год просто копировало идеал красоты эпохи."
+            ),
+            "visual_hint": "OSS Барби в полосатом купальнике vs Малибу Барби, смотрящая прямо",
+            "object_anchor": "лицо Барби OSS в полосатом купальнике",
+            "contrast_pair": {
+                "state_a": "первая Барби OSS смотрит в сторону и вниз, тяжёлый макияж",
+                "state_b": "Малибу Барби 1972 смотрит в глаза и улыбается",
+                "shift": "пугающая взрослость сменяется пляжной «естественностью», но силуэт тот же бренд",
+            },
+            "mechanism_term": "узнаваемость-вместо-моды",
+            "mechanism_explain": (
+                "После каждого скачка лицо улучшают точечно: взгляд, улыбка, макияж — "
+                "чтобы девочка в музее не сказала «это не Барби»."
+            ),
+            "quote": (
+                "Барби должна была становиться лучше, но она не имела права стать другой"
+            ),
+            "locator": "гл. 3, изменения внешности",
+            "author": "Линор Горалик · Полая женщина",
+        },
+        "arc": (
+            "1) хук — девочка в музее: «Это не Барби» про первую OSS\n"
+            "2) ложное — «лицо всегда = идеал красоты своего года»\n"
+            "3) A/B — OSS (косит, тяжёлый макияж) → Малибу 1972 (смотрит прямо, улыбка)\n"
+            "   опционально короткий хвост: откуда странные пропорции (Лилли/комикс 50-х)\n"
+            "4) механизм — узнаваемость: лучше, но не другой\n"
+            "5) кода — одна уносимая фраза про усреднённый тип / бренд-лицо"
+        ),
+    },
+}
+
 
 WHOLE_VO_PROMPT = """\
-Ты пишешь ОЗВУЧКУ короткого ролика по ЦЕЛОМУ эссе (не по одному тезису).
+Ты пишешь ОЗВУЧКУ короткого ролика по ЦЕЛОЙ главе (не по одному тезису).
 Голос за кадром: коротко, живо, смотришь на картинку вместе со зрителем.
 
-Дуга ролика = дуга эссе, одним дыханием (~90 сек):
-1) хук — сток-щенок с поводочком «Гулять пойдем?» / минимальная социальная монета
-2) педоморфизм — почему хочется защитить и «забрать домой»
-3) хрупкость — мордочка из конфет на пирожном: целое → надкушенное
-4) порог количества — один котик → пятьдесят; милота ломается
-5) кода — одна уносимая фраза (благодарность / моление о мирном времени — по эссе)
+Дуга ролика = дуга главы, одним дыханием (~80–100 сек):
+{arc}
 
 Правила:
 — Не дели на «отдельные ролики» и не объявляй список тезисов.
 — Не канцелярит. Не «механизм:», не «формула:», не «как сказано в материале».
-— Факты и имена — ТОЛЬКО из текста эссе (Райден, Бейсман и т.п. — только если
-  реально нужны и есть в тексте; лучше через образы, чем через фамилии).
+— Факты, даты, имена — ТОЛЬКО из текста главы.
 — Каждая строка lines должна иметь claim_id = "{claim_id}".
-— Таймкоды сплошные с 0; duration_sec ≈ 85–100.
+— Таймкоды сплошные с 0; duration_sec ≈ 80–100.
 — Один сквозной сюжет, не набор слайдов.
+— Сначала объект на экране, потом смысл.
 
 Верни ТОЛЬКО JSON ScriptDraft:
 {{
-  "script_id": "script-goralik-mimimi-whole",
+  "script_id": "script-{claim_id}",
   "claim_id": "{claim_id}",
   "duration_sec": 90.0,
   "tov_applied": false,
@@ -95,55 +170,35 @@ def _images(state: str, query: str, n: int = 4) -> list[ImageCandidate]:
     ]
 
 
-def build_throughline_claim() -> ClaimCard:
-    """Один сквозной каркас на главу — не набор подтезисов."""
+def build_claim(cfg: dict) -> ClaimCard:
+    c = cfg["claim"]
     return ClaimCard(
-        claim_id="goralik-mimimi-whole",
+        claim_id=c["claim_id"],
         kind=ClaimKind.causal,
-        claim=(
-            "Котик на улице даёт микроумиление без вовлечения — "
-            "пока тех же котиков не станет пятьдесят и милота не перевернётся в тревогу."
-        ),
-        counter_expectation=(
-            "Чем больше милых картинок в ленте, тем теплее и безопаснее становится фон."
-        ),
-        visual_hint="один котик на улице → пятьдесят котиков",
-        object_anchor="котик на улице",
-        contrast_pair=ContrastPair(
-            state_a="перед тобой один котик",
-            state_b="перед тобой пятьдесят котиков",
-            shift="микроумиление сменяется замиранием перед хищной массой",
-        ),
-        mechanism_term="порог-количества",
-        mechanism_explain=(
-            "При росте числа одинаковых фигур взгляд перестаёт держать одну мордочку "
-            "и начинает читать плотность стаи."
-        ),
-        citation=Citation(
-            locator="эссе целиком, финал",
-            quote=(
-                "Пятьдесят — ты останавливаешься и не знаешь, как идти дальше, "
-                "потому что перед тобой пятьдесят, простите, хищных животных"
-            ),
-        ),
-        scope=Scope(author_or_work="Линор Горалик"),
-        source_segment_id="goralik-mimimi-whole",
+        claim=c["claim"],
+        counter_expectation=c["counter_expectation"],
+        visual_hint=c["visual_hint"],
+        object_anchor=c["object_anchor"],
+        contrast_pair=ContrastPair(**c["contrast_pair"]),
+        mechanism_term=c["mechanism_term"],
+        mechanism_explain=c["mechanism_explain"],
+        citation=Citation(locator=c["locator"], quote=c["quote"]),
+        scope=Scope(author_or_work=c["author"]),
+        source_segment_id=c["claim_id"],
         confidence=0.9,
     )
 
 
-def freeze_dossier(claim: ClaimCard, essay: str) -> Dossier:
-    notes = (
-        "Полный текст эссе (глава целиком, без нарезки на подтезисы):\n\n" + essay.strip()
-    )
+def freeze_dossier(claim: ClaimCard, chapter: str) -> Dossier:
+    notes = "Полный текст главы (целиком, без нарезки на подтезисы):\n\n" + chapter.strip()
     d = Dossier(
         claim_id=claim.claim_id,
         claim=claim,
         material_notes=notes,
         web_confirmations=[
             WebConfirmation(
-                url="https://linorgoralik.com/mimi.html",
-                title="Линор Горалик · N мимими × M мимими",
+                url="https://example.com/source",
+                title=claim.scope.author_or_work or "source",
                 snippet=claim.citation.quote,
                 query=claim.claim,
                 supports_claim=True,
@@ -156,34 +211,34 @@ def freeze_dossier(claim: ClaimCard, essay: str) -> Dossier:
         ),
         soft_factcheck=SoftFactcheckResult(
             ok=True,
-            rationale="материал = полный текст источника; выдуманных атрибуций нет",
+            rationale="материал = полный текст главы; выдуманных атрибуций нет",
         ),
     )
     return d.freeze()
 
 
-def write_whole_vo(essay: str, claim: ClaimCard, *, llm) -> ScriptDraft:
+def write_whole_vo(chapter: str, claim: ClaimCard, *, arc: str, llm) -> ScriptDraft:
     user = {
         "claim_id": claim.claim_id,
         "throughline": claim.claim,
         "object_anchor": claim.object_anchor,
         "contrast_pair": claim.contrast_pair.model_dump(mode="json"),
         "mechanism_term": claim.mechanism_term,
-        "essay": essay.strip(),
+        "chapter": chapter.strip(),
     }
     raw = invoke_json(
         llm,
         [
             {
                 "role": "system",
-                "content": WHOLE_VO_PROMPT.format(claim_id=claim.claim_id),
+                "content": WHOLE_VO_PROMPT.format(claim_id=claim.claim_id, arc=arc),
             },
             {"role": "user", "content": str(user)},
         ],
         retries=2,
     )
     if isinstance(raw, dict):
-        raw.setdefault("script_id", "script-goralik-mimimi-whole")
+        raw.setdefault("script_id", f"script-{claim.claim_id}")
         raw.setdefault("claim_id", claim.claim_id)
         raw["tov_applied"] = False
         for line in raw.get("lines") or []:
@@ -204,14 +259,12 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
     blocked = ed.get("blocked_for_production")
 
     lines = [
-        "# Редактура E · глава целиком (`goralik-mimimi`)",
+        f"# Редактура E · `{claim.claim_id}`",
         "",
         f"**blocked_for_production:** `{blocked}`",
-        f"**claim_id:** `{claim.claim_id}`",
         f"**длительность (после E):** {script.duration_sec:.0f}с",
         "",
-        "Источник прогнан как одна глава: полный текст в `material_notes`, "
-        "без нарезки A2 на подтезисы.",
+        "Глава прогнана целиком: полный текст в `material_notes`, без нарезки A2.",
         "",
         "## Сводка проходов",
         "",
@@ -240,7 +293,7 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
             lines.append(
                 f"- issue[{iss.line_index}] {iss.reason}: {iss.detail or iss.text}"
             )
-    lines += ["", "## E2 · Удержание (зачем смотреть дальше)", ""]
+    lines += ["", "## E2 · Удержание", ""]
     if ret:
         lines.append(f"- dropoff_score: **{ret.dropoff_score}** · passes=`{ret.passes}`")
         lines.append(f"- summary: {ret.summary}")
@@ -261,19 +314,16 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
             )
     lines += ["", "## E4 · Перебор открытий", ""]
     if op:
-        lines.append(f"- chosen_index: {op.chosen_index}")
         lines.append(f"- chosen: {op.chosen_text}")
         for i, v in enumerate(op.variants):
             mark = "←" if i == op.chosen_index else " "
-            lines.append(f"- [{i}]{mark} (h{v.hook_strength}) {v.text} — {v.rationale}")
+            lines.append(f"- [{i}]{mark} (h{v.hook_strength}) {v.text}")
     lines += ["", "## E5 · Пересказ", ""]
     if retell:
         lines.append(f"- passes=`{retell.passes}`")
         lines.append(f"- retell: {retell.retell}")
         lines.append(f"- coda: {retell.coda_quote}")
         lines.append(f"- summary: {retell.summary}")
-        if retell.fix_hint:
-            lines.append(f"- fix_hint: {retell.fix_hint}")
     lines += ["", "## E6 · Сжатие", ""]
     if comp:
         lines.append(
@@ -284,54 +334,53 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
     lines += ["", "## Озвучка после редактуры", ""]
     for line in script.lines:
         lines.append(f"- `{line.t_start:.0f}–{line.t_end:.0f}` {line.text}")
-    lines += ["", "## Озвучка до E4/E6 (черновик)", ""]
+    lines += ["", "## Озвучка до E4/E6", ""]
     for line in script0.lines:
         lines.append(f"- `{line.t_start:.0f}–{line.t_end:.0f}` {line.text}")
     lines.append("")
     return "\n".join(lines)
 
 
-def main() -> int:
-    essay = SOURCE.read_text(encoding="utf-8")
-    claim = build_throughline_claim()
-    dossier = freeze_dossier(claim, essay)
-    llm = get_chat_model(model="gpt-5-2", temperature=0.2)
+def run_profile(name: str, *, model: str) -> int:
+    cfg = PROFILES[name]
+    chapter = cfg["source"].read_text(encoding="utf-8")
+    claim = build_claim(cfg)
+    dossier = freeze_dossier(claim, chapter)
+    llm = get_chat_model(model=model, temperature=0.2)
+    out: Path = cfg["out"]
+    out.mkdir(parents=True, exist_ok=True)
+    _dump(out / "00_claim.json", claim)
+    _dump(out / "01_dossier.json", dossier)
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    _dump(OUT / "00_claim.json", claim)
-    _dump(OUT / "01_dossier.json", dossier)
-
-    print("== VO по целой главе ==")
-    script0 = write_whole_vo(essay, claim, llm=llm)
-    _dump(OUT / "03_script_draft.json", script0)
+    print(f"== [{name}] VO по целой главе ==")
+    script0 = write_whole_vo(chapter, claim, arc=cfg["arc"], llm=llm)
+    _dump(out / "03_script_draft.json", script0)
     print(f"  lines={len(script0.lines)} duration={script0.duration_sec}s")
     for line in script0.lines:
         print(f"  {line.t_start:.0f}–{line.t_end:.0f} {line.text}")
 
-    print("== E1 ==")
+    print(f"== [{name}] E1 ==")
     e1 = build_e1_only_graph().invoke({"dossier": dossier, "script": script0})
-    _dump(OUT / "04_trace.json", e1.get("trace"))
+    _dump(out / "04_trace.json", e1.get("trace"))
     print(f"  passes={e1['trace'].passes} issues={len(e1['trace'].issues)}")
     if not e1["trace"].passes:
-        _dump(OUT / "04_editorial_meta.json", {"blocked": True, "at": "E1"})
-        (OUT / "EDITORIAL.md").write_text(
-            _report_md(claim, dossier, script0, e1, {}), encoding="utf-8"
+        (out / "EDITORIAL.md").write_text(
+            _report_md(claim, dossier, script0, e1, {"blocked_for_production": True}),
+            encoding="utf-8",
         )
-        print((OUT / "EDITORIAL.md").read_text(encoding="utf-8"))
         return 2
 
-    print("== E2→E6 ==")
-    ed = build_editorial_graph(llm=llm).invoke(
-        {"dossier": dossier, "script": script0}
-    )
-    _dump(OUT / "04b_retention.json", ed.get("retention"))
-    _dump(OUT / "04c_red.json", ed.get("red_critique"))
-    _dump(OUT / "04d_openings.json", ed.get("opening_pick"))
-    _dump(OUT / "04e_retell.json", ed.get("retell"))
-    _dump(OUT / "04f_compression.json", ed.get("compression"))
+    print(f"== [{name}] E2→E6 ==")
+    ed = build_editorial_graph(llm=llm).invoke({"dossier": dossier, "script": script0})
+    _dump(out / "04b_retention.json", ed.get("retention"))
+    _dump(out / "04c_red.json", ed.get("red_critique"))
+    _dump(out / "04d_openings.json", ed.get("opening_pick"))
+    _dump(out / "04e_retell.json", ed.get("retell"))
+    _dump(out / "04f_compression.json", ed.get("compression"))
     if ed.get("script"):
-        _dump(OUT / "05_script_edited.json", ed["script"])
+        _dump(out / "05_script_edited.json", ed["script"])
     meta = {
+        "profile": name,
         "blocked_for_production": ed.get("blocked_for_production"),
         "trace_passes": True,
         "retention_passes": ed["retention"].passes if ed.get("retention") else None,
@@ -344,11 +393,24 @@ def main() -> int:
         "opening_chosen": ed["opening_pick"].chosen_text if ed.get("opening_pick") else None,
         "retell": ed["retell"].retell if ed.get("retell") else None,
     }
-    _dump(OUT / "04_editorial_meta.json", meta)
+    _dump(out / "04_editorial_meta.json", meta)
     md = _report_md(claim, dossier, script0, e1, ed)
-    (OUT / "EDITORIAL.md").write_text(md, encoding="utf-8")
+    (out / "EDITORIAL.md").write_text(md, encoding="utf-8")
     print(md)
     return 0 if not ed.get("blocked_for_production") else 2
+
+
+def main() -> int:
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        "--profile",
+        default="barbie-ch03",
+        choices=sorted(PROFILES),
+        help="Какую главу прогнать",
+    )
+    p.add_argument("--model", default="gpt-5-2")
+    args = p.parse_args()
+    return run_profile(args.profile, model=args.model)
 
 
 if __name__ == "__main__":
