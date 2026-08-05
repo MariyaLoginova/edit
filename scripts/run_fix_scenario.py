@@ -90,7 +90,7 @@ def _screen_for_role(role: str, claim: ClaimCard, dossier) -> str:
     return mapping.get(role, f"Кадр: {claim.object_anchor}")
 
 
-def _scenario_md(claim: ClaimCard, beats, script, shot_list, dossier) -> str:
+def _scenario_md(claim: ClaimCard, script, shot_list, dossier) -> str:
     lines = [
         f"# Сценарий · `{claim.claim_id}`",
         "",
@@ -102,33 +102,29 @@ def _scenario_md(claim: ClaimCard, beats, script, shot_list, dossier) -> str:
         "> Картинки не курировались: колонка «экран» — что искать в стоке/архиве "
         "(из `contrast_pair` + C2-кандидаты). Отбор и права — на монтаже.",
         "",
-        "| сек | бит | озвучка | экран (примерно) |",
-        "|---|---|---|---|",
+        "| сек | озвучка | экран (примерно) |",
+        "|---|---|---|",
     ]
-    beat_by_id = {b.beat_id: b for b in beats.beats}
-
-    for line in script.lines:
-        beat = beat_by_id.get(line.beat_id) if line.beat_id else None
-        role = beat.role.value if beat else "—"
+    n = len(script.lines)
+    for i, line in enumerate(script.lines):
+        if i == 0:
+            role = "hook_evidence"
+        elif i == n - 1:
+            role = "coda"
+        elif i == 1:
+            role = "false_explanation"
+        elif i >= n - 2:
+            role = "mechanism"
+        else:
+            role = "contrast_ab"
         vis = _screen_for_role(role, claim, dossier)
         text = line.text.replace("|", "\\|").replace("\n", " ")
         vis = vis.replace("|", "\\|").replace("\n", " ")
         lines.append(
-            f"| {line.t_start:.0f}–{line.t_end:.0f} | {role} | {text} | {vis} |"
+            f"| {line.t_start:.0f}–{line.t_end:.0f} | {text} | {vis} |"
         )
 
-    lines.extend(
-        [
-            "",
-            "## Каркас (D1)",
-            "",
-        ]
-    )
-    for b in beats.beats:
-        lines.append(
-            f"- `{b.t_start:.0f}–{b.t_end:.0f}` **{b.role.value}**: {b.intent}"
-        )
-    lines.extend(["", f"## Claim", "", claim.claim, ""])
+    lines.extend(["", "## Claim", "", claim.claim, ""])
     return "\n".join(lines)
 
 
@@ -164,10 +160,9 @@ def run_one(claim: ClaimCard, out_dir: Path, *, model: str) -> int:
         f"b={len(dossier.image_candidates.for_state_b)}"
     )
 
-    print(f"== {claim.claim_id}: D1–D3 ==")
+    print(f"== {claim.claim_id}: D2 ==")
     sc = build_scenario_graph(llm=llm).invoke({"dossier": dossier})
-    beats, script = sc["beats"], sc["script"]
-    _dump(dest / "02_beats.json", beats)
+    script = sc["script"]
     _dump(dest / "03_script.json", script)
     print(f"  lines={len(script.lines)} duration={script.duration_sec}s")
 
@@ -178,7 +173,7 @@ def run_one(claim: ClaimCard, out_dir: Path, *, model: str) -> int:
     shot_list = f1["shot_list"]
     _dump(dest / "06_shot_list.json", shot_list)
 
-    md = _scenario_md(claim, beats, script, shot_list, dossier)
+    md = _scenario_md(claim, script, shot_list, dossier)
     (dest / "SCENARIO.md").write_text(md, encoding="utf-8")
     print(f"  wrote {dest / 'SCENARIO.md'}")
     print(md)

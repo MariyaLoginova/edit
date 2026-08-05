@@ -17,7 +17,6 @@ sys.path.insert(0, str(ROOT))
 
 from dotenv import load_dotenv
 
-from edit.d3_tov import apply_tov
 from edit.graph import build_e1_only_graph, build_editorial_graph
 from edit.llm import get_chat_model, invoke_json
 from models import (
@@ -245,17 +244,14 @@ def write_whole_vo(chapter: str, claim: ClaimCard, *, arc: str, llm) -> ScriptDr
             if isinstance(line, dict):
                 line["claim_id"] = claim.claim_id
     script = ScriptDraft.model_validate(raw)
-    return apply_tov(script, llm=llm)
+    return script
 
 
 def _report_md(claim, dossier, script0, e1, ed) -> str:
     script = ed.get("script") or script0
     trace = e1.get("trace")
-    ret = ed.get("retention")
-    red = ed.get("red_critique")
+    cri = ed.get("critique")
     op = ed.get("opening_pick")
-    retell = ed.get("retell")
-    comp = ed.get("compression")
     blocked = ed.get("blocked_for_production")
 
     lines = [
@@ -265,6 +261,7 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
         f"**длительность (после E):** {script.duration_sec:.0f}с",
         "",
         "Глава прогнана целиком: полный текст в `material_notes`, без нарезки A2.",
+        "Граф FIX-4: E1 → E-критик → E4.",
         "",
         "## Сводка проходов",
         "",
@@ -272,16 +269,11 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
         "|---|---|---|",
         f"| E1 трассируемость | `{getattr(trace, 'passes', None)}` | "
         f"issues={len(getattr(trace, 'issues', []) or [])} |",
-        f"| E2 удержание | `{getattr(ret, 'passes', None)}` | "
-        f"score={getattr(ret, 'dropoff_score', None)} |",
-        f"| E3 красный | `{getattr(red, 'passes', None)}` | "
-        f"severity_max={getattr(red, 'severity_max', None)} |",
+        f"| E-критик | `{getattr(cri, 'passes', None)}` | "
+        f"dropoff={getattr(cri, 'dropoff_score', None)} "
+        f"sev_max={getattr(cri, 'severity_max', None)} |",
         f"| E4 открытия | — | variants={len(getattr(op, 'variants', []) or [])}, "
         f"chosen={getattr(op, 'chosen_index', None)} |",
-        f"| E5 пересказ | `{getattr(retell, 'passes', None)}` | "
-        f"coda_quotable={getattr(retell, 'coda_is_quotable', None)} |",
-        f"| E6 сжатие | `{getattr(comp, 'passes', None)}` | "
-        f"reduction={getattr(comp, 'reduction_ratio', None)} |",
         "",
         "## E1 · Трассируемость",
         "",
@@ -293,24 +285,20 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
             lines.append(
                 f"- issue[{iss.line_index}] {iss.reason}: {iss.detail or iss.text}"
             )
-    lines += ["", "## E2 · Удержание", ""]
-    if ret:
-        lines.append(f"- dropoff_score: **{ret.dropoff_score}** · passes=`{ret.passes}`")
-        lines.append(f"- summary: {ret.summary}")
-        for m in (ret.risks or [])[:12]:
+    lines += ["", "## E-критик · динамика + содержание + пересказ", ""]
+    if cri:
+        lines.append(f"- passes=`{cri.passes}` · dropoff=**{cri.dropoff_score}** · severity_max={cri.severity_max}")
+        lines.append(f"- summary: {cri.summary}")
+        lines.append(f"- retell: {cri.retell}")
+        lines.append(f"- coda: {cri.coda_quote}")
+        for m in (cri.risks or [])[:10]:
             reason = m.reason.value if hasattr(m.reason, "value") else m.reason
-            fwd = m.forward_question or "—"
             lines.append(
-                f"- `{m.t_start:.0f}–{m.t_end:.0f}` sev{m.severity} `{reason}`: "
-                f"«{m.quote}» · держит: {fwd} · fix: {m.fix_hint}"
+                f"- risk `{m.t_start:.0f}–{m.t_end:.0f}` sev{m.severity} `{reason}`: «{m.quote}»"
             )
-    lines += ["", "## E3 · Красный критик", ""]
-    if red:
-        lines.append(f"- passes=`{red.passes}` · severity_max={red.severity_max}")
-        lines.append(f"- summary: {red.summary}")
-        for a in red.attacks:
+        for a in cri.attacks:
             lines.append(
-                f"- **{a.kind.value}** sev{a.severity}: «{a.quote}» — {a.attack}"
+                f"- attack **{a.kind.value}** sev{a.severity}: «{a.quote}» — {a.attack}"
             )
     lines += ["", "## E4 · Перебор открытий", ""]
     if op:
@@ -318,23 +306,10 @@ def _report_md(claim, dossier, script0, e1, ed) -> str:
         for i, v in enumerate(op.variants):
             mark = "←" if i == op.chosen_index else " "
             lines.append(f"- [{i}]{mark} (h{v.hook_strength}) {v.text}")
-    lines += ["", "## E5 · Пересказ", ""]
-    if retell:
-        lines.append(f"- passes=`{retell.passes}`")
-        lines.append(f"- retell: {retell.retell}")
-        lines.append(f"- coda: {retell.coda_quote}")
-        lines.append(f"- summary: {retell.summary}")
-    lines += ["", "## E6 · Сжатие", ""]
-    if comp:
-        lines.append(
-            f"- passes=`{comp.passes}` · {comp.original_chars}→{comp.compressed_chars} "
-            f"({comp.reduction_ratio:.0%})"
-        )
-        lines.append(f"- summary: {comp.summary}")
     lines += ["", "## Озвучка после редактуры", ""]
     for line in script.lines:
         lines.append(f"- `{line.t_start:.0f}–{line.t_end:.0f}` {line.text}")
-    lines += ["", "## Озвучка до E4/E6", ""]
+    lines += ["", "## Озвучка до E4", ""]
     for line in script0.lines:
         lines.append(f"- `{line.t_start:.0f}–{line.t_end:.0f}` {line.text}")
     lines.append("")
@@ -370,28 +345,23 @@ def run_profile(name: str, *, model: str) -> int:
         )
         return 2
 
-    print(f"== [{name}] E2→E6 ==")
+    print(f"== [{name}] E-критик → E4 ==")
     ed = build_editorial_graph(llm=llm).invoke({"dossier": dossier, "script": script0})
-    _dump(out / "04b_retention.json", ed.get("retention"))
-    _dump(out / "04c_red.json", ed.get("red_critique"))
+    if ed.get("critique"):
+        _dump(out / "04b_critique.json", ed["critique"])
     _dump(out / "04d_openings.json", ed.get("opening_pick"))
-    _dump(out / "04e_retell.json", ed.get("retell"))
-    _dump(out / "04f_compression.json", ed.get("compression"))
     if ed.get("script"):
         _dump(out / "05_script_edited.json", ed["script"])
+    cri = ed.get("critique")
     meta = {
         "profile": name,
         "blocked_for_production": ed.get("blocked_for_production"),
         "trace_passes": True,
-        "retention_passes": ed["retention"].passes if ed.get("retention") else None,
-        "red_passes": ed["red_critique"].passes if ed.get("red_critique") else None,
-        "retell_passes": ed["retell"].passes if ed.get("retell") else None,
-        "compression_passes": ed["compression"].passes if ed.get("compression") else None,
-        "dropoff_score": ed["retention"].dropoff_score if ed.get("retention") else None,
-        "red_severity_max": ed["red_critique"].severity_max if ed.get("red_critique") else None,
-        "reduction_ratio": ed["compression"].reduction_ratio if ed.get("compression") else None,
+        "critique_passes": cri.passes if cri else None,
+        "dropoff_score": cri.dropoff_score if cri else None,
+        "severity_max": cri.severity_max if cri else None,
         "opening_chosen": ed["opening_pick"].chosen_text if ed.get("opening_pick") else None,
-        "retell": ed["retell"].retell if ed.get("retell") else None,
+        "retell": cri.retell if cri else None,
     }
     _dump(out / "04_editorial_meta.json", meta)
     md = _report_md(claim, dossier, script0, e1, ed)
