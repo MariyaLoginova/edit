@@ -33,7 +33,7 @@ a1_a2_matrix:
 
 # Параметры сегментации A1 (не LLM)
 segmentation:
-  # provisional default — финальный выбор после ручной оценки в runs/*/NOTES.md
+  # выбрано по прогону goralik-mimimi (см. runs/goralik-mimimi/NOTES.md)
   default_strategy: semantic
   fixed_window_tokens: 450
   fixed_window_overlap: 60
