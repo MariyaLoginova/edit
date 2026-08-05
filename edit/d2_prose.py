@@ -70,23 +70,43 @@ def write_prose(
         "beats": beats.model_dump(mode="json"),
         "meta_stop_phrases": stop,
     }
-    raw = invoke_json(
-        model,
-        [
-            {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
-            {"role": "user", "content": str(user)},
-        ],
-        retries=2,
-    )
-    if isinstance(raw, dict):
-        raw.setdefault("script_id", beats.script_id)
-        raw.setdefault("claim_id", dossier.claim_id)
-        raw["tov_applied"] = False
-    script = ScriptDraft.model_validate(raw)
-    _assert_grounded(script, dossier, beats)
-    _assert_no_stop_phrases(script, stop)
-    _assert_object_grounding(script, dossier)
-    return script
+    last_err: Exception | None = None
+    for attempt in range(3):
+        payload = user
+        if last_err is not None:
+            payload = {
+                **user,
+                "revision_note": (
+                    f"Предыдущий черновик отклонён: {last_err}. "
+                    "Перепиши озвучку живым голосом за кадром, без стоп-фраз и без "
+                    "докладного тона."
+                ),
+            }
+        raw = invoke_json(
+            model,
+            [
+                {
+                    "role": "system",
+                    "content": PROMPT_PATH.read_text(encoding="utf-8").strip(),
+                },
+                {"role": "user", "content": str(payload)},
+            ],
+            retries=2,
+        )
+        if isinstance(raw, dict):
+            raw.setdefault("script_id", beats.script_id)
+            raw.setdefault("claim_id", dossier.claim_id)
+            raw["tov_applied"] = False
+        try:
+            script = ScriptDraft.model_validate(raw)
+            _assert_grounded(script, dossier, beats)
+            _assert_no_stop_phrases(script, stop)
+            _assert_object_grounding(script, dossier)
+            return script
+        except (ValueError, Exception) as exc:
+            last_err = exc
+    assert last_err is not None
+    raise last_err
 
 
 def _assert_grounded(script: ScriptDraft, dossier: Dossier, beats: BeatList) -> None:
