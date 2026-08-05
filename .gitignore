@@ -24,3 +24,7 @@ htmlcov/
 # LangGraph / local
 .langgraph_api/
 egg-info
+
+# Generated from the tracked full Barbie book.
+sources/goralik-barbie-chapters/
+runs/goralik-barbie/book-a2/
