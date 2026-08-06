@@ -14,16 +14,20 @@ from edit.c3_soft_factcheck import soft_factcheck
 from edit.d2_prose import write_prose
 from edit.e1_traceability import audit_traceability
 from edit.e4_openings import rewrite_openings
+from edit.e_check import check_monologue
+from edit.e_editor import plan_story
 from edit.e7_ideator import (
     apply_probe_to_script,
     parse_include_decision,
     propose_idea_probe,
 )
 from edit.e_critic import critique_as_retention, critique_script
+from edit.d2_monologue import write_monologue
 from edit.f1_shotlist import build_shotlist
 from edit.g1_post_analyst import analyze_rollouts, apply_weight_update
 from edit.state import EditState
 from edit.stubs import require_frozen_dossier, require_manual_script, resolve_selected_claim
+from models import SoftFactcheckResult
 
 
 def node_a2_mine(state: EditState, *, llm: Any = None) -> dict:
@@ -85,6 +89,44 @@ def node_d_manual_script(state: EditState) -> dict:
 def node_d2_prose(state: EditState, *, llm: Any = None) -> dict:
     dossier = require_frozen_dossier(state.get("dossier"))
     return {"script": write_prose(dossier, llm=llm)}
+
+
+def node_e_editor(state: EditState, *, llm: Any = None) -> dict:
+    claim = resolve_selected_claim(state.get("claims") or [], state.get("selected_claim_id"))
+    return {"story_brief": plan_story(claim, llm=llm)}
+
+
+def node_c1_freeze_primary(state: EditState) -> dict:
+    """C1 без отдельного LLM: citation уже валидирована A2, E проверит текст после D2."""
+    dossier = state.get("dossier")
+    if dossier is None:
+        raise ValueError("C1: нет dossier")
+    checked = dossier.model_copy(
+        update={
+            "soft_factcheck": SoftFactcheckResult(
+                ok=True,
+                rationale="Первичный источник и цитата переданы в E-проверку.",
+            )
+        }
+    )
+    return {"dossier": checked.freeze(require_images=False)}
+
+
+def node_d2_monologue(state: EditState, *, llm: Any = None) -> dict:
+    dossier = require_frozen_dossier(state.get("dossier"))
+    brief = state.get("story_brief")
+    if brief is None:
+        raise ValueError("D2: нет StoryBrief от E-редактора")
+    return {"monologue": write_monologue(dossier, brief, llm=llm)}
+
+
+def node_e_monologue_check(state: EditState, *, llm: Any = None) -> dict:
+    dossier = require_frozen_dossier(state.get("dossier"))
+    monologue = state.get("monologue")
+    if monologue is None:
+        raise ValueError("E-проверка: нет монолога D2")
+    report = check_monologue(monologue, dossier, llm=llm)
+    return {"monologue_check": report, "blocked_for_production": not report.passes}
 
 
 def node_material_blocked(state: EditState) -> dict:
@@ -456,6 +498,24 @@ def build_f1_only_graph(*, searcher: Any = None):
     return g.compile()
 
 
+def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
+    """FIX-5: E-редактор → C1(code) → D2 plain text → E-проверка."""
+    g = StateGraph(EditState)
+    g.add_node("e_editor", lambda s: node_e_editor(s, llm=llm))
+    # C1 не получает llm: это экономит вызов, сохраняя первичный материал.
+    g.add_node("c1_material", lambda s: node_c1_material(s, llm=None, searcher=searcher))
+    g.add_node("c1_freeze_primary", node_c1_freeze_primary)
+    g.add_node("d2_monologue", lambda s: node_d2_monologue(s, llm=llm))
+    g.add_node("e_monologue_check", lambda s: node_e_monologue_check(s, llm=llm))
+    g.add_edge(START, "e_editor")
+    g.add_edge("e_editor", "c1_material")
+    g.add_edge("c1_material", "c1_freeze_primary")
+    g.add_edge("c1_freeze_primary", "d2_monologue")
+    g.add_edge("d2_monologue", "e_monologue_check")
+    g.add_edge("e_monologue_check", END)
+    return g.compile()
+
+
 def build_edit_graph(
     *,
     llm: Any = None,
@@ -463,12 +523,8 @@ def build_edit_graph(
     checkpointer: Any = None,
     e7_auto_decision: bool | None = None,
 ):
-    return build_v5_slice_graph(
-        llm=llm,
-        searcher=searcher,
-        checkpointer=checkpointer,
-        e7_auto_decision=e7_auto_decision,
-    )
+    # Новый продуктовый контур; E7 подключается отдельным вызовом после human review.
+    return build_personal_story_graph(llm=llm, searcher=searcher)
 
 
 def build_a2_only_graph(*, llm: Any = None):

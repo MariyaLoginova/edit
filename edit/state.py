@@ -11,6 +11,8 @@ from models import (
     CritiqueReport,
     Dossier,
     IdeaProbe,
+    MonologueCheck,
+    MonologueDraft,
     OpeningPick,
     RedCritique,
     RetentionReport,
@@ -20,6 +22,7 @@ from models import (
     ScriptDraft,
     ShotList,
     SourceMap,
+    StoryBrief,
     TraceReport,
     WeightUpdate,
 )
@@ -41,6 +44,9 @@ class EditState(TypedDict, total=False):
     dossier: Dossier | None
     beats: BeatList | None  # legacy; D1 удалён из графа
     script: ScriptDraft | None
+    story_brief: StoryBrief | None
+    monologue: MonologueDraft | None
+    monologue_check: MonologueCheck | None
     trace: TraceReport | None
     critique: CritiqueReport | None
     # legacy поля (старые узлы/тесты) — не пишутся новым графом

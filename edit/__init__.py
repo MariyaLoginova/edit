@@ -10,6 +10,7 @@ __all__ = [
     "build_f1_only_graph",
     "build_learning_graph",
     "build_material_graph",
+    "build_personal_story_graph",
     "build_scenario_graph",
     "build_v2_slice_graph",
     "build_v3_slice_graph",
