@@ -13,12 +13,14 @@ from models import Dossier, MonologueDraft, StoryBrief, can_freeze
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "d2_monologue.txt"
 METHODS_PATH = ROOT / "config" / "story_methods.yaml"
 _FIRST_PERSON = re.compile(r"\b(я|мне|меня|мной|увидела|заметила|прочитала)\b", re.I)
+_WRITING_ENVELOPE = re.compile(r"^:::writing[^\n]*\n?|\n?:::\s*$", re.I)
+_STOP_PHRASES = ("формула простая", "механизм:", "в материале", "как сказано")
 
 
 def _word_bounds() -> tuple[int, int]:
     cfg = load_thresholds().get("scenario", {})
-    # 45 сек русской речи при 140–150 слов/мин.
-    return int(cfg.get("min_words", 95)), int(cfg.get("max_words", 115))
+    # Целимся в 105–115, но речь живого автора может быть чуть медленнее.
+    return int(cfg.get("min_words", 90)), int(cfg.get("max_words", 120))
 
 
 def _methods() -> list[dict]:
@@ -56,7 +58,7 @@ def write_monologue(
         "word_limit": {"min": lo, "max": hi},
     }
     last_error: Exception | None = None
-    for _ in range(3):
+    for _ in range(5):
         request = user if last_error is None else {
             **user,
             "revision_note": f"Предыдущий текст отклонён: {last_error}",
@@ -70,12 +72,17 @@ def write_monologue(
             )
         ).strip()
         text = re.sub(r"^```.*?\n|\n```$", "", text, flags=re.S).strip()
+        text = _WRITING_ENVELOPE.sub("", text).strip()
+        text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
         words = len(re.findall(r"\S+", text))
         try:
             if not lo <= words <= hi:
                 raise ValueError(f"нужно {lo}–{hi} слов, получено {words}")
             if not _FIRST_PERSON.search(text):
                 raise ValueError("нет первого лица")
+            for phrase in _STOP_PHRASES:
+                if phrase in text.lower():
+                    raise ValueError(f"стоп-фраза: {phrase}")
             return MonologueDraft(
                 claim_id=dossier.claim_id,
                 text=text,

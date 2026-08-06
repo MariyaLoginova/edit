@@ -46,4 +46,4 @@ class MonologueCheck(BaseModel):
     factual_issues: list[FactIssue] = Field(default_factory=list)
     overclaim_issues: list[FactIssue] = Field(default_factory=list)
     passes: bool
-    summary: str = Field(..., max_length=500)
+    summary: str = Field(..., min_length=1, max_length=500)
