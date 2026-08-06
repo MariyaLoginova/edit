@@ -50,15 +50,23 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
     aliases = {
         "primary_method": "recommended_method",
         "method": "recommended_method",
+        "selected_story_method": "recommended_method",
+        "selected_method": "recommended_method",
         "hook": "opening",
+        "hook_text": "opening",
         "why_audience": "audience_reason",
         "why_share": "share_reason",
         "methods": "alternative_methods",
+        "alternative_story_methods": "alternative_methods",
     }
     for source, target in aliases.items():
         if target not in raw and source in raw:
             raw[target] = raw[source]
-    method = raw.get("story_method") or raw.get("story_type")
+    method = (
+        raw.get("story_method")
+        or raw.get("story_type")
+        or raw.get("selected_story_method")
+    )
     if not raw.get("recommended_method") and isinstance(method, dict):
         raw["recommended_method"] = (
             method.get("id")
@@ -67,9 +75,12 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
             or method.get("method")
             or method.get("name")
         )
+    if "alternative_methods" not in raw and isinstance(method, dict):
+        raw["alternative_methods"] = method.get("alternatives") or []
     if isinstance(raw.get("recommended_method"), dict):
         raw["recommended_method"] = (
             raw["recommended_method"].get("id")
+            or raw["recommended_method"].get("primary")
             or raw["recommended_method"].get("name")
             or ""
         )
@@ -88,9 +99,21 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
             or (trigger.get("text") if isinstance(trigger, dict) else None)
             or ""
         )
+    if not raw.get("opening"):
+        raw["opening"] = (
+            raw.get("opening_text")
+            or raw.get("opening_line")
+            or raw.get("hook_line")
+            or claim.counter_expectation
+        )
+    if isinstance(raw.get("opening"), str):
+        raw["opening"] = raw["opening"][:280]
     if isinstance(raw.get("hook_trigger"), dict):
         raw["hook_trigger"] = raw["hook_trigger"].get("id") or raw["hook_trigger"].get("name") or ""
+    if isinstance(opening, dict) and not raw.get("hook_trigger"):
+        raw["hook_trigger"] = opening.get("trigger_id") or ""
     audience = raw.get("audience")
+    audience = audience or raw.get("audience_retention_and_payoff")
     if "audience_reason" not in raw and isinstance(audience, dict):
         raw["audience_reason"] = (
             audience.get("reason") or audience.get("why") or audience.get("fit") or ""
@@ -100,12 +123,16 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
     if not raw.get("audience_reason"):
         raw["audience_reason"] = (
             raw.get("why_watch")
+            or raw.get("why_watch_till_end")
+            or (audience.get("why_watch_till_end") if isinstance(audience, dict) else None)
             or raw.get("audience_fit")
             or "Даёт исторический контекст знакомому визуальному маркеру."
         )
     if not raw.get("share_reason"):
         raw["share_reason"] = (
             raw.get("status_gain")
+            or raw.get("status_flex")
+            or (audience.get("flex_value") if isinstance(audience, dict) else None)
             or raw.get("share_value")
             or "Даёт точный референс и термин для обсуждения с коллегами."
         )

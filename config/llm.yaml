@@ -19,6 +19,12 @@ models:
   gemini-3.5-flash:
     path_prefix: gemini-3-5-flash-openai/v1
     temperature: 0.0
+  grok-4-5:
+    path_prefix: grok-4-5-openai/v1
+    temperature: 0.0
+  gemini-3-6-flash:
+    path_prefix: gemini-3-6-flash-openai/v1
+    temperature: 0.0
 
 # Матрица первого живого прогона A1→A2 (Часть 3 тикета)
 a1_a2_matrix:

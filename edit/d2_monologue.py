@@ -13,7 +13,10 @@ from models import Dossier, MonologueDraft, StoryBrief, can_freeze
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "d2_monologue.txt"
 METHODS_PATH = ROOT / "config" / "story_methods.yaml"
 _FIRST_PERSON = re.compile(r"\b(я|мне|меня|мной|увидела|заметила|прочитала)\b", re.I)
-_WRITING_ENVELOPE = re.compile(r"^:::writing[^\n]*\n?|\n?:::\s*$", re.I)
+_WRITING_ENVELOPE = re.compile(
+    r"^:::writing[^\n]*\n?|^:::\s*$", re.MULTILINE | re.IGNORECASE
+)
+_MONOLOGUE_LABEL = re.compile(r"(?im)^\s*готовый\s+монолог\s*:\s*")
 _STOP_PHRASES = ("формула простая", "механизм:", "в материале", "как сказано")
 
 
@@ -72,6 +75,7 @@ def write_monologue(
             )
         ).strip()
         text = re.sub(r"^```.*?\n|\n```$", "", text, flags=re.S).strip()
+        text = _MONOLOGUE_LABEL.sub("", text).strip()
         text = _WRITING_ENVELOPE.sub("", text).strip()
         text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
         words = len(re.findall(r"\S+", text))
