@@ -13,10 +13,15 @@ from models import ClaimCard, EndingType, StoryBrief
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_editor.txt"
 METHODS_PATH = ROOT / "config" / "story_methods.yaml"
+HOOKS_PATH = ROOT / "config" / "hook_triggers.yaml"
 
 
 def load_story_methods() -> list[dict]:
     return yaml.safe_load(METHODS_PATH.read_text(encoding="utf-8")) or []
+
+
+def load_hook_triggers() -> list[dict]:
+    return yaml.safe_load(HOOKS_PATH.read_text(encoding="utf-8")) or []
 
 
 def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
@@ -31,6 +36,7 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
                         "claim": claim.model_dump(mode="json"),
                         "audience": load_audience(),
                         "menu_story_methods": load_story_methods(),
+                        "hook_triggers": load_hook_triggers(),
                     }
                 ),
             },
