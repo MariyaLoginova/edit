@@ -43,6 +43,8 @@ def soft_factcheck(
         ]
     )
     raw = parse_json_payload(content_text(response))
+    if isinstance(raw, dict) and isinstance(raw.get("rationale"), str):
+        raw["rationale"] = raw["rationale"][:500]
     result = SoftFactcheckResult.model_validate(raw)
     # FIX-5: картинки больше не гейтят фактологический ролик.
     ready, problems = can_freeze(dossier, require_images=False)
