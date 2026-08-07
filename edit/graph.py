@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from edit.a2_claim_miner import mine_claims
 from edit.b1_scoring import score_claims
 from edit.c1_material import collect_material
+from edit.c1_research_enricher import enrich_material
 from edit.c2_images import collect_images
 from edit.c3_soft_factcheck import soft_factcheck
 from edit.d2_prose import write_prose
@@ -118,6 +119,15 @@ def node_c1_research(
         research_queries=brief.research_queries,
     )
     return {"dossier": dossier}
+
+
+def node_c1_research_enricher(state: EditState, *, llm: Any = None) -> dict:
+    dossier = state.get("dossier")
+    brief = state.get("story_brief")
+    if dossier is None or brief is None:
+        raise ValueError("C1.5: нужен dossier и StoryBrief")
+    enriched, pack = enrich_material(dossier, brief, llm=llm)
+    return {"dossier": enriched, "research_pack": pack}
 
 
 def node_c1_freeze_primary(state: EditState) -> dict:
@@ -523,17 +533,19 @@ def build_f1_only_graph(*, searcher: Any = None):
 
 
 def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
-    """FIX-5: E-редактор → C1(code) → D2 plain text → E-проверка."""
+    """FIX-5: E-editor → web research → C1.5 meat → D2 → fact check."""
     g = StateGraph(EditState)
     g.add_node("e_editor", lambda s: node_e_editor(s, llm=llm))
     # C1 не получает llm: E-редактор дал запросы, код собирает подтверждения.
     g.add_node("c1_research", lambda s: node_c1_research(s, searcher=searcher))
+    g.add_node("c1_research_enricher", lambda s: node_c1_research_enricher(s, llm=llm))
     g.add_node("c1_freeze_primary", node_c1_freeze_primary)
     g.add_node("d2_monologue", lambda s: node_d2_monologue(s, llm=llm))
     g.add_node("e_monologue_check", lambda s: node_e_monologue_check(s, llm=llm))
     g.add_edge(START, "e_editor")
     g.add_edge("e_editor", "c1_research")
-    g.add_edge("c1_research", "c1_freeze_primary")
+    g.add_edge("c1_research", "c1_research_enricher")
+    g.add_edge("c1_research_enricher", "c1_freeze_primary")
     g.add_edge("c1_freeze_primary", "d2_monologue")
     g.add_edge("d2_monologue", "e_monologue_check")
     g.add_edge("e_monologue_check", END)

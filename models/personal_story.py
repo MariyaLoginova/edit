@@ -37,6 +37,20 @@ class MonologueDraft(BaseModel):
     ending_type: EndingType
 
 
+class ResearchFact(BaseModel):
+    fact: str = Field(..., min_length=1, max_length=500)
+    source_url: str = Field(..., min_length=1)
+    source_title: str = ""
+    why_it_matters: str = Field(..., min_length=1, max_length=300)
+
+
+class ResearchPack(BaseModel):
+    claim_id: str
+    facts: list[ResearchFact] = Field(default_factory=list, max_length=8)
+    gaps: list[str] = Field(default_factory=list)
+    summary: str = Field(..., min_length=1, max_length=800)
+
+
 class FactIssue(BaseModel):
     quote: str = Field(..., min_length=1)
     issue: str = Field(..., min_length=1)

@@ -13,6 +13,7 @@ from models import (
     IdeaProbe,
     MonologueCheck,
     MonologueDraft,
+    ResearchPack,
     OpeningPick,
     RedCritique,
     RetentionReport,
@@ -48,6 +49,7 @@ class EditState(TypedDict, total=False):
     story_brief: StoryBrief | None
     monologue: MonologueDraft | None
     monologue_check: MonologueCheck | None
+    research_pack: ResearchPack | None
     trace: TraceReport | None
     critique: CritiqueReport | None
     # legacy поля (старые узлы/тесты) — не пишутся новым графом

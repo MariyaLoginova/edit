@@ -26,6 +26,20 @@ def test_personal_story_graph_uses_three_llm_calls():
             })
         if "Рассказываешь от первого лица" in system:
             return monologue
+        if "исследователь для личного ролика" in system:
+            return json.dumps({
+                "claim_id": claim.claim_id,
+                "facts": [
+                    {
+                        "fact": "Дополнительный факт.",
+                        "source_url": "https://example.com",
+                        "source_title": "source",
+                        "why_it_matters": "Усиливает историю.",
+                    }
+                ],
+                "gaps": [],
+                "summary": "Фактура добавлена.",
+            })
         if "фактчекер личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
@@ -45,4 +59,4 @@ def test_personal_story_graph_uses_three_llm_calls():
     )
     assert out["monologue"].word_count == 180
     assert out["monologue_check"].passes is True
-    assert len(llm.calls) == 3
+    assert len(llm.calls) == 4

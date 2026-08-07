@@ -22,7 +22,15 @@ from models.editorial import (
 from models.idea import GenerationBrief, IdeaProbe, ProbeRegister
 from models.learning import RolloutMetrics, ScoringWeights, WeightUpdate
 from models.pipeline import ScoredClaim
-from models.personal_story import EndingType, FactIssue, MonologueCheck, MonologueDraft, StoryBrief
+from models.personal_story import (
+    EndingType,
+    FactIssue,
+    MonologueCheck,
+    MonologueDraft,
+    ResearchFact,
+    ResearchPack,
+    StoryBrief,
+)
 from models.retention import BeatRisk, DropReason, RetentionReport
 from models.scenario import Beat, BeatList, BeatRole, ScriptDraft, ScriptLine, ToneOfVoice
 from models.shots import ShotImage, ShotList, ShotPacket
@@ -58,6 +66,8 @@ __all__ = [
     "RedCritique",
     "RetentionReport",
     "RetellReport",
+    "ResearchFact",
+    "ResearchPack",
     "RolloutMetrics",
     "Scope",
     "ScoredClaim",
