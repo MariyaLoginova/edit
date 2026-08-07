@@ -22,9 +22,8 @@ _STOP_PHRASES = ("формула простая", "механизм:", "в ма�
 
 
 def _word_bounds() -> tuple[int, int]:
-    cfg = load_thresholds().get("scenario", {})
-    # Целимся в 105–115, но речь живого автора может быть чуть медленнее.
-    return int(cfg.get("min_words", 90)), int(cfg.get("max_words", 120))
+    # Личный формат: 150–300 слов, как задано редакционным контрактом.
+    return 150, 300
 
 
 def _methods() -> list[dict]:

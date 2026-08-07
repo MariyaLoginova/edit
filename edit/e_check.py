@@ -19,7 +19,7 @@ def check_monologue(
 ) -> MonologueCheck:
     if not dossier.frozen:
         raise ValueError("E-проверка: нужен frozen dossier")
-    if monologue.word_count < 70:
+    if monologue.word_count < 120:
         return MonologueCheck(
             claim_id=monologue.claim_id,
             factual_issues=[],
