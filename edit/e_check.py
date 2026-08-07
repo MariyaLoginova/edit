@@ -41,6 +41,9 @@ def check_monologue(
         "monologue": monologue.model_dump(mode="json"),
         "source_material": dossier.material_notes,
         "source_citation": dossier.claim.citation.model_dump(mode="json"),
+        "web_confirmations": [
+            item.model_dump(mode="json") for item in dossier.web_confirmations if item.supports_claim
+        ],
     }
     try:
         raw = invoke_json(

@@ -93,7 +93,31 @@ def node_d2_prose(state: EditState, *, llm: Any = None) -> dict:
 
 def node_e_editor(state: EditState, *, llm: Any = None) -> dict:
     claim = resolve_selected_claim(state.get("claims") or [], state.get("selected_claim_id"))
-    return {"story_brief": plan_story(claim, llm=llm)}
+    primary_text = state.get("primary_text") or "\n\n".join(
+        segment.text for segment in (state.get("source_map").segments if state.get("source_map") else [])
+    )
+    return {"story_brief": plan_story(claim, primary_text=primary_text, llm=llm)}
+
+
+def node_c1_research(
+    state: EditState,
+    *,
+    searcher: Any = None,
+) -> dict:
+    """C1 после E-редактора: кодовый поиск по research_queries, без LLM."""
+    claim = resolve_selected_claim(state.get("claims") or [], state.get("selected_claim_id"))
+    brief = state.get("story_brief")
+    if brief is None:
+        raise ValueError("C1 research: нет StoryBrief")
+    primary_text = state.get("primary_text") or ""
+    dossier = collect_material(
+        claim,
+        searcher=searcher,
+        llm=None,
+        primary_text=primary_text,
+        research_queries=brief.research_queries,
+    )
+    return {"dossier": dossier}
 
 
 def node_c1_freeze_primary(state: EditState) -> dict:
@@ -502,14 +526,14 @@ def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
     """FIX-5: E-редактор → C1(code) → D2 plain text → E-проверка."""
     g = StateGraph(EditState)
     g.add_node("e_editor", lambda s: node_e_editor(s, llm=llm))
-    # C1 не получает llm: это экономит вызов, сохраняя первичный материал.
-    g.add_node("c1_material", lambda s: node_c1_material(s, llm=None, searcher=searcher))
+    # C1 не получает llm: E-редактор дал запросы, код собирает подтверждения.
+    g.add_node("c1_research", lambda s: node_c1_research(s, searcher=searcher))
     g.add_node("c1_freeze_primary", node_c1_freeze_primary)
     g.add_node("d2_monologue", lambda s: node_d2_monologue(s, llm=llm))
     g.add_node("e_monologue_check", lambda s: node_e_monologue_check(s, llm=llm))
     g.add_edge(START, "e_editor")
-    g.add_edge("e_editor", "c1_material")
-    g.add_edge("c1_material", "c1_freeze_primary")
+    g.add_edge("e_editor", "c1_research")
+    g.add_edge("c1_research", "c1_freeze_primary")
     g.add_edge("c1_freeze_primary", "d2_monologue")
     g.add_edge("d2_monologue", "e_monologue_check")
     g.add_edge("e_monologue_check", END)

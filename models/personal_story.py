@@ -14,12 +14,14 @@ class EndingType(str, Enum):
 
 class StoryBrief(BaseModel):
     claim_id: str
+    main_thought: str = Field("", max_length=400)
     recommended_method: str = Field(..., min_length=1)
     alternative_methods: list[str] = Field(default_factory=list, max_length=2)
     hook_trigger: str = Field("", max_length=80)
     opening: str = Field(..., min_length=1, max_length=280)
     audience_reason: str = Field(..., min_length=1, max_length=300)
     share_reason: str = Field(..., min_length=1, max_length=300)
+    research_queries: list[str] = Field(default_factory=list, max_length=4)
     proof_plan: list[str] = Field(
         default_factory=list,
         description="Три конкретные детали из материала, без которых история развалится.",

@@ -26,7 +26,7 @@ def test_personal_story_graph_uses_three_llm_calls():
             })
         if "Расскажи от первого лица" in system:
             return monologue
-        if "вирусный цензор" in system:
+        if "фактчекер личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
                 "factual_issues": [],

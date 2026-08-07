@@ -37,6 +37,7 @@ def _merge_claims(left: list[ClaimCard], right: list[ClaimCard]) -> list[ClaimCa
 
 class EditState(TypedDict, total=False):
     source_map: SourceMap
+    primary_text: str
     claims: Annotated[list[ClaimCard], _merge_claims]
     scored_claims: list[ScoredClaim]
     rejected_notes: list[str]

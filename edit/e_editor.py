@@ -25,7 +25,12 @@ def load_hook_triggers() -> list[dict]:
     return yaml.safe_load(HOOKS_PATH.read_text(encoding="utf-8")) or []
 
 
-def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
+def plan_story(
+    claim: ClaimCard,
+    *,
+    primary_text: str = "",
+    llm: ChatModel | None = None,
+) -> StoryBrief:
     model = llm or get_personal_story_model(temperature=0.2)
     response = model.invoke(
         [
@@ -35,6 +40,7 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
                 "content": str(
                     {
                         "claim": claim.model_dump(mode="json"),
+                        "primary_text": primary_text,
                         "audience": load_audience(),
                         "menu_story_methods": load_story_methods(),
                         "hook_triggers": load_hook_triggers(),
@@ -49,6 +55,8 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
     if "recommended_method" not in raw and isinstance(raw.get("StoryBrief"), dict):
         raw = raw["StoryBrief"]
     aliases = {
+        "key_idea": "main_thought",
+        "main_idea": "main_thought",
         "primary_method": "recommended_method",
         "method": "recommended_method",
         "selected_story_method": "recommended_method",
@@ -64,6 +72,7 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
     for source, target in aliases.items():
         if target not in raw and source in raw:
             raw[target] = raw[source]
+    raw.setdefault("main_thought", raw.get("claim") or claim.claim)
     method = (
         raw.get("story_method")
         or raw.get("story_type")
@@ -153,6 +162,16 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
             else item
             for item in proof_plan
         ]
+    if not raw.get("research_queries"):
+        raw["research_queries"] = (
+            raw.get("queries")
+            or raw.get("search_queries")
+            or [
+                " ".join(
+                    x for x in (claim.scope.author_or_work, claim.scope.period, claim.object_anchor) if x
+                )
+            ]
+        )
     alternatives = raw.get("alternative_methods")
     if isinstance(alternatives, list):
         raw["alternative_methods"] = [
