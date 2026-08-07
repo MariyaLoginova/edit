@@ -36,6 +36,9 @@ from models.personal_story import (
     ResearchFact,
     ResearchPack,
     StoryBrief,
+    VisualPlanBeat,
+    VisualReference,
+    VisualScenarioPlan,
 )
 from models.retention import BeatRisk, DropReason, RetentionReport
 from models.scenario import Beat, BeatList, BeatRole, ScriptDraft, ScriptLine, ToneOfVoice
@@ -100,5 +103,8 @@ __all__ = [
     "TraceReport",
     "WebConfirmation",
     "WeightUpdate",
+    "VisualPlanBeat",
+    "VisualReference",
+    "VisualScenarioPlan",
     "can_freeze",
 ]

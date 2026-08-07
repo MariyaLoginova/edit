@@ -17,7 +17,7 @@ def test_d2_user_payload_includes_full_structure_example_for_argument():
 
     def router(messages):
         seen["user"] = messages[1]["content"]
-        return ("текст " * 220) + "Спиздели или вдохновились?"
+        return ("текст " * 450) + "Спиздели или вдохновились?"
 
     write_monologue(dossier, brief, hook_text="Кадр ломает ожидание.", llm=FakeLLM(router))
     assert "myth_bust" in seen["user"]
@@ -42,10 +42,10 @@ def test_d2_retries_on_service_speech_leak():
         if calls == 1:
             return (
                 "Кадр ломает ожидание. "
-                + ("деталь " * 200)
+                + ("деталь " * 450)
                 + "Кому это интересно? Всем, кто рисует. Что думаешь?"
             )
-        return ("текст " * 220) + "Какая больше нравится?"
+        return ("текст " * 450) + "Какая больше нравится?"
 
     monologue = write_monologue(
         dossier, brief, hook_text="Кадр ломает ожидание.", llm=FakeLLM(router)

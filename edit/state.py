@@ -26,6 +26,7 @@ from models import (
     SourceMap,
     StoryBrief,
     TraceReport,
+    VisualScenarioPlan,
     WeightUpdate,
 )
 
@@ -48,6 +49,7 @@ class EditState(TypedDict, total=False):
     beats: BeatList | None  # legacy; D1 удалён из графа
     script: ScriptDraft | None
     story_brief: StoryBrief | None
+    visual_scenario_plan: VisualScenarioPlan | None
     hook_options: HookOptions | None
     monologue: MonologueDraft | None
     monologue_check: MonologueCheck | None

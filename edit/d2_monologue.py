@@ -10,7 +10,14 @@ from edit.library import banned_speech_phrases, compose_system_prompt, get_idea_
 from edit.llm import ChatModel, content_text
 from edit.model_routing import PolicyBlockedError, get_personal_story_model, is_policy_text
 from edit.structures import get_structure
-from models import Dossier, MonologueDraft, ReelFormat, StoryBrief, can_freeze
+from models import (
+    Dossier,
+    MonologueDraft,
+    ReelFormat,
+    StoryBrief,
+    VisualScenarioPlan,
+    can_freeze,
+)
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "d2_monologue.txt"
 METHODS_PATH = ROOT / "config" / "story_methods.yaml"
@@ -21,9 +28,10 @@ _MONOLOGUE_LABEL = re.compile(r"(?im)^\s*готовый\s+монолог\s*:\s*"
 
 
 def _word_bounds(fmt: ReelFormat) -> tuple[int, int]:
+    """3–5 минут речи: диапазон оставляет темп живым, но не превращает в шорт."""
     if fmt == ReelFormat.excursion:
-        return 160, 280
-    return 200, 300
+        return 390, 650
+    return 420, 700
 
 
 def _methods() -> list[dict]:
@@ -71,6 +79,7 @@ def write_monologue(
     brief: StoryBrief,
     *,
     hook_text: str | None = None,
+    visual_plan: VisualScenarioPlan | None = None,
     llm: ChatModel | None = None,
 ) -> MonologueDraft:
     if not dossier.frozen:
@@ -80,6 +89,11 @@ def write_monologue(
         raise ValueError("D2: неполное досье — " + "; ".join(problems))
     if not brief.topic_ready:
         raise ValueError("D2: тема не готова — нет вывода из источника")
+    if visual_plan is not None:
+        if visual_plan.claim_id != dossier.claim_id:
+            raise ValueError("D2: visual_plan для другого claim_id")
+        if visual_plan.format != brief.format:
+            raise ValueError("D2: visual_plan другого формата")
     lo, hi = _word_bounds(brief.format)
     model = llm or get_personal_story_model(temperature=0.3)
     notes = _source_notes(dossier, brief)
@@ -118,12 +132,14 @@ def write_monologue(
         },
         # Только озвучиваемый слой — без why_viewer / audience / idea_pitch.
         "story_brief": speakable,
+        "visual_scenario_plan": visual_plan.for_d2() if visual_plan else None,
         "must_include": {
             "hook_draft": hook_text or brief.opening,
             "conclusion_plain": brief.conclusion.plain,
             "structure": (
                 [
                     "start with hook_draft verbatim",
+                    "walk the visual_scenario_plan beats in order",
                     "walk exhibits: 1–2 short phrases each, observation only",
                     "no mid-roll meaning explanations",
                     "say conclusion_plain once at the end, lightly",
@@ -132,6 +148,7 @@ def write_monologue(
                 if brief.format == ReelFormat.excursion
                 else [
                     "start with hook_draft verbatim",
+                    "follow visual_scenario_plan beats in order when present",
                     "one thesis + exactly three proof_plan beats",
                     "conclusion_plain once at the end",
                     "final line: simple question about what was shown",

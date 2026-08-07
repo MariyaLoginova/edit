@@ -56,6 +56,90 @@ class Conclusion(BaseModel):
     )
 
 
+class VisualReference(BaseModel):
+    """Найденный внешний референс к одному кадру плана."""
+
+    url: str = Field(..., min_length=1)
+    title: str = ""
+    description: str = ""
+
+
+class VisualPlanBeat(BaseModel):
+    """Секция сценария: речь D2 строится по этому плану, монтаж — по visual_plan."""
+
+    beat_id: str = Field(..., min_length=1, max_length=80)
+    t_start: float = Field(..., ge=0)
+    t_end: float = Field(..., gt=0)
+    exhibit_name: str = Field(..., min_length=1, max_length=160)
+    narration_intent: str = Field(..., min_length=1, max_length=400)
+    what_to_show: str = Field(..., min_length=1, max_length=500)
+    source_quote: str = Field(
+        ...,
+        min_length=1,
+        max_length=700,
+        description="Дословная опора для визуальной детали из первичного текста.",
+    )
+    image_query: str = Field(..., min_length=1, max_length=300)
+    image_references: list[VisualReference] = Field(default_factory=list, max_length=5)
+
+    @model_validator(mode="after")
+    def _time_order(self) -> VisualPlanBeat:
+        if self.t_end <= self.t_start:
+            raise ValueError(f"{self.beat_id}: t_end должен быть больше t_start")
+        return self
+
+
+class VisualScenarioPlan(BaseModel):
+    """Монтажный сценарий между E-редактором и D2."""
+
+    claim_id: str
+    format: ReelFormat
+    duration_sec: float = Field(..., ge=180, le=300)
+    opening_intent: str = Field(..., min_length=1, max_length=400)
+    beats: list[VisualPlanBeat] = Field(default_factory=list)
+    image_search_status: Literal["ok", "empty", "unavailable"] = "empty"
+    image_search_error: str | None = None
+
+    @model_validator(mode="after")
+    def _timeline_matches_format(self) -> VisualScenarioPlan:
+        n = len(self.beats)
+        if self.format == ReelFormat.excursion and not 6 <= n <= 10:
+            raise ValueError(f"excursion visual plan: нужно 6–10 битов, получено {n}")
+        if self.format == ReelFormat.argument and n < 4:
+            raise ValueError("argument visual plan: нужно минимум 4 бита")
+        if not self.beats:
+            return self
+        ordered = sorted(self.beats, key=lambda b: b.t_start)
+        if ordered[0].t_start > 0.5:
+            raise ValueError("visual plan: первый бит должен начинаться около 0")
+        previous_end = ordered[0].t_start
+        for beat in ordered:
+            if beat.t_start < previous_end - 0.5:
+                raise ValueError(f"visual plan: перекрытие около {beat.beat_id}")
+            if beat.t_start > previous_end + 1.0:
+                raise ValueError(f"visual plan: разрыв перед {beat.beat_id}")
+            previous_end = beat.t_end
+        if abs(self.duration_sec - ordered[-1].t_end) > 1.0:
+            raise ValueError("visual plan: duration_sec не совпадает с концом последнего бита")
+        return self
+
+    def for_d2(self) -> dict[str, Any]:
+        """Только режиссёрские ориентиры для человеческой речи; без URL/служебных метаданных."""
+        return {
+            "format": self.format.value,
+            "duration_sec": self.duration_sec,
+            "opening_intent": self.opening_intent,
+            "beats": [
+                {
+                    "exhibit_name": beat.exhibit_name,
+                    "narration_intent": beat.narration_intent,
+                    "what_to_show": beat.what_to_show,
+                }
+                for beat in self.beats
+            ],
+        }
+
+
 class HookVariant(BaseModel):
     move: str = Field(..., min_length=1, max_length=80)
     first_frame: str = Field(..., min_length=1, max_length=300)

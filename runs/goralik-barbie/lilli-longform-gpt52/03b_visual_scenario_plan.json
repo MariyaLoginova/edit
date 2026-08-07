@@ -1,0 +1,98 @@
+{
+  "claim_id": "barbie-lilli-steal-like-artist",
+  "format": "excursion",
+  "duration_sec": 240.0,
+  "opening_intent": "Показать, что привычный образ первой Барби резко отличается от современной версии и предложить зрителю сравнить её с Лилли.",
+  "beats": [
+    {
+      "beat_id": "b01",
+      "t_start": 0.0,
+      "t_end": 30.0,
+      "exhibit_name": "Лилли и первая Барби рядом",
+      "narration_intent": "Предложить сравнить обеих кукол до любых выводов.",
+      "what_to_show": "Фронтальное сравнение немецкой куклы Bild Lilli и первой Barbie OSS в полосатых купальниках рядом, общий силуэт и пропорции.",
+      "source_quote": "Так или иначе за исключением нескольких мелких деталей первая Барби оказалась почти точной копией Лилли.",
+      "image_query": "Bild Lilli doll and 1959 Barbie Original Swimsuit side by side",
+      "image_references": []
+    },
+    {
+      "beat_id": "b02",
+      "t_start": 30.0,
+      "t_end": 60.0,
+      "exhibit_name": "Грудь",
+      "narration_intent": "Показать единственное заметное изменение фигуры.",
+      "what_to_show": "Крупный план груди Лилли и первой Барби для сравнения формы груди и отсутствия заострённых сосков у Барби.",
+      "source_quote": "Так или иначе фигура первой Барби осталась фактически фигурой Лилли - ей только удалили соски.",
+      "image_query": "Bild Lilli doll torso close up Barbie 1959 torso comparison",
+      "image_references": []
+    },
+    {
+      "beat_id": "b03",
+      "t_start": 60.0,
+      "t_end": 90.0,
+      "exhibit_name": "Лицо",
+      "narration_intent": "Рассмотреть, какие элементы лица сохранили, а какие смягчили.",
+      "what_to_show": "Крупные планы лиц Лилли и первой Барби рядом: высокий лоб, форма головы, губы и брови.",
+      "source_quote": "губы стали полнее и обрели более мягкие очертания, брови были подрисованы шире, но карикатурная форма головы с чрезмерно высоким лбом сохранилась.",
+      "image_query": "Bild Lilli face Barbie 1959 face close up comparison",
+      "image_references": []
+    },
+    {
+      "beat_id": "b04",
+      "t_start": 90.0,
+      "t_end": 120.0,
+      "exhibit_name": "Причёска",
+      "narration_intent": "Показать изменение укладки при сохранении общей конструкции.",
+      "what_to_show": "Сравнение затылка и передней части головы: валик на затылке, завиток Лилли и кудрявая чёлка Барби.",
+      "source_quote": "Жесткие волосы были уложены валиком за затылке, завиток на лбу Лилли сменился кудрявой челкой.",
+      "image_query": "Bild Lilli hairstyle Barbie 1959 ponytail curl bangs comparison",
+      "image_references": []
+    },
+    {
+      "beat_id": "b05",
+      "t_start": 120.0,
+      "t_end": 150.0,
+      "exhibit_name": "Макияж и украшения",
+      "narration_intent": "Показать, что взрослый визуальный код ещё сохраняется.",
+      "what_to_show": "Крупные планы глаз, губ и серёг первой Барби.",
+      "source_quote": "Глаза с белой радужкой были подведены очень широкой черной линией, веки покрыты голубыми тенями, губы и ногти на руках и ногах накрашены ярко-алым, в ушах покачивались огромные цыганские серьги.",
+      "image_query": "1959 Barbie Original Swimsuit face blue eyeshadow hoop earrings close up",
+      "image_references": []
+    },
+    {
+      "beat_id": "b06",
+      "t_start": 150.0,
+      "t_end": 180.0,
+      "exhibit_name": "Две полки",
+      "narration_intent": "Показать, что изменился прежде всего контекст продажи.",
+      "what_to_show": "Архивные изображения или реклама Bild Lilli для взрослых рядом с рекламой первой Barbie как детской игрушки.",
+      "source_quote": "Когда через четыре года ровно такая же сисястая Барби в ровно таком же крошечном купальничке появилась в США в качестве детской игрушки, шок был предсказуем.",
+      "image_query": "Bild Lilli original packaging adult novelty store Barbie 1959 toy advertisement",
+      "image_references": []
+    },
+    {
+      "beat_id": "b07",
+      "t_start": 180.0,
+      "t_end": 210.0,
+      "exhibit_name": "Первое смягчение",
+      "narration_intent": "Показать, как уже через год начали менять лицо Барби.",
+      "what_to_show": "Сравнение ранней Barbie OSS и версии после первого обновления лица: брови, нижняя подводка и серьги.",
+      "source_quote": "более светлые брови обрели мягкий изгиб вместо агрессивного излома, исчезла подводка нижнего века, а серьги-кольца сильно ужались в диаметре.",
+      "image_query": "1960 Barbie face compared to 1959 Barbie eyebrows eyeliner earrings",
+      "image_references": []
+    },
+    {
+      "beat_id": "b08",
+      "t_start": 210.0,
+      "t_end": 240.0,
+      "exhibit_name": "Финальное сопоставление",
+      "narration_intent": "Подвести зрителя к основному выводу после всех сравнений.",
+      "what_to_show": "Возврат к сравнению Лилли и первой Барби рядом с медленным выделением совпадающих элементов внешности.",
+      "source_quote": "Так или иначе за исключением нескольких мелких деталей первая Барби оказалась почти точной копией Лилли.",
+      "image_query": "Bild Lilli and 1959 Barbie side by side high resolution comparison",
+      "image_references": []
+    }
+  ],
+  "image_search_status": "unavailable",
+  "image_search_error": "BRAVE_API_KEY не задан — image search не отработал"
+}

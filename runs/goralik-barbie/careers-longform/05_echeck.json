@@ -1,0 +1,13 @@
+{
+  "claim_id": "barbie-career-costume-permission",
+  "factual_issues": [
+    {
+      "quote": "Зелёный хирургический комплект, медицинские аксессуары, упаковка — всё собирается в цельный профессиональный образ.",
+      "issue": "Цвет хирургического комплекта («зелёный») не подтверждён в предоставленных source_material и proof_anchors.",
+      "severity": 3
+    }
+  ],
+  "overclaim_issues": [],
+  "passes": true,
+  "summary": "Проверка завершена без текстового summary."
+}

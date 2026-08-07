@@ -12,6 +12,7 @@ from edit.c1_material import collect_material
 from edit.c1_research_enricher import enrich_material
 from edit.c2_images import collect_images
 from edit.c3_soft_factcheck import soft_factcheck
+from edit.d1_visual_planner import plan_visual_scenario
 from edit.d2_prose import write_prose
 from edit.e1_traceability import audit_traceability
 from edit.e4_openings import rewrite_openings
@@ -162,6 +163,29 @@ def node_d2_monologue(state: EditState, *, llm: Any = None) -> dict:
                 if hook_options is not None
                 else brief.opening
             ),
+            visual_plan=state.get("visual_scenario_plan"),
+            llm=llm,
+        )
+    }
+
+
+def node_d1_visual_plan(
+    state: EditState,
+    *,
+    llm: Any = None,
+    image_searcher: Any = None,
+) -> dict:
+    """Новый слой перед D2: источник+материалы → монтажный план + image search."""
+    dossier = require_frozen_dossier(state.get("dossier"))
+    brief = state.get("story_brief")
+    if brief is None:
+        raise ValueError("D1.5: нет StoryBrief")
+    return {
+        "visual_scenario_plan": plan_visual_scenario(
+            dossier,
+            brief,
+            primary_text=state.get("primary_text") or "",
+            image_searcher=image_searcher,
             llm=llm,
         )
     }
@@ -183,6 +207,7 @@ def node_e_monologue_check(state: EditState, *, llm: Any = None) -> dict:
         monologue,
         dossier,
         brief=state.get("story_brief"),
+        visual_plan=state.get("visual_scenario_plan"),
         llm=llm,
     )
     return {"monologue_check": report, "blocked_for_production": not report.passes}
@@ -558,7 +583,7 @@ def build_f1_only_graph(*, searcher: Any = None):
 
 
 def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
-    """FIX-5: E-editor → web research → C1.5 meat → D2 → fact check."""
+    """E-editor → research → D1.5 visual plan/images → D2 human voice → facts."""
     g = StateGraph(EditState)
     g.add_node("e_editor", lambda s: node_e_editor(s, llm=llm))
     # C1 не получает llm: E-редактор дал запросы, код собирает подтверждения.
@@ -566,6 +591,10 @@ def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
     g.add_node("c1_research_enricher", lambda s: node_c1_research_enricher(s, llm=llm))
     g.add_node("c1_freeze_primary", node_c1_freeze_primary)
     g.add_node("e_hook", lambda s: node_e_hook(s, llm=llm))
+    g.add_node(
+        "d1_visual_plan",
+        lambda s: node_d1_visual_plan(s, llm=llm, image_searcher=searcher),
+    )
     g.add_node("d2_monologue", lambda s: node_d2_monologue(s, llm=llm))
     g.add_node("e_monologue_check", lambda s: node_e_monologue_check(s, llm=llm))
     g.add_edge(START, "e_editor")
@@ -573,7 +602,8 @@ def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
     g.add_edge("c1_research", "c1_research_enricher")
     g.add_edge("c1_research_enricher", "c1_freeze_primary")
     g.add_edge("c1_freeze_primary", "e_hook")
-    g.add_edge("e_hook", "d2_monologue")
+    g.add_edge("e_hook", "d1_visual_plan")
+    g.add_edge("d1_visual_plan", "d2_monologue")
     g.add_edge("d2_monologue", "e_monologue_check")
     g.add_edge("e_monologue_check", END)
     return g.compile()

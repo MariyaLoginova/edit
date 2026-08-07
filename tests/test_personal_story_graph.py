@@ -10,7 +10,7 @@ from tests.fakes import FakeLLM, FakeSearcher
 
 def test_personal_story_graph_uses_three_llm_calls():
     claim = make_claim()
-    monologue = " ".join(["я"] * 210)
+    monologue = " ".join(["я"] * 450)
 
     def router(messages):
         system = messages[0]["content"]
@@ -57,6 +57,34 @@ def test_personal_story_graph_uses_three_llm_calls():
                     for move in ("залипание", "спрятанное", "переворот", "тихий кадр", "потеря")
                 ]
             )
+        if "режиссёр-исследователь" in system:
+            return json.dumps({
+                "claim_id": claim.claim_id,
+                "format": "argument",
+                "duration_sec": 240,
+                "opening_intent": "Крупно показать платье.",
+                "beats": [
+                    {
+                        "beat_id": f"b{i}",
+                        "t_start": start,
+                        "t_end": end,
+                        "exhibit_name": name,
+                        "narration_intent": "Коротко показать улику.",
+                        "what_to_show": "Архивный кадр и крупная деталь.",
+                        "source_quote": "visual evidence one",
+                        "image_query": "black dress Chanel archive",
+                    }
+                    for i, (start, end, name) in enumerate(
+                        (
+                            (0, 45, "Вход"),
+                            (45, 100, "Первая улика"),
+                            (100, 165, "Вторая улика"),
+                            (165, 240, "Вывод"),
+                        ),
+                        start=1,
+                    )
+                ],
+            })
         if (
             "рассматриваешь" in system.lower()
             or "Говоришь со зрителем" in system
@@ -101,7 +129,8 @@ def test_personal_story_graph_uses_three_llm_calls():
             ),
         }
     )
-    assert 200 <= out["monologue"].word_count <= 300
+    assert 420 <= out["monologue"].word_count <= 700
     assert out["monologue_check"].passes is True
     assert len(out["hook_options"].variants) == 5
-    assert len(llm.calls) == 4
+    assert out["visual_scenario_plan"].duration_sec == 240
+    assert len(llm.calls) == 5
