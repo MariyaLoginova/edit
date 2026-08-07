@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Any
 
 from edit.llm import ChatModel, invoke_json
@@ -68,14 +69,17 @@ def _image_refs(
 
 
 def _normalize_quote(text: str) -> str:
-    return " ".join(
+    normalized = (
         (text or "")
         .lower()
         .replace("«", '"')
         .replace("»", '"')
         .replace("—", "-")
-        .split()
+        .replace("–", "-")
+        .replace("\u00a0", " ")
     )
+    normalized = re.sub(r"[^\w\s-]+", " ", normalized, flags=re.UNICODE)
+    return re.sub(r"\s+", " ", normalized).strip()
 
 
 def _validate_source_quotes(plan: VisualScenarioPlan, source: str) -> None:
