@@ -7,7 +7,7 @@ from pathlib import Path
 
 from edit.llm import ChatModel, invoke_json
 from edit.model_routing import get_personal_story_model
-from models import Dossier, FactIssue, MonologueCheck, MonologueDraft
+from models import Dossier, FactIssue, MonologueCheck, MonologueDraft, StoryBrief
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_check.txt"
 
@@ -50,10 +50,48 @@ def _code_gates(monologue: MonologueDraft) -> list[FactIssue]:
     return issues
 
 
+def _compose_source_for_check(
+    notes: str,
+    anchors: list[str],
+    *,
+    limit: int = 7000,
+) -> str:
+    """Голова текста + окна вокруг якорей proof_plan (иначе mid-chapter факты «пропадают»)."""
+    notes = (notes or "").strip()
+    if not notes:
+        return "\n\n".join(a for a in anchors if a)
+    windows: list[str] = []
+    used = 0
+    for quote in anchors:
+        q = (quote or "").strip()
+        if not q:
+            continue
+        idx = notes.find(q)
+        if idx < 0:
+            piece = q
+        else:
+            start = max(0, idx - 180)
+            end = min(len(notes), idx + len(q) + 180)
+            piece = notes[start:end].strip()
+        if piece in windows:
+            continue
+        if used + len(piece) > limit - 900:
+            break
+        windows.append(piece)
+        used += len(piece)
+    head_budget = max(900, limit - used)
+    head = notes[:head_budget].rstrip()
+    if len(notes) > head_budget:
+        head += "…"
+    parts = [head, *windows]
+    return "\n\n---\n\n".join(parts)
+
+
 def check_monologue(
     monologue: MonologueDraft,
     dossier: Dossier,
     *,
+    brief: StoryBrief | None = None,
     llm: ChatModel | None = None,
 ) -> MonologueCheck:
     if not dossier.frozen:
@@ -69,8 +107,12 @@ def check_monologue(
         )
     model = llm or get_personal_story_model(temperature=0.0)
     notes = (dossier.material_notes or "").strip()
-    if len(notes) > 6000:
-        notes = notes[:6000].rstrip() + "…"
+    anchors = [dossier.claim.citation.quote]
+    if brief is not None:
+        anchors.extend(item.source_quote for item in brief.proof_plan)
+        if brief.visual_evidence:
+            anchors.append(brief.visual_evidence)
+    source_material = _compose_source_for_check(notes, anchors)
     web_slim = []
     for item in dossier.web_confirmations:
         if not item.supports_claim:
@@ -82,8 +124,9 @@ def check_monologue(
         web_slim.append(raw)
     user = {
         "monologue": monologue.model_dump(mode="json"),
-        "source_material": notes,
+        "source_material": source_material,
         "source_citation": dossier.claim.citation.model_dump(mode="json"),
+        "proof_anchors": [a for a in anchors if a],
         "web_confirmations": web_slim,
         "check_scope": {
             "only": ["dates", "names", "places", "colors", "numbers", "hard attributions"],
@@ -94,6 +137,10 @@ def check_monologue(
                 "rhetorical questions",
                 "style / slogans / density",
             ],
+            "note": (
+                "Имена/детали из proof_anchors и source_material считаются "
+                "опертыми на первичный текст; не флажь их как выдумку."
+            ),
         },
     }
     try:

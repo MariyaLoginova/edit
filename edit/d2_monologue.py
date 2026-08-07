@@ -65,9 +65,32 @@ def write_monologue(
     lo, hi = _word_bounds()
     model = llm or get_personal_story_model(temperature=0.3)
     # Полная глава в payload ломает провайдеров («message too long») и жрёт деньги.
-    notes = (dossier.material_notes or "").strip()
-    if len(notes) > 4500:
-        notes = notes[:4500].rstrip() + "…"
+    # Голова + окна вокруг proof_plan, чтобы mid-chapter улики не пропадали.
+    notes_full = (dossier.material_notes or "").strip()
+    windows: list[str] = []
+    used = 0
+    for item in brief.proof_plan:
+        q = (item.source_quote or "").strip()
+        if not q or not notes_full:
+            continue
+        idx = notes_full.find(q)
+        if idx < 0:
+            continue
+        start = max(0, idx - 120)
+        end = min(len(notes_full), idx + len(q) + 120)
+        piece = notes_full[start:end].strip()
+        if piece in windows:
+            continue
+        if used + len(piece) > 1800:
+            break
+        windows.append(piece)
+        used += len(piece)
+    head_budget = max(1200, 4500 - used)
+    notes = notes_full[:head_budget].rstrip()
+    if len(notes_full) > head_budget:
+        notes += "…"
+    if windows:
+        notes = notes + "\n\n--- proof windows ---\n\n" + "\n\n---\n\n".join(windows)
     web_slim = []
     for c in dossier.web_confirmations:
         if not c.supports_claim:

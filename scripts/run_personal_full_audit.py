@@ -437,7 +437,7 @@ def main() -> int:
 
     print("== E-check ==")
     audited.stage = "E-check"
-    check = check_monologue(monologue, dossier, llm=audited)
+    check = check_monologue(monologue, dossier, brief=brief, llm=audited)
     dump(out / "05_echeck.json", check)
     print(f"PASSES={check.passes}")
     print(check.summary)
