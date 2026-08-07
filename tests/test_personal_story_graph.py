@@ -24,8 +24,9 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "share_reason": "Есть чем поделиться.",
                 "ending_type": "formula",
             })
-        if "Рассказываешь от первого лица" in system:
-            return monologue
+        if "Говоришь со зрителем вслух" in system or "Рассказываешь от первого лица" in system:
+            # Нужны маркеры идеи — иначе кодовый E-gate режет без LLM.
+            return monologue + " Поэтому я бы вернула этот образ во взрослый регистр."
         if "исследователь для личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
@@ -40,7 +41,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "gaps": [],
                 "summary": "Фактура добавлена.",
             })
-        if "фактчекер личного ролика" in system:
+        if "фактчекер" in system and "личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
                 "factual_issues": [],
@@ -57,6 +58,7 @@ def test_personal_story_graph_uses_three_llm_calls():
     out = build_personal_story_graph(llm=llm, searcher=searcher).invoke(
         {"claims": [claim], "selected_claim_id": claim.claim_id}
     )
-    assert out["monologue"].word_count == 180
+    assert out["monologue"].word_count >= 180
+    assert "я бы" in out["monologue"].text.lower()
     assert out["monologue_check"].passes is True
     assert len(llm.calls) == 4

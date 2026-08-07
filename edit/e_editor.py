@@ -73,6 +73,10 @@ def plan_story(
         "impress_colleagues": "share_reason",
         "methods": "alternative_methods",
         "alternative_story_methods": "alternative_methods",
+        "personal_pitch": "idea_pitch",
+        "pitch": "idea_pitch",
+        "idea": "idea_pitch",
+        "idea_probe": "idea_pitch",
     }
     for source, target in aliases.items():
         if target not in raw and source in raw:
@@ -171,7 +175,22 @@ def plan_story(
             if isinstance(item, dict)
             else item
             for item in proof_plan
-        ]
+        ][:3]
+    if isinstance(raw.get("idea_pitch"), dict):
+        pitch = raw["idea_pitch"]
+        raw["idea_pitch"] = (
+            pitch.get("text")
+            or pitch.get("pitch")
+            or pitch.get("idea")
+            or pitch.get("voiced_marker")
+            or ""
+        )
+    if isinstance(raw.get("idea_pitch"), str):
+        raw["idea_pitch"] = raw["idea_pitch"][:280]
+    if not raw.get("idea_pitch"):
+        raw["idea_pitch"] = (
+            "А если вернуть этот образ туда, откуда он родом — во взрослый регистр?"
+        )
     if not raw.get("research_queries"):
         raw["research_queries"] = (
             raw.get("queries")

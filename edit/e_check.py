@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from edit.llm import ChatModel, invoke_json
@@ -9,6 +10,55 @@ from edit.model_routing import get_personal_story_model
 from models import Dossier, FactIssue, MonologueCheck, MonologueDraft
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_check.txt"
+
+# Источник/автор книги — в описание ролика, не в озвучку.
+_SOURCE_IN_SPEECH = re.compile(
+    r"(?i)("
+    r"читаю\s+у|по\s+данным|в\s+исследовани\w*|в\s+книге|источник\s+говор"
+    r"|как\s+пишет|по\s+горалик|у\s+горалик|горалик\s+пиш"
+    r"|лин[оа]р\s+горалик|полая\s+женщина"
+    r")"
+)
+_IDEA_PITCH = re.compile(r"(?i)\b((?:поэтому\s+)?я\s+бы|а\s+если)\b")
+
+
+def _code_gates(monologue: MonologueDraft) -> list[FactIssue]:
+    issues: list[FactIssue] = []
+    text = monologue.text or ""
+    if monologue.word_count < 120:
+        issues.append(
+            FactIssue(
+                quote=text[:280] or "пустой монолог",
+                issue=(
+                    f"Монолог слишком короткий ({monologue.word_count} слов): "
+                    "в нём нельзя удержать три доказательные детали."
+                ),
+                severity=4,
+            )
+        )
+    source_hit = _SOURCE_IN_SPEECH.search(text)
+    if source_hit:
+        start = max(0, source_hit.start() - 40)
+        end = min(len(text), source_hit.end() + 80)
+        issues.append(
+            FactIssue(
+                quote=text[start:end].strip(),
+                issue=(
+                    "В озвучке назван источник/автор книги. "
+                    "Источники — в описание ролика, не в речь."
+                ),
+                severity=4,
+            )
+        )
+    if not _IDEA_PITCH.search(text):
+        issues.append(
+            FactIssue(
+                quote=text[-280:] or "пустой монолог",
+                issue="Нет блока идеи с маркером «Я бы…» / «А если…?» — личный питч обязателен.",
+                severity=4,
+            )
+        )
+    return issues
 
 
 def check_monologue(
@@ -19,22 +69,14 @@ def check_monologue(
 ) -> MonologueCheck:
     if not dossier.frozen:
         raise ValueError("E-проверка: нужен frozen dossier")
-    if monologue.word_count < 120:
+    gate_issues = _code_gates(monologue)
+    if gate_issues:
         return MonologueCheck(
             claim_id=monologue.claim_id,
             factual_issues=[],
-            overclaim_issues=[
-                FactIssue(
-                    quote=monologue.text[:280] or "пустой монолог",
-                    issue=(
-                        f"Монолог слишком короткий ({monologue.word_count} слов): "
-                        "в нём нельзя удержать три доказательные детали."
-                    ),
-                    severity=4,
-                )
-            ],
+            overclaim_issues=gate_issues,
             passes=False,
-            summary="Кодовый quality-gate заблокировал слишком короткий D2 без нового LLM-вызова.",
+            summary="Кодовый quality-gate заблокировал монолог без нового LLM-вызова.",
         )
     model = llm or get_personal_story_model(temperature=0.0)
     user = {
