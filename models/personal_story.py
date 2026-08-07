@@ -22,8 +22,18 @@ class ProofItem(BaseModel):
     )
 
 
-class HookDraft(BaseModel):
-    text: str = Field(..., min_length=1, max_length=280)
+class HookVariant(BaseModel):
+    move: str = Field(..., min_length=1, max_length=80)
+    first_frame: str = Field(..., min_length=1, max_length=300)
+    first_line: str = Field(..., min_length=1, max_length=280)
+    subject: str = Field(..., min_length=1, max_length=160)
+    tension: str = Field(..., min_length=1, max_length=200)
+    payoff: str = Field(..., min_length=1, max_length=200)
+    why: str = Field(..., min_length=1, max_length=300)
+
+
+class HookOptions(BaseModel):
+    variants: list[HookVariant] = Field(..., min_length=5, max_length=5)
 
 
 class StoryBrief(BaseModel):

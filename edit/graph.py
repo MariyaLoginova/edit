@@ -152,12 +152,16 @@ def node_d2_monologue(state: EditState, *, llm: Any = None) -> dict:
     brief = state.get("story_brief")
     if brief is None:
         raise ValueError("D2: нет StoryBrief от E-редактора")
-    hook = state.get("hook_draft")
+    hook_options = state.get("hook_options")
     return {
         "monologue": write_monologue(
             dossier,
             brief,
-            hook_text=hook.text if hook is not None else brief.opening,
+            hook_text=(
+                hook_options.variants[0].first_line
+                if hook_options is not None
+                else brief.opening
+            ),
             llm=llm,
         )
     }
@@ -167,7 +171,7 @@ def node_e_hook(state: EditState, *, llm: Any = None) -> dict:
     brief = state.get("story_brief")
     if brief is None:
         raise ValueError("E-hook: нет StoryBrief")
-    return {"hook_draft": write_hook(brief, llm=llm)}
+    return {"hook_options": write_hook(brief, llm=llm)}
 
 
 def node_e_monologue_check(state: EditState, *, llm: Any = None) -> dict:

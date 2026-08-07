@@ -11,7 +11,7 @@ from models import (
     CritiqueReport,
     Dossier,
     IdeaProbe,
-    HookDraft,
+    HookOptions,
     MonologueCheck,
     MonologueDraft,
     ResearchPack,
@@ -48,7 +48,7 @@ class EditState(TypedDict, total=False):
     beats: BeatList | None  # legacy; D1 удалён из графа
     script: ScriptDraft | None
     story_brief: StoryBrief | None
-    hook_draft: HookDraft | None
+    hook_options: HookOptions | None
     monologue: MonologueDraft | None
     monologue_check: MonologueCheck | None
     research_pack: ResearchPack | None

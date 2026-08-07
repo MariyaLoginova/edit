@@ -32,8 +32,21 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "needs_external_research": False,
                 "ending_type": "formula",
             })
-        if "редактор хука" in system:
-            return json.dumps({"text": "Чёрное платье оказалось инфраструктурой дня."})
+        if "первые 3 секунды" in system:
+            return json.dumps(
+                [
+                    {
+                        "move": move,
+                        "first_frame": "чёрное прямое платье",
+                        "first_line": "Чёрное платье оказалось инфраструктурой дня.",
+                        "subject": "чёрное прямое платье",
+                        "tension": "оно выглядит как статус, но работает иначе",
+                        "payoff": "ролик объяснит эту функцию",
+                        "why": "конкретный визуальный предмет",
+                    }
+                    for move in ("залипание", "спрятанное", "переворот", "тихий кадр", "потеря")
+                ]
+            )
         if "Говоришь со зрителем вслух" in system or "Рассказываешь от первого лица" in system:
             return monologue + " Финальная формула держит историю."
         if "исследователь для личного ролика" in system:
@@ -76,5 +89,5 @@ def test_personal_story_graph_uses_three_llm_calls():
     )
     assert 105 <= out["monologue"].word_count <= 115
     assert out["monologue_check"].passes is True
-    assert out["hook_draft"].text
+    assert len(out["hook_options"].variants) == 5
     assert len(llm.calls) == 4

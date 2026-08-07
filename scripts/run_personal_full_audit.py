@@ -157,8 +157,8 @@ def main() -> int:
     brief = plan_story(claim, primary_text=source, llm=audited)
     dump(out / "01_story_brief.json", brief)
     audited.stage = "E-hook"
-    hook = write_hook(brief, llm=audited)
-    dump(out / "01b_hook.json", hook)
+    hooks = write_hook(brief, llm=audited)
+    dump(out / "01b_hooks.json", hooks)
 
     print("== C1/C1.5 ==")
     draft = collect_material(
@@ -183,7 +183,12 @@ def main() -> int:
 
     print("== D2 ==")
     audited.stage = "D2 monologue"
-    monologue = write_monologue(dossier, brief, hook_text=hook.text, llm=audited)
+    monologue = write_monologue(
+        dossier,
+        brief,
+        hook_text=hooks.variants[0].first_line,
+        llm=audited,
+    )
     dump(out / "04_monologue.json", monologue)
     print(f"WORDS={monologue.word_count}")
     print(monologue.text)
@@ -213,9 +218,9 @@ def main() -> int:
         "",
         monologue.text,
         "",
-        "## Хук",
+        "## Выбранный хук",
         "",
-        hook.text,
+        hooks.variants[0].first_line,
         "",
         "## E-check summary",
         "",

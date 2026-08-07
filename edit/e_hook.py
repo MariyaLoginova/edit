@@ -6,12 +6,12 @@ from pathlib import Path
 
 from edit.llm import ChatModel, content_text, parse_json_payload
 from edit.model_routing import get_personal_story_model
-from models import HookDraft, StoryBrief
+from models import HookOptions, StoryBrief
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_hook.txt"
 
 
-def write_hook(brief: StoryBrief, *, llm: ChatModel | None = None) -> HookDraft:
+def write_hook(brief: StoryBrief, *, llm: ChatModel | None = None) -> HookOptions:
     model = llm or get_personal_story_model(temperature=0.3)
     response = model.invoke(
         [
@@ -29,8 +29,8 @@ def write_hook(brief: StoryBrief, *, llm: ChatModel | None = None) -> HookDraft:
         ]
     )
     raw = parse_json_payload(content_text(response))
+    if isinstance(raw, list):
+        raw = {"variants": raw}
     if not isinstance(raw, dict):
-        raise ValueError("E-hook: ожидался JSON-объект")
-    if isinstance(raw.get("hook"), str) and not raw.get("text"):
-        raw["text"] = raw["hook"]
-    return HookDraft.model_validate(raw)
+        raise ValueError("E-hook: ожидался JSON-массив из пяти вариантов")
+    return HookOptions.model_validate(raw)
