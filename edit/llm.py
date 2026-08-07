@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import Any, Protocol
 
@@ -23,14 +24,28 @@ def get_chat_model(
 ) -> ChatModel:
     """Фабрика чат-модели. provider из config/llm.yaml (kie | openai)."""
     cfg = load_llm_config()
-    provider = str(cfg.get("provider") or "kie").lower()
+    spec = resolve_model_spec(model) if model else None
+    provider = (spec.provider if spec and spec.provider else str(cfg.get("provider") or "kie")).lower()
     if provider == "kie":
         return build_kie_chat_model(model=model, temperature=temperature)
+
+    if provider == "aihubmix":
+        from langchain_openai import ChatOpenAI
+
+        key = os.environ.get("AIHUBMIX_API_KEY", "").strip()
+        if not key:
+            raise RuntimeError("AIHUBMIX_API_KEY не задан")
+        temp = spec.temperature if spec and temperature is None else (temperature or 0.0)
+        return ChatOpenAI(
+            model=spec.model_id if spec else (model or "glm-5.2"),
+            temperature=temp,
+            api_key=key,
+            base_url="https://aihubmix.com/v1",
+        )
 
     # fallback: прямой OpenAI (локальная отладка без KIE)
     from langchain_openai import ChatOpenAI
 
-    spec = resolve_model_spec(model) if model else None
     mid = model or cfg.get("default_model") or "gpt-4o-mini"
     temp = 0.0 if temperature is None else temperature
     if spec is not None and temperature is None:

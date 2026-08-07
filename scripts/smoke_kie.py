@@ -10,24 +10,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from edit.kie_client import kie_api_key, list_configured_models, load_llm_config
+from edit.kie_client import list_configured_models, load_llm_config
 from edit.llm import get_chat_model, invoke_json
 
 
 def main() -> int:
     load_llm_config()
-    try:
-        kie_api_key()
-    except RuntimeError as exc:
-        print(f"FAIL: {exc}", file=sys.stderr)
-        return 2
-
     models = list_configured_models()
     if not models:
         print("FAIL: нет models в config/llm.yaml", file=sys.stderr)
         return 2
 
     failed = 0
+    skipped = 0
     for model_id in models:
         print(f"→ {model_id} …", flush=True)
         try:
@@ -49,6 +44,13 @@ def main() -> int:
             if not isinstance(data, dict) or data.get("ok") is not True:
                 raise ValueError(f"неожиданный ответ: {data!r}")
             print(f"  OK {model_id}: {json.dumps(data, ensure_ascii=False)}")
+        except RuntimeError as exc:
+            if "API_KEY не задан" in str(exc):
+                skipped += 1
+                print(f"  SKIP {model_id}: {exc}")
+                continue
+            failed += 1
+            print(f"  FAIL {model_id}: {exc}", file=sys.stderr)
         except Exception as exc:  # noqa: BLE001 — smoke печатает любую ошибку модели
             failed += 1
             print(f"  FAIL {model_id}: {exc}", file=sys.stderr)
@@ -56,7 +58,7 @@ def main() -> int:
     if failed:
         print(f"Итого: {failed}/{len(models)} моделей упали", file=sys.stderr)
         return 1
-    print(f"Итого: все {len(models)} моделей ответили валидным JSON")
+    print(f"Итого: {len(models) - skipped} моделей ответили валидным JSON; SKIP={skipped}")
     return 0
 
 
