@@ -14,7 +14,7 @@ class TopicCandidate(BaseModel):
     one_line: str = Field(..., min_length=1, max_length=400)
     naive_expectation: str = Field(..., min_length=1, max_length=300)
     source_conclusion_quote: str = Field(
-        ..., min_length=1, max_length=700, description="Дословный вывод автора."
+        "", max_length=700, description="Дословный вывод автора; пусто → gate drop."
     )
     visual_examples: list[str] = Field(default_factory=list, max_length=12)
     format: Literal["excursion", "narrative", "argument"] = "excursion"
