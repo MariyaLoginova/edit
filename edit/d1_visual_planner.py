@@ -114,6 +114,8 @@ def plan_visual_scenario(
     visual_research: VisualResearchPack | None = None,
     image_searcher: ImageSearcher | None = None,
     llm: ChatModel | None = None,
+    _repair_attempt: int = 0,
+    _repair_note: str = "",
 ) -> VisualScenarioPlan:
     """Собрать план 3–5 минут: что показывать, когда и по какому запросу искать."""
     if not dossier.frozen:
@@ -139,6 +141,7 @@ def plan_visual_scenario(
         "external_visual_research": (
             visual_research.model_dump(mode="json") if visual_research else None
         ),
+        "validation_repair": _repair_note,
     }
     raw = invoke_json(
         model,
@@ -157,5 +160,24 @@ def plan_visual_scenario(
         raise ValueError("D1.5: claim_id сценария не совпадает с досье")
     if plan.format != brief.format:
         raise ValueError("D1.5: format сценария не совпадает с StoryBrief")
-    _validate_source_quotes(plan, primary_text or dossier.material_notes, visual_research)
+    try:
+        _validate_source_quotes(plan, primary_text or dossier.material_notes, visual_research)
+    except ValueError as exc:
+        if _repair_attempt >= 1:
+            raise
+        return plan_visual_scenario(
+            dossier,
+            brief,
+            primary_text=primary_text,
+            visual_research=visual_research,
+            image_searcher=image_searcher,
+            llm=model,
+            _repair_attempt=1,
+            _repair_note=(
+                f"Предыдущий план отклонён: {exc}. Верни весь VisualScenarioPlan "
+                "заново. source_quote каждого бита должна быть дословной "
+                "непрерывной цитатой из source_material; не сокращай и не "
+                "перефразируй её."
+            ),
+        )
     return _image_refs(plan, searcher=image_searcher)
