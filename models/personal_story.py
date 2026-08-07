@@ -39,13 +39,30 @@ class HookOptions(BaseModel):
 class StoryBrief(BaseModel):
     claim_id: str
     main_thought: str = Field("", max_length=400)
+    angle: str = Field(
+        ...,
+        min_length=1,
+        max_length=280,
+        description=(
+            "Ход фантограммы, ломающий линейную хронологию, "
+            "и что он даёт истории."
+        ),
+    )
+    why_viewer: str = Field(
+        ...,
+        min_length=1,
+        max_length=300,
+        description=(
+            "Почему история касается жизни/работы/спора зрителя, "
+            "а не только предмета."
+        ),
+    )
     visual_evidence: str = Field(
         ...,
         min_length=1,
         max_length=200,
         description=(
-            "Что зритель увидит на экране в доказательство тезиса: "
-            "конкретные кадры/предметы, не рассуждение."
+            "Конкретные вещи/кадры на экран — не рассуждение."
         ),
     )
     recommended_method: str = Field(..., min_length=1)
@@ -70,8 +87,12 @@ class StoryBrief(BaseModel):
         max_length=280,
         description="Черновик хука: 1–2 ярких предложения для озвучки.",
     )
-    audience_reason: str = Field(..., min_length=1, max_length=300)
-    share_reason: str = Field(..., min_length=1, max_length=300)
+    audience_reason: str = Field(
+        "",
+        max_length=300,
+        description="Совместимость: дубль/наследник why_viewer.",
+    )
+    share_reason: str = Field("", max_length=300)
     research_queries: list[str] = Field(default_factory=list, max_length=4)
     proof_plan: list[ProofItem] = Field(
         ...,

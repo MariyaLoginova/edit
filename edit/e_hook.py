@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from edit.library import load_hook_formulas, load_open_second_triggers
+from edit.library import (
+    compose_system_prompt,
+    load_hook_formulas,
+    load_open_second_triggers,
+)
 from edit.llm import ChatModel, content_text, parse_json_payload
 from edit.model_routing import get_personal_story_model
 from models import HookOptions, StoryBrief
@@ -16,12 +20,17 @@ def write_hook(brief: StoryBrief, *, llm: ChatModel | None = None) -> HookOption
     model = llm or get_personal_story_model(temperature=0.3)
     response = model.invoke(
         [
-            {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
+            {
+                "role": "system",
+                "content": compose_system_prompt(PROMPT_PATH, "e_hook_menu"),
+            },
             {
                 "role": "user",
                 "content": str(
                     {
                         "main_thought": brief.main_thought,
+                        "angle": brief.angle,
+                        "why_viewer": brief.why_viewer,
                         "visual_evidence": brief.visual_evidence,
                         "proof_plan": [
                             item.model_dump(mode="json") for item in brief.proof_plan

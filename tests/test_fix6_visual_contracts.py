@@ -9,16 +9,23 @@ from tests.claim_factory import make_frozen_dossier
 from tests.fakes import FakeLLM
 
 
-def _brief(*, main_thought: str = "Костюм показывает разрешённый образ работы.") -> StoryBrief:
+def _brief(
+    *,
+    main_thought: str = "Костюм показывает разрешённый образ работы.",
+    angle: str = "уменьшить до минимума — вся история в перчатках",
+    why_viewer: str = "Ты тоже одеваешь «разрешённый» силуэт на собеседовании.",
+) -> StoryBrief:
     source_quotes = ("твидовый костюм", "длинные перчатки", "разноцветных динозавриков")
     return StoryBrief(
         claim_id="x",
         main_thought=main_thought,
+        angle=angle,
+        why_viewer=why_viewer,
         visual_evidence="твидовый костюм, длинные перчатки и разноцветных динозавриков",
         recommended_method="a_vot_nifiga",
         alternative_methods=[],
         opening="Кадр ломает ожидание.",
-        audience_reason="Есть показуемый конфликт.",
+        audience_reason=why_viewer,
         share_reason="Есть конкретный образ.",
         proof_plan=[
             ProofItem(point=f"деталь {i}", source_quote=quote)
@@ -30,10 +37,17 @@ def _brief(*, main_thought: str = "Костюм показывает разре�
     )
 
 
-def test_motive_thesis_is_rejected_even_with_visual_evidence():
+def test_motive_thesis_is_allowed_when_visual_story_holds():
+    """FIX-7: мотивный тезис больше не режется кодом — рамка шире."""
     brief = _brief(main_thought="Карьерные Барби были репутационным щитом Mattel.")
     source = "твидовый костюм; длинные перчатки; разноцветных динозавриков"
-    with pytest.raises(ValueError, match="мотивный"):
+    _validate_visual_contract(brief, source)
+
+
+def test_chronology_angle_is_rejected():
+    brief = _brief(angle="хронология 1960 → потом армия → потом палеонтолог")
+    source = "твидовый костюм; длинные перчатки; разноцветных динозавриков"
+    with pytest.raises(ValueError, match="хронолог"):
         _validate_visual_contract(brief, source)
 
 

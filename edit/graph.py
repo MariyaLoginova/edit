@@ -179,7 +179,12 @@ def node_e_monologue_check(state: EditState, *, llm: Any = None) -> dict:
     monologue = state.get("monologue")
     if monologue is None:
         raise ValueError("E-проверка: нет монолога D2")
-    report = check_monologue(monologue, dossier, llm=llm)
+    report = check_monologue(
+        monologue,
+        dossier,
+        brief=state.get("story_brief"),
+        llm=llm,
+    )
     return {"monologue_check": report, "blocked_for_production": not report.passes}
 
 

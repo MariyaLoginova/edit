@@ -74,6 +74,8 @@ def main() -> int:
         selected = StoryBrief(
             claim_id=brief.claim_id,
             main_thought=brief.main_thought,
+            angle=brief.angle,
+            why_viewer=brief.why_viewer,
             visual_evidence=brief.visual_evidence,
             recommended_method=method,
             alternative_methods=[m for m in METHODS if m != method],
@@ -87,7 +89,7 @@ def main() -> int:
             ending_type=brief.ending_type,
         )
         monologue = write_monologue(dossier, selected, llm=llm)
-        check = check_monologue(monologue, dossier, llm=llm)
+        check = check_monologue(monologue, dossier, brief=selected, llm=llm)
         dump(OUT / f"03_{method}_monologue.json", monologue)
         dump(OUT / f"04_{method}_check.json", check)
         results.append(

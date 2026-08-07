@@ -11,12 +11,14 @@ def test_d2_user_payload_includes_full_structure_example():
     brief = StoryBrief(
         claim_id="x",
         main_thought="Костюм показывает разрешённый образ работы.",
+        angle="сделать наоборот — костюм не профессия, а разрешение",
+        why_viewer="Ты тоже собираешь «безопасный» образ на работу.",
         visual_evidence="твидовый костюм, длинные перчатки и разноцветных динозавриков",
         recommended_method="a_vot_nifiga",
         alternative_methods=[],
         selected_structure="myth_bust",
         opening="Кадр ломает ожидание.",
-        audience_reason="Есть показуемый конфликт.",
+        audience_reason="Ты тоже собираешь «безопасный» образ на работу.",
         share_reason="Есть конкретный образ.",
         proof_plan=[
             ProofItem(point=f"деталь {i}", source_quote=q)
