@@ -186,6 +186,8 @@ def plan_story(
     fmt = str(raw.get("format") or "excursion").strip().lower()
     if fmt in {"visual_research", "excursion", "экскурсия", "tour"}:
         raw["format"] = ReelFormat.excursion.value
+    elif fmt in {"narrative", "story", "storytelling", "сюжет", "история"}:
+        raw["format"] = ReelFormat.narrative.value
     elif fmt in {"argument", "аргумент", "proof"}:
         raw["format"] = ReelFormat.argument.value
     else:

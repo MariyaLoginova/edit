@@ -20,7 +20,7 @@ def write_hook(brief: StoryBrief, *, llm: ChatModel | None = None) -> HookOption
     model = llm or get_personal_story_model(temperature=0.3)
     units = (
         {"exhibits": [e.model_dump(mode="json") for e in brief.exhibits]}
-        if brief.format == ReelFormat.excursion
+        if brief.format in {ReelFormat.excursion, ReelFormat.narrative}
         else {
             "proof_plan": [
                 item.model_dump(mode="json") for item in brief.proof_plan

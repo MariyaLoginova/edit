@@ -1,0 +1,83 @@
+[
+  {
+    "topic_id": "barbie-lilli-origin",
+    "one_line": "Барби выросла из комиксной Лилли и взрослой немецкой куклы, а не из детской игрушки.",
+    "naive_expectation": "Барби придумали как новый детский образ.",
+    "source_conclusion_quote": "Так или иначе за исключением нескольких мелких деталей первая Барби оказалась почти точной копией Лилли.",
+    "visual_examples": ["комикс Bild", "Bild Lilli", "упаковка Лилли", "взрослый рынок", "первая Барби OSS", "ранняя реклама Барби"],
+    "format": "narrative",
+    "source_locator": "гл. 3"
+  },
+  {
+    "topic_id": "barbie-careers-pr-shield",
+    "one_line": "Одна карьерная Барби защищала весь легкомысленный ассортимент Mattel перед родителями и прессой.",
+    "naive_expectation": "Профессиональных Барби выпускали по запросу детей.",
+    "source_conclusion_quote": "Одна умная, но скучно одетая Барби защищает целую плеяду своих красивых, расфуфыренных и легкомысленных сестер.",
+    "visual_examples": ["Busy Girl", "Барби-астронавт", "Барби-хирург", "Барби-палеонтолог", "детские Барби-принцессы", "пресс-материалы Mattel"],
+    "format": "narrative",
+    "source_locator": "гл. 9"
+  },
+  {
+    "topic_id": "barbie-safe-trend-stamp",
+    "one_line": "Барби не создаёт тренды — она выпускает их после того, как они стали безопасны для массового рынка.",
+    "naive_expectation": "Барби первой приносит тренды массовой аудитории.",
+    "source_conclusion_quote": "Ультрамодные наряды Барби скорее легитимизируют те или иные модные тенденции, нежели диктуют их.",
+    "visual_examples": ["Жаклин Кеннеди", "авангардные прототипы 1980-х", "пражский музей игрушек", "массовые наряды Барби", "показы высокой моды", "Barbie de Lacroix"],
+    "format": "narrative",
+    "source_locator": "гл. 7"
+  },
+  {
+    "topic_id": "barbie-collectibles-scarcity",
+    "one_line": "Mattel обрушил коллекционный рынок Барби допечатками, а затем вернул доверие лимитом 35 тысяч.",
+    "naive_expectation": "Больше «редких» кукол означает более сильный коллекционный рынок.",
+    "source_conclusion_quote": "такие куклы будут выпускаться строго ограниченными тиражами - не более 35 тысяч экземпляров",
+    "visual_examples": ["реплика первой Барби 1994", "Silkstone", "лимит 35 000", "вторичный рынок", "коллекционные коробки", "белье и сменные костюмы"],
+    "format": "narrative",
+    "source_locator": "гл. 15"
+  },
+  {
+    "topic_id": "barbie-pregnant-midge",
+    "one_line": "Беременную Мидж убирали с полок из страха перед реакцией родителей.",
+    "naive_expectation": "Беременная кукла — нейтральная семейная игрушка.",
+    "source_conclusion_quote": "",
+    "visual_examples": ["Беременная Мидж"],
+    "format": "excursion",
+    "source_locator": "нужна добыча"
+  },
+  {
+    "topic_id": "barbie-saudi-black-market",
+    "one_line": "После запрета Барби в Саудовской Аравии её цена на чёрном рынке выросла.",
+    "naive_expectation": "Запрет просто убирает игрушку из культуры.",
+    "source_conclusion_quote": "",
+    "visual_examples": ["Барби", "саудовская витрина"],
+    "format": "narrative",
+    "source_locator": "нужна добыча"
+  },
+  {
+    "topic_id": "barbie-lingerie",
+    "one_line": "Lingerie Barbie продавалась взрослым коллекционерам на обычной полке.",
+    "naive_expectation": "Коллекционная бельевая кукла отделена от детского ассортимента.",
+    "source_conclusion_quote": "",
+    "visual_examples": ["Lingerie Barbie"],
+    "format": "excursion",
+    "source_locator": "нужна добыча"
+  },
+  {
+    "topic_id": "chelsea-piercing",
+    "one_line": "Родители добились изъятия пирсинга из носа куклы Челси.",
+    "naive_expectation": "Маленькая деталь аксессуара не вызывает общественной реакции.",
+    "source_conclusion_quote": "",
+    "visual_examples": ["Челси с пирсингом"],
+    "format": "argument",
+    "source_locator": "нужна добыча"
+  },
+  {
+    "topic_id": "barbie-astronaut",
+    "one_line": "Mattel использовал Барби-астронавта как доказательство опережения времени.",
+    "naive_expectation": "Кукла-астронавт автоматически была прогрессивнее реальной истории женщин в космосе.",
+    "source_conclusion_quote": "",
+    "visual_examples": ["Барби-астронавт", "упаковка 1965"],
+    "format": "argument",
+    "source_locator": "нужна добыча"
+  }
+]
