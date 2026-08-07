@@ -22,6 +22,7 @@ def test_visual_planner_collects_image_references_for_each_beat():
                 "t_end": i * 35,
                 "exhibit_name": exhibit.name,
                 "narration_intent": "Рассмотреть деталь.",
+                "context_fact": "Исторический контекст экспоната.",
                 "what_to_show": exhibit.what_to_see,
                 "source_quote": "source",
                 "image_query": f"{exhibit.name} Barbie",
@@ -52,6 +53,7 @@ def test_visual_planner_collects_image_references_for_each_beat():
     d2 = plan.for_d2()
     assert "image_query" not in str(d2)
     assert len(d2["beats"]) == 6
+    assert d2["beats"][0]["context_fact"] == "Исторический контекст экспоната."
 
 
 def test_visual_planner_keeps_plan_when_image_search_unavailable():
@@ -69,6 +71,7 @@ def test_visual_planner_keeps_plan_when_image_search_unavailable():
                 "t_end": i * 30,
                 "exhibit_name": exhibit.name,
                 "narration_intent": "Рассмотреть деталь.",
+                "context_fact": "Исторический контекст экспоната.",
                 "what_to_show": exhibit.what_to_see,
                 "source_quote": "material notes",
                 "image_query": f"{exhibit.name} Barbie",

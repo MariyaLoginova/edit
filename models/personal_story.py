@@ -100,6 +100,14 @@ class VisualPlanBeat(BaseModel):
     t_end: float = Field(..., gt=0)
     exhibit_name: str = Field(..., min_length=1, max_length=160)
     narration_intent: str = Field(..., min_length=1, max_length=400)
+    context_fact: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description=(
+            "Новое историческое/социальное знание для речи: не описание кадра."
+        ),
+    )
     what_to_show: str = Field(..., min_length=1, max_length=500)
     source_quote: str = Field(
         ...,
@@ -165,6 +173,7 @@ class VisualScenarioPlan(BaseModel):
                 {
                     "exhibit_name": beat.exhibit_name,
                     "narration_intent": beat.narration_intent,
+                    "context_fact": beat.context_fact,
                     "what_to_show": beat.what_to_show,
                 }
                 for beat in self.beats

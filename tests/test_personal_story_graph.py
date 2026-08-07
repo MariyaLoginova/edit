@@ -78,6 +78,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                         "t_end": end,
                         "exhibit_name": name,
                         "narration_intent": "Коротко показать улику.",
+                        "context_fact": "Контекст этой улики.",
                         "what_to_show": "Архивный кадр и крупная деталь.",
                         "source_quote": "visual evidence one",
                         "source_url": None,
