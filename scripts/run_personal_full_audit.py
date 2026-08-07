@@ -426,7 +426,6 @@ def main() -> int:
     dump(out / "02_research_pack.json", pack)
     dump(out / "03_dossier.json", dossier)
 
-    print("== D2 ==")
     print("== D1.5 visual plan / image search ==")
     audited.stage = "D1.5 visual plan"
     visual_plan = plan_visual_scenario(
