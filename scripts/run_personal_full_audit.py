@@ -30,7 +30,7 @@ from edit.e_check import check_monologue
 from edit.e_editor import plan_story
 from edit.e_hook import write_hook
 from edit.llm import content_text, get_chat_model
-from edit.search import SearchHit
+from edit.search import SearchHit, default_searcher
 from models import ClaimCard, SoftFactcheckResult
 
 load_dotenv(ROOT / ".env")
@@ -433,7 +433,8 @@ def main() -> int:
         dossier,
         brief,
         primary_text=source,
-        image_searcher=searcher,
+        # C1 uses the pinned primary source; visual refs use Brave Images when configured.
+        image_searcher=default_searcher(),
         llm=audited,
     )
     dump(out / "03b_visual_scenario_plan.json", visual_plan)
@@ -453,7 +454,13 @@ def main() -> int:
 
     print("== E-check ==")
     audited.stage = "E-check"
-    check = check_monologue(monologue, dossier, brief=brief, llm=audited)
+    check = check_monologue(
+        monologue,
+        dossier,
+        brief=brief,
+        visual_plan=visual_plan,
+        llm=audited,
+    )
     dump(out / "05_echeck.json", check)
     print(f"PASSES={check.passes}")
     print(check.summary)

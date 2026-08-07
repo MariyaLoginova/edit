@@ -67,6 +67,28 @@ def _image_refs(
     )
 
 
+def _normalize_quote(text: str) -> str:
+    return " ".join(
+        (text or "")
+        .lower()
+        .replace("«", '"')
+        .replace("»", '"')
+        .replace("—", "-")
+        .split()
+    )
+
+
+def _validate_source_quotes(plan: VisualScenarioPlan, source: str) -> None:
+    haystack = _normalize_quote(source)
+    for beat in plan.beats:
+        quote = _normalize_quote(beat.source_quote)
+        if quote not in haystack:
+            raise ValueError(
+                "D1.5: source_quote не найдена в первичном тексте для "
+                f"{beat.beat_id}: {beat.source_quote[:120]}"
+            )
+
+
 def plan_visual_scenario(
     dossier: Dossier,
     brief: StoryBrief,
@@ -114,4 +136,5 @@ def plan_visual_scenario(
         raise ValueError("D1.5: claim_id сценария не совпадает с досье")
     if plan.format != brief.format:
         raise ValueError("D1.5: format сценария не совпадает с StoryBrief")
+    _validate_source_quotes(plan, primary_text or dossier.material_notes)
     return _image_refs(plan, searcher=image_searcher)

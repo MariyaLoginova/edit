@@ -207,6 +207,7 @@ def node_e_monologue_check(state: EditState, *, llm: Any = None) -> dict:
         monologue,
         dossier,
         brief=state.get("story_brief"),
+        visual_plan=state.get("visual_scenario_plan"),
         llm=llm,
     )
     return {"monologue_check": report, "blocked_for_production": not report.passes}

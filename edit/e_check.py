@@ -7,7 +7,14 @@ from pathlib import Path
 
 from edit.llm import ChatModel, invoke_json
 from edit.model_routing import get_personal_story_model
-from models import Dossier, FactIssue, MonologueCheck, MonologueDraft, StoryBrief
+from models import (
+    Dossier,
+    FactIssue,
+    MonologueCheck,
+    MonologueDraft,
+    StoryBrief,
+    VisualScenarioPlan,
+)
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_check.txt"
 
@@ -92,6 +99,7 @@ def check_monologue(
     dossier: Dossier,
     *,
     brief: StoryBrief | None = None,
+    visual_plan: VisualScenarioPlan | None = None,
     llm: ChatModel | None = None,
 ) -> MonologueCheck:
     if not dossier.frozen:
@@ -110,6 +118,8 @@ def check_monologue(
     anchors = [dossier.claim.citation.quote]
     if brief is not None:
         anchors.extend(brief.source_anchors())
+    if visual_plan is not None:
+        anchors.extend(beat.source_quote for beat in visual_plan.beats)
     source_material = _compose_source_for_check(notes, anchors)
     web_slim = []
     for item in dossier.web_confirmations:

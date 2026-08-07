@@ -1,0 +1,100 @@
+{
+  "claim_id": "barbie-career-costume-permission",
+  "format": "excursion",
+  "duration_sec": 240.0,
+  "opening_intent": "Показать карьерный костюм Барби как объект наблюдения: не просто одежда профессии, а визуальный код допустимой женской роли.",
+  "beats": [
+    {
+      "beat_id": "b01",
+      "t_start": 0.0,
+      "t_end": 30.0,
+      "exhibit_name": "Busy Girl Barbie (1960)",
+      "narration_intent": "Рассмотреть первый карьерный образ: работа обозначена костюмом, а не инструментами.",
+      "what_to_show": "Кукла Busy Girl Barbie крупным планом: твидовый костюм, длинные перчатки, строгая маленькая шапочка; затем детали одежды без аксессуаров профессии.",
+      "image_query": "Busy Girl Barbie 1960 tweed suit gloves hat doll",
+      "image_references": []
+    },
+    {
+      "beat_id": "b02",
+      "t_start": 30.0,
+      "t_end": 60.0,
+      "exhibit_name": "Business Woman / Career Girl Barbie",
+      "narration_intent": "Показать, что слово «карьера» не всегда означает конкретную работу.",
+      "what_to_show": "Кукла Business Woman Barbie или Career Girl Barbie в деловом костюме; упаковка и общий офисный образ без профессиональных инструментов.",
+      "image_query": "Business Woman Barbie Career Girl Barbie business suit doll packaging",
+      "image_references": []
+    },
+    {
+      "beat_id": "b03",
+      "t_start": 60.0,
+      "t_end": 90.0,
+      "exhibit_name": "Barbie Astronaut",
+      "narration_intent": "Показать пример новой сферы, которая всё равно сохраняет безопасный визуальный стиль.",
+      "what_to_show": "Barbie Astronaut в космическом костюме: чистый силуэт, аккуратная форма, сравнение с реальным космическим снаряжением.",
+      "image_query": "1965 Barbie Astronaut doll space suit",
+      "image_references": []
+    },
+    {
+      "beat_id": "b04",
+      "t_start": 90.0,
+      "t_end": 120.0,
+      "exhibit_name": "Army Barbie",
+      "narration_intent": "Рассмотреть, как военная роль становится частью модного образа.",
+      "what_to_show": "Army Barbie в военной форме; крупные планы формы, аксессуаров и упаковки как игрушечного образа.",
+      "image_query": "Army Barbie doll military uniform vintage",
+      "image_references": []
+    },
+    {
+      "beat_id": "b05",
+      "t_start": 120.0,
+      "t_end": 150.0,
+      "exhibit_name": "Candidate for President Barbie",
+      "narration_intent": "Показать, как официальный костюм соединяется с образом публичного успеха.",
+      "what_to_show": "Candidate for President Barbie: деловой костюм, детали трансформации наряда в более праздничный образ.",
+      "image_query": "Barbie Candidate for President doll business suit evening dress",
+      "image_references": []
+    },
+    {
+      "beat_id": "b06",
+      "t_start": 150.0,
+      "t_end": 180.0,
+      "exhibit_name": "Working Woman Barbie",
+      "narration_intent": "Показать, что работа часто обозначается внешними аксессуарами, а не самим трудом.",
+      "what_to_show": "Working Woman Barbie с ноутбуком и мобильным телефоном; крупные планы аксессуаров рядом с нейтральным деловым костюмом.",
+      "image_query": "Working Woman Barbie laptop phone doll business outfit",
+      "image_references": []
+    },
+    {
+      "beat_id": "b07",
+      "t_start": 180.0,
+      "t_end": 210.0,
+      "exhibit_name": "Baby Doctor Barbie",
+      "narration_intent": "Показать медицинскую профессию как чистый и безопасный образ без сложной стороны работы.",
+      "what_to_show": "Baby Doctor Barbie в белом медицинском образе с новорождённым аксессуаром; детали одежды и набора.",
+      "image_query": "Baby Doctor Barbie doll medical set newborn",
+      "image_references": []
+    },
+    {
+      "beat_id": "b08",
+      "t_start": 210.0,
+      "t_end": 235.0,
+      "exhibit_name": "Barbie Paleontologist",
+      "narration_intent": "Показать границу между названием профессии и её игровым представлением.",
+      "what_to_show": "Barbie Paleontologist с разноцветными динозавриками вместо реалистичных раскопок; сравнение с полевыми инструментами палеонтолога.",
+      "image_query": "Barbie Paleontologist doll colorful dinosaurs accessories",
+      "image_references": []
+    },
+    {
+      "beat_id": "b09",
+      "t_start": 235.0,
+      "t_end": 240.0,
+      "exhibit_name": "Коллекция карьерных костюмов Барби",
+      "narration_intent": "Сделать вывод: костюмы показывают ожидания общества от женской карьеры.",
+      "what_to_show": "Последовательная нарезка карьерных Барби: твидовый костюм, офисный образ, форма, медицинский халат, исследовательский наряд.",
+      "image_query": "Barbie career dolls collection astronaut doctor business woman",
+      "image_references": []
+    }
+  ],
+  "image_search_status": "unavailable",
+  "image_search_error": "'PrimarySourceSearcher' object has no attribute 'search_images'"
+}

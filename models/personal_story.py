@@ -73,6 +73,12 @@ class VisualPlanBeat(BaseModel):
     exhibit_name: str = Field(..., min_length=1, max_length=160)
     narration_intent: str = Field(..., min_length=1, max_length=400)
     what_to_show: str = Field(..., min_length=1, max_length=500)
+    source_quote: str = Field(
+        ...,
+        min_length=1,
+        max_length=700,
+        description="Дословная опора для визуальной детали из первичного текста.",
+    )
     image_query: str = Field(..., min_length=1, max_length=300)
     image_references: list[VisualReference] = Field(default_factory=list, max_length=5)
 

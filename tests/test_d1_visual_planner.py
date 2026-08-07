@@ -23,6 +23,7 @@ def test_visual_planner_collects_image_references_for_each_beat():
                 "exhibit_name": exhibit.name,
                 "narration_intent": "Рассмотреть деталь.",
                 "what_to_show": exhibit.what_to_see,
+                "source_quote": "source",
                 "image_query": f"{exhibit.name} Barbie",
             }
             for i, exhibit in enumerate(brief.exhibits, start=1)
@@ -69,6 +70,7 @@ def test_visual_planner_keeps_plan_when_image_search_unavailable():
                 "exhibit_name": exhibit.name,
                 "narration_intent": "Рассмотреть деталь.",
                 "what_to_show": exhibit.what_to_see,
+                "source_quote": "material notes",
                 "image_query": f"{exhibit.name} Barbie",
             }
             for i, exhibit in enumerate(brief.exhibits, start=1)
