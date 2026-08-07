@@ -22,13 +22,13 @@ _SOURCE_IN_SPEECH = re.compile(
 def _code_gates(monologue: MonologueDraft) -> list[FactIssue]:
     issues: list[FactIssue] = []
     text = monologue.text or ""
-    if monologue.word_count < 105:
+    if monologue.word_count < 200:
         issues.append(
             FactIssue(
                 quote=text[:280] or "пустой монолог",
                 issue=(
                     f"Монолог слишком короткий ({monologue.word_count} слов): "
-                    "в нём нельзя удержать три доказательные детали."
+                    "нужно 200–300 слов мяса, не конспект."
                 ),
                 severity=4,
             )

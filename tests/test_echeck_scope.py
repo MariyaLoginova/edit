@@ -21,8 +21,8 @@ def test_echeck_user_payload_scopes_hard_facts_only():
     dossier = make_frozen_dossier(claim, material_notes="Лилли, 1955, Bild Zeitung.")
     monologue = MonologueDraft(
         claim_id=claim.claim_id,
-        text=("Барби — дочка проститутки. " * 40) + "Спиздели или вдохновились?",
-        word_count=120,
+        text=("Барби — дочка проститутки. " * 50) + "Спиздели или вдохновились?",
+        word_count=220,
         story_method="a_vot_nifiga",
         ending_type=EndingType.reactive,
     )

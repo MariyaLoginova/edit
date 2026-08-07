@@ -28,11 +28,18 @@ _BANNED_EMPTY = (
     "меняешь контекст — меняешь смысл",
     "меняешь контекст - меняешь смысл",
     "не фантазия скульптора",
+    "а дальше фокус похлеще",
+    "и вот тут уже смешно",
+    "смотри внимательно",
+    "а теперь главное",
+    "заметь фокус",
+    "и тут поворот",
+    "вот тебе",
 )
 
 
 def _word_bounds() -> tuple[int, int]:
-    return 105, 115
+    return 200, 300
 
 
 def _methods() -> list[dict]:
@@ -83,8 +90,10 @@ def write_monologue(
             "hook_draft": hook_text or brief.opening,
             "structure": [
                 "start with the given hook_draft first_line verbatim",
+                "immediately name the objects/prototype — no filler warmup",
                 "aggressive sarcastic story through three visual proofs",
-                "viewer address + questions; no opaque slogan ending",
+                "more meat/scenes, zero empty intensifiers",
+                "viewer questions at the end; no opaque slogan",
             ],
             "never_in_speech": [
                 "автор книги",
@@ -96,6 +105,10 @@ def write_monologue(
                 "кража-с-переносом",
                 "меняешь контекст — меняешь смысл",
                 "не фантазия скульптора",
+                "а дальше фокус похлеще",
+                "и вот тут уже смешно",
+                "смотри внимательно",
+                "а теперь главное",
             ],
         },
         "story_method": next(
@@ -112,12 +125,24 @@ def write_monologue(
             problems = []
             if words < lo:
                 problems.append(
-                    f"вышло {words} слов — коротко; допиши мясо сторителлинга "
-                    f"до {lo}–{hi} (ещё деталь полки/покупки/копирования)"
+                    f"вышло {words} слов — коротко; допиши мясо/сцены "
+                    f"до {lo}–{hi} (ещё конкретные детали, не вводные)"
                 )
             elif words > hi:
                 problems.append(
                     f"вышло {words} слов — обрежь до {lo}–{hi}, не трогая хук и три улики"
+                )
+            if any(
+                filler in text.lower()
+                for filler in (
+                    "фокус похлеще",
+                    "вот тут уже смешно",
+                    "смотри внимательно",
+                    "а теперь главное",
+                )
+            ):
+                problems.append(
+                    "убери пустые вводные; после хука сразу к предмету и фактам"
                 )
             lowered = text.lower()
             banned = [

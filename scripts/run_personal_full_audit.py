@@ -18,6 +18,12 @@ from dotenv import load_dotenv
 
 from edit.c1_material import collect_material
 from edit.c1_research_enricher import enrich_material
+from edit.costing import (
+    cost_usd,
+    extract_usage,
+    render_cost_report,
+    summarize_calls,
+)
 from edit.d2_monologue import write_monologue
 from edit.e_check import check_monologue
 from edit.e_editor import plan_story
@@ -44,11 +50,23 @@ class AuditedLLM:
         }
         try:
             response = self.model.invoke(messages)
+            usage = extract_usage(response)
             item["received"] = content_text(response)
+            item["usage"] = usage
+            item["cost_usd"] = round(
+                cost_usd(
+                    self.model_id,
+                    usage["input_tokens"],
+                    usage["output_tokens"],
+                ),
+                6,
+            )
             self.calls.append(item)
             return response
         except Exception as exc:
             item["error"] = f"{type(exc).__name__}: {exc}"
+            item["usage"] = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+            item["cost_usd"] = 0.0
             self.calls.append(item)
             raise
 
@@ -90,11 +108,15 @@ def write_audit_csv(path: Path, calls: list[dict[str, Any]], meta_rows: list[dic
         messages = call.get("messages") or []
         system = next((m.get("content", "") for m in messages if m.get("role") == "system"), "")
         user = next((m.get("content", "") for m in messages if m.get("role") == "user"), "")
+        usage = call.get("usage") or {}
         rows.append(
             {
                 "step": str(idx),
                 "stage": str(call.get("stage") or ""),
                 "model": str(call.get("model") or ""),
+                "input_tokens": str(usage.get("input_tokens") or 0),
+                "output_tokens": str(usage.get("output_tokens") or 0),
+                "cost_usd": str(call.get("cost_usd") or 0),
                 "system_prompt": system,
                 "user_payload": user,
                 "received": str(call.get("received") or ""),
@@ -108,6 +130,9 @@ def write_audit_csv(path: Path, calls: list[dict[str, Any]], meta_rows: list[dic
                 "step",
                 "stage",
                 "model",
+                "input_tokens",
+                "output_tokens",
+                "cost_usd",
                 "system_prompt",
                 "user_payload",
                 "received",
@@ -145,6 +170,9 @@ def main() -> int:
             "step": "0",
             "stage": "input",
             "model": "n/a",
+            "input_tokens": "0",
+            "output_tokens": "0",
+            "cost_usd": "0",
             "system_prompt": "",
             "user_payload": f"claim_id={claim.claim_id}; source={args.source}",
             "received": f"chars={len(source)}",
@@ -204,6 +232,12 @@ def main() -> int:
 
     dump(out / "calls.json", audited.calls)
     write_audit_csv(out / "audit.csv", audited.calls, meta_rows)
+    cost_summary = summarize_calls(audited.calls)
+    dump(out / "06_cost.json", cost_summary)
+    (out / "COST.md").write_text(
+        render_cost_report(cost_summary, title=claim.claim_id),
+        encoding="utf-8",
+    )
 
     report = [
         f"# Полный прогон · {claim.claim_id}",
@@ -213,6 +247,8 @@ def main() -> int:
         f"**D2:** {monologue.word_count} слов · method `{monologue.story_method}`",
         f"**E-check:** `passes={check.passes}`",
         f"**LLM calls:** {len(audited.calls)}",
+        f"**Cost:** `${cost_summary['cost_usd']:.4f}` · "
+        f"{cost_summary['total_tokens']} tokens",
         "",
         "## Монолог",
         "",
@@ -240,11 +276,13 @@ def main() -> int:
     report.extend(
         [
             "",
-            f"Аудит: [`audit.csv`](audit.csv) · [`calls.json`](calls.json)",
+            "Аудит: [`audit.csv`](audit.csv) · [`calls.json`](calls.json) · "
+            "[`COST.md`](COST.md)",
         ]
     )
     (out / "REPORT.md").write_text("\n".join(report) + "\n", encoding="utf-8")
     print(out / "audit.csv")
+    print(f"COST_USD={cost_summary['cost_usd']:.4f}")
     return 0 if check.passes else 2
 
 
