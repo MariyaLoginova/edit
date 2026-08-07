@@ -14,9 +14,10 @@ class EndingType(str, Enum):
 
 
 class ReelFormat(str, Enum):
-    """Экскурсия — по умолчанию; аргумент — исключение."""
+    """Экскурсия, сюжетное исследование или аргумент."""
 
     excursion = "excursion"
+    narrative = "narrative"
     argument = "argument"
 
 
@@ -143,8 +144,10 @@ class VisualScenarioPlan(BaseModel):
     @model_validator(mode="after")
     def _timeline_matches_format(self) -> VisualScenarioPlan:
         n = len(self.beats)
-        if self.format == ReelFormat.excursion and not 6 <= n <= 10:
-            raise ValueError(f"excursion visual plan: нужно 6–10 битов, получено {n}")
+        if self.format in {ReelFormat.excursion, ReelFormat.narrative} and not 6 <= n <= 10:
+            raise ValueError(
+                f"{self.format.value} visual plan: нужно 6–10 битов, получено {n}"
+            )
         if self.format == ReelFormat.argument and n < 4:
             raise ValueError("argument visual plan: нужно минимум 4 бита")
         if not self.beats:
@@ -256,7 +259,7 @@ class StoryBrief(BaseModel):
 
     @model_validator(mode="after")
     def _units_match_format(self) -> StoryBrief:
-        if self.format == ReelFormat.excursion:
+        if self.format in {ReelFormat.excursion, ReelFormat.narrative}:
             n = len(self.exhibits)
             if not 6 <= n <= 10:
                 raise ValueError(
@@ -288,7 +291,7 @@ class StoryBrief(BaseModel):
                 "do_not_voice_quote": self.conclusion.source_quote,
             },
         }
-        if self.format == ReelFormat.excursion:
+        if self.format in {ReelFormat.excursion, ReelFormat.narrative}:
             payload["exhibits"] = [
                 {
                     "name": e.name,

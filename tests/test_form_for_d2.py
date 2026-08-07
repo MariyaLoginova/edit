@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from models import ReelFormat
 from tests.brief_factory import make_argument_brief, make_excursion_brief
 
 
@@ -32,3 +33,10 @@ def test_for_d2_argument_has_proof_plan_not_exhibits():
     assert "proof_plan" in payload
     assert "exhibits" not in payload
     assert len(payload["proof_plan"]) == 3
+
+
+def test_narrative_uses_story_materials_not_proof_plan():
+    brief = make_excursion_brief().model_copy(update={"format": ReelFormat.narrative})
+    payload = brief.for_d2()
+    assert payload["format"] == "narrative"
+    assert len(payload["exhibits"]) == 6

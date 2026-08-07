@@ -29,7 +29,7 @@ _MONOLOGUE_LABEL = re.compile(r"(?im)^\s*готовый\s+монолог\s*:\s*"
 
 def _word_bounds(fmt: ReelFormat) -> tuple[int, int]:
     """3–5 минут речи: диапазон оставляет темп живым, но не превращает в шорт."""
-    if fmt == ReelFormat.excursion:
+    if fmt in {ReelFormat.excursion, ReelFormat.narrative}:
         return 390, 650
     return 420, 700
 
@@ -145,7 +145,7 @@ def write_monologue(
                     "say conclusion_plain once at the end, lightly",
                     "final line: simple question about what was shown",
                 ]
-                if brief.format == ReelFormat.excursion
+                if brief.format in {ReelFormat.excursion, ReelFormat.narrative}
                 else [
                     "start with hook_draft verbatim",
                     "follow visual_scenario_plan beats in order when present",
