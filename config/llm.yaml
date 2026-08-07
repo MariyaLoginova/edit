@@ -6,6 +6,13 @@ base_url: https://api.kie.ai
 # Дефолт для узлов, если явно не передали model=
 default_model: gpt-5-2
 
+# Применяется только в личном контуре. Переход — один раз и только когда
+# провайдер явно сообщил policy-block; модель помечается непригодной для run.
+personal_story_fallback_models:
+  - gemini-3-6-flash
+  - gemini-3.5-flash
+  - gemini-2.5-flash
+
 # KIE: OpenAI-совместимый путь POST {base_url}/{path_prefix}/chat/completions
 # path_prefix = сегмент из docs.kie.ai / Market (сверять при смене моделей).
 models:

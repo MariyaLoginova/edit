@@ -7,7 +7,8 @@ from pathlib import Path
 
 from edit.audience import load_audience
 from edit.config import ROOT, load_thresholds
-from edit.llm import ChatModel, content_text, get_chat_model
+from edit.llm import ChatModel, content_text
+from edit.model_routing import PolicyBlockedError, get_personal_story_model, is_policy_text
 from models import Dossier, MonologueDraft, StoryBrief, can_freeze
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "d2_monologue.txt"
@@ -44,7 +45,7 @@ def write_monologue(
     if not ok:
         raise ValueError("D2: неполное досье — " + "; ".join(problems))
     lo, hi = _word_bounds()
-    model = llm or get_chat_model(temperature=0.3)
+    model = llm or get_personal_story_model(temperature=0.3)
     user = {
         "dossier": {
             "claim": dossier.claim.model_dump(mode="json"),
@@ -60,41 +61,27 @@ def write_monologue(
         ),
         "word_limit": {"min": lo, "max": hi},
     }
-    last_error: Exception | None = None
-    for _ in range(5):
-        request = user if last_error is None else {
-            **user,
-            "revision_note": f"Предыдущий текст отклонён: {last_error}",
-        }
-        text = content_text(
-            model.invoke(
-                [
-                    {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
-                    {"role": "user", "content": str(request)},
-                ]
-            )
-        ).strip()
-        text = re.sub(r"^```.*?\n|\n```$", "", text, flags=re.S).strip()
-        text = _MONOLOGUE_LABEL.sub("", text).strip()
-        text = _WRITING_ENVELOPE.sub("", text).strip()
-        text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
-        words = len(re.findall(r"\S+", text))
-        try:
-            if not lo <= words <= hi:
-                raise ValueError(f"нужно {lo}–{hi} слов, получено {words}")
-            if not _FIRST_PERSON.search(text):
-                raise ValueError("нет первого лица")
-            for phrase in _STOP_PHRASES:
-                if phrase in text.lower():
-                    raise ValueError(f"стоп-фраза: {phrase}")
-            return MonologueDraft(
-                claim_id=dossier.claim_id,
-                text=text,
-                word_count=words,
-                story_method=brief.recommended_method,
-                ending_type=brief.ending_type,
-            )
-        except ValueError as exc:
-            last_error = exc
-    assert last_error is not None
-    raise last_error
+    text = content_text(
+        model.invoke(
+            [
+                {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
+                {"role": "user", "content": str(user)},
+            ]
+        )
+    ).strip()
+    if is_policy_text(text):
+        raise PolicyBlockedError(text)
+    text = re.sub(r"^```.*?\n|\n```$", "", text, flags=re.S).strip()
+    text = _MONOLOGUE_LABEL.sub("", text).strip()
+    text = _WRITING_ENVELOPE.sub("", text).strip()
+    text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
+    words = len(re.findall(r"\S+", text))
+    # Длина и первое лицо оцениваются E-проверкой. Не сжигаем API на
+    # идентичном D2-повторе только из-за 32 или 121 слова.
+    return MonologueDraft(
+        claim_id=dossier.claim_id,
+        text=text,
+        word_count=words,
+        story_method=brief.recommended_method,
+        ending_type=brief.ending_type,
+    )

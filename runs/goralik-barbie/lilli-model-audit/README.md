@@ -17,14 +17,15 @@ model, stage, sent_system, sent_user, received, next_stage, status
 | модель | E-редактор | D2 | E-проверка | итог |
 |---|---|---|---|---|
 | `gpt-5-2` | прошёл | 94 слова | прошла | `passes=true` |
-| `gemini-3-6-flash` | прошёл | 5 попыток, каждая 32 слова | не вызвана | словный лимит заблокировал |
+| `gemini-3-6-flash` | прошёл | policy-block вернулся текстом | не вызвана | модель disabled для run |
 | `grok-4-5` | KIE вернул `NoneType` | — | — | маршрут недоступен |
 
 ## Вывод
 
 - GPT-5.2 — рабочая основная модель личного D2-контура.
-- Gemini 3.6 — отвечает содержательно, но для этого формата слишком агрессивно
-  сокращает монолог; не ослабляем словный гейт ради модели.
+- Gemini 3.6 — E-редактор прошёл, но D2 вернул текст Google policy-block.
+  Такой ответ больше не принимается за короткий сценарий: модель помечается
+  непригодной для текущего run, а в штатном контуре включается fallback.
 - Grok 4.5 не подменяется другой моделью: ошибка записана как результат
   сравнения.
 
@@ -32,5 +33,5 @@ model, stage, sent_system, sent_user, received, next_stage, status
 
 - `gpt-5-2/calls.json`, `02_story_brief.json`, `03_monologue.json`,
   `04_e_check.json`, `05_result.json`
-- `gemini-3-6-flash/calls.json` — все пять попыток D2
+- `gemini-3-6-flash/calls.json` — E-редактор и policy-block D2
 - `grok-4-5/calls.json` — исходный prompt и ошибка KIE

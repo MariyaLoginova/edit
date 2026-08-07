@@ -8,7 +8,8 @@ import yaml
 
 from edit.audience import load_audience
 from edit.config import ROOT
-from edit.llm import ChatModel, content_text, get_chat_model, parse_json_payload
+from edit.llm import ChatModel, content_text, parse_json_payload
+from edit.model_routing import get_personal_story_model
 from models import ClaimCard, EndingType, StoryBrief
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_editor.txt"
@@ -25,7 +26,7 @@ def load_hook_triggers() -> list[dict]:
 
 
 def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
-    model = llm or get_chat_model(temperature=0.2)
+    model = llm or get_personal_story_model(temperature=0.2)
     response = model.invoke(
         [
             {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
@@ -52,6 +53,7 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
         "method": "recommended_method",
         "selected_story_method": "recommended_method",
         "selected_method": "recommended_method",
+        "main_story_method": "recommended_method",
         "hook": "opening",
         "hook_text": "opening",
         "why_audience": "audience_reason",
@@ -109,7 +111,10 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
     if isinstance(raw.get("opening"), str):
         raw["opening"] = raw["opening"][:280]
     if isinstance(raw.get("hook_trigger"), dict):
-        raw["hook_trigger"] = raw["hook_trigger"].get("id") or raw["hook_trigger"].get("name") or ""
+        hook = raw["hook_trigger"]
+        if not raw.get("opening"):
+            raw["opening"] = hook.get("hook_text") or hook.get("text") or ""
+        raw["hook_trigger"] = hook.get("id") or hook.get("name") or ""
     if isinstance(opening, dict) and not raw.get("hook_trigger"):
         raw["hook_trigger"] = opening.get("trigger_id") or ""
     audience = raw.get("audience")
@@ -132,6 +137,7 @@ def plan_story(claim: ClaimCard, *, llm: ChatModel | None = None) -> StoryBrief:
         raw["share_reason"] = (
             raw.get("status_gain")
             or raw.get("status_flex")
+            or raw.get("flex_for_colleague")
             or (audience.get("flex_value") if isinstance(audience, dict) else None)
             or raw.get("share_value")
             or "Даёт точный референс и термин для обсуждения с коллегами."
