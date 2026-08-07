@@ -10,7 +10,7 @@ from tests.fakes import FakeLLM, FakeSearcher
 
 def test_personal_story_graph_uses_three_llm_calls():
     claim = make_claim()
-    monologue = " ".join(["я"] * 100)
+    monologue = " ".join(["я"] * 180)
 
     def router(messages):
         system = messages[0]["content"]
@@ -43,6 +43,6 @@ def test_personal_story_graph_uses_three_llm_calls():
     out = build_personal_story_graph(llm=llm, searcher=searcher).invoke(
         {"claims": [claim], "selected_claim_id": claim.claim_id}
     )
-    assert out["monologue"].word_count == 100
+    assert out["monologue"].word_count == 180
     assert out["monologue_check"].passes is True
     assert len(llm.calls) == 3
