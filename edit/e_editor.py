@@ -533,14 +533,5 @@ def _validate_visual_contract(brief: StoryBrief, primary_text: str) -> None:
             raise ValueError(
                 "source_quote не найдена в первичном тексте: " + missing[0][:120]
             )
-    else:
-        for exhibit in brief.exhibits:
-            if not exhibit.source_quote:
-                continue
-            located = _locate_source_quote(exhibit.source_quote, primary_text)
-            if located is None:
-                raise ValueError(
-                    "exhibit.source_quote не найдена в первичном тексте: "
-                    + exhibit.source_quote[:120]
-                )
-            exhibit.source_quote = located[:700]
+    # Exhibit.source_quote по контракту optional: это подсказка E-редактора,
+    # не доказательство. Все кадры D1.5 позже получают обязательный anchor.
