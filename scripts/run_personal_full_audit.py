@@ -25,6 +25,7 @@ from edit.costing import (
     summarize_calls,
 )
 from edit.d2_monologue import write_monologue
+from edit.d1_visual_planner import plan_visual_scenario
 from edit.e_check import check_monologue
 from edit.e_editor import plan_story
 from edit.e_hook import write_hook
@@ -228,7 +229,7 @@ def write_audit_md(
         "",
         "## Цепочка",
         "",
-        "primary → E-editor → E-hook → C1/C1.5 → D2 → E-check",
+        "primary → E-editor → E-hook → C1/C1.5 → D1.5 visual plan → D2 → E-check",
         "",
         "## Brief",
         "",
@@ -426,11 +427,24 @@ def main() -> int:
     dump(out / "03_dossier.json", dossier)
 
     print("== D2 ==")
+    print("== D1.5 visual plan / image search ==")
+    audited.stage = "D1.5 visual plan"
+    visual_plan = plan_visual_scenario(
+        dossier,
+        brief,
+        primary_text=source,
+        image_searcher=searcher,
+        llm=audited,
+    )
+    dump(out / "03b_visual_scenario_plan.json", visual_plan)
+
+    print("== D2 ==")
     audited.stage = "D2 monologue"
     monologue = write_monologue(
         dossier,
         brief,
         hook_text=hooks.variants[0].first_line,
+        visual_plan=visual_plan,
         llm=audited,
     )
     dump(out / "04_monologue.json", monologue)
@@ -471,7 +485,7 @@ def main() -> int:
         f"# Полный прогон · {claim.claim_id}",
         "",
         f"**Модель:** `{args.model}`",
-        f"**Путь:** primary → E-editor → C1/C1.5 → D2 → E-check",
+        f"**Путь:** primary → E-editor → C1/C1.5 → D1.5 visual plan → D2 → E-check",
         f"**D2:** {monologue.word_count} слов · method `{monologue.story_method}`",
         f"**E-check:** `passes={check.passes}`",
         f"**LLM calls:** {len(audited.calls)}",
