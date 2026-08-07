@@ -38,6 +38,9 @@ from models.personal_story import (
     StoryBrief,
     VisualPlanBeat,
     VisualReference,
+    VisualResearchFinding,
+    VisualResearchPack,
+    VisualResearchQuery,
     VisualScenarioPlan,
 )
 from models.retention import BeatRisk, DropReason, RetentionReport
@@ -105,6 +108,9 @@ __all__ = [
     "WeightUpdate",
     "VisualPlanBeat",
     "VisualReference",
+    "VisualResearchFinding",
+    "VisualResearchPack",
+    "VisualResearchQuery",
     "VisualScenarioPlan",
     "can_freeze",
 ]

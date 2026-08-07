@@ -27,6 +27,7 @@ from models import (
     StoryBrief,
     TraceReport,
     VisualScenarioPlan,
+    VisualResearchPack,
     WeightUpdate,
 )
 
@@ -50,6 +51,7 @@ class EditState(TypedDict, total=False):
     script: ScriptDraft | None
     story_brief: StoryBrief | None
     visual_scenario_plan: VisualScenarioPlan | None
+    visual_research_pack: VisualResearchPack | None
     hook_options: HookOptions | None
     monologue: MonologueDraft | None
     monologue_check: MonologueCheck | None

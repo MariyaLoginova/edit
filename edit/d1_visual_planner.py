@@ -14,6 +14,7 @@ from models import (
     StoryBrief,
     VisualPlanBeat,
     VisualReference,
+    VisualResearchPack,
     VisualScenarioPlan,
     can_freeze,
 )
@@ -82,11 +83,23 @@ def _normalize_quote(text: str) -> str:
     return re.sub(r"\s+", " ", normalized).strip()
 
 
-def _validate_source_quotes(plan: VisualScenarioPlan, source: str) -> None:
+def _validate_source_quotes(
+    plan: VisualScenarioPlan,
+    source: str,
+    research: VisualResearchPack | None = None,
+) -> None:
     haystack = _normalize_quote(source)
     for beat in plan.beats:
         quote = _normalize_quote(beat.source_quote)
-        if quote not in haystack:
+        if quote in haystack:
+            continue
+        external_text = ""
+        if research is not None and beat.source_url:
+            for finding in research.findings:
+                for ref in finding.web_references:
+                    if ref.url == beat.source_url:
+                        external_text += f" {ref.title} {ref.description}"
+        if quote not in _normalize_quote(external_text):
             raise ValueError(
                 "D1.5: source_quote не найдена в первичном тексте для "
                 f"{beat.beat_id}: {beat.source_quote[:120]}"
@@ -98,8 +111,11 @@ def plan_visual_scenario(
     brief: StoryBrief,
     *,
     primary_text: str = "",
+    visual_research: VisualResearchPack | None = None,
     image_searcher: ImageSearcher | None = None,
     llm: ChatModel | None = None,
+    _repair_attempt: int = 0,
+    _repair_note: str = "",
 ) -> VisualScenarioPlan:
     """Собрать план 3–5 минут: что показывать, когда и по какому запросу искать."""
     if not dossier.frozen:
@@ -122,6 +138,10 @@ def plan_visual_scenario(
                 if c.supports_claim
             ],
         },
+        "external_visual_research": (
+            visual_research.model_dump(mode="json") if visual_research else None
+        ),
+        "validation_repair": _repair_note,
     }
     raw = invoke_json(
         model,
@@ -140,5 +160,24 @@ def plan_visual_scenario(
         raise ValueError("D1.5: claim_id сценария не совпадает с досье")
     if plan.format != brief.format:
         raise ValueError("D1.5: format сценария не совпадает с StoryBrief")
-    _validate_source_quotes(plan, primary_text or dossier.material_notes)
+    try:
+        _validate_source_quotes(plan, primary_text or dossier.material_notes, visual_research)
+    except ValueError as exc:
+        if _repair_attempt >= 1:
+            raise
+        return plan_visual_scenario(
+            dossier,
+            brief,
+            primary_text=primary_text,
+            visual_research=visual_research,
+            image_searcher=image_searcher,
+            llm=model,
+            _repair_attempt=1,
+            _repair_note=(
+                f"Предыдущий план отклонён: {exc}. Верни весь VisualScenarioPlan "
+                "заново. source_quote каждого бита должна быть дословной "
+                "непрерывной цитатой из source_material; не сокращай и не "
+                "перефразируй её."
+            ),
+        )
     return _image_refs(plan, searcher=image_searcher)

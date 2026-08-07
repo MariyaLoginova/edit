@@ -13,6 +13,7 @@ from edit.c1_research_enricher import enrich_material
 from edit.c2_images import collect_images
 from edit.c3_soft_factcheck import soft_factcheck
 from edit.d1_visual_planner import plan_visual_scenario
+from edit.d1_visual_research import research_visual_material
 from edit.d2_prose import write_prose
 from edit.e1_traceability import audit_traceability
 from edit.e4_openings import rewrite_openings
@@ -185,7 +186,29 @@ def node_d1_visual_plan(
             dossier,
             brief,
             primary_text=state.get("primary_text") or "",
+            visual_research=state.get("visual_research_pack"),
             image_searcher=image_searcher,
+            llm=llm,
+        )
+    }
+
+
+def node_d1_visual_research(
+    state: EditState,
+    *,
+    llm: Any = None,
+    searcher: Any = None,
+) -> dict:
+    dossier = require_frozen_dossier(state.get("dossier"))
+    brief = state.get("story_brief")
+    if brief is None:
+        raise ValueError("D1.4: нет StoryBrief")
+    return {
+        "visual_research_pack": research_visual_material(
+            dossier,
+            brief,
+            primary_text=state.get("primary_text") or "",
+            searcher=searcher,
             llm=llm,
         )
     }
@@ -592,6 +615,10 @@ def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
     g.add_node("c1_freeze_primary", node_c1_freeze_primary)
     g.add_node("e_hook", lambda s: node_e_hook(s, llm=llm))
     g.add_node(
+        "d1_visual_research",
+        lambda s: node_d1_visual_research(s, llm=llm, searcher=searcher),
+    )
+    g.add_node(
         "d1_visual_plan",
         lambda s: node_d1_visual_plan(s, llm=llm, image_searcher=searcher),
     )
@@ -602,7 +629,8 @@ def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
     g.add_edge("c1_research", "c1_research_enricher")
     g.add_edge("c1_research_enricher", "c1_freeze_primary")
     g.add_edge("c1_freeze_primary", "e_hook")
-    g.add_edge("e_hook", "d1_visual_plan")
+    g.add_edge("e_hook", "d1_visual_research")
+    g.add_edge("d1_visual_research", "d1_visual_plan")
     g.add_edge("d1_visual_plan", "d2_monologue")
     g.add_edge("d2_monologue", "e_monologue_check")
     g.add_edge("e_monologue_check", END)

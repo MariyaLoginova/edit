@@ -57,6 +57,14 @@ def test_personal_story_graph_uses_three_llm_calls():
                     for move in ("залипание", "спрятанное", "переворот", "тихий кадр", "потеря")
                 ]
             )
+        if "визуальный исследователь" in system:
+            return json.dumps({
+                "claim_id": claim.claim_id,
+                "queries": [
+                    {"query": f"archive {i}", "purpose": "найти первичный визуал"}
+                    for i in range(4)
+                ],
+            })
         if "режиссёр-исследователь" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
@@ -70,8 +78,10 @@ def test_personal_story_graph_uses_three_llm_calls():
                         "t_end": end,
                         "exhibit_name": name,
                         "narration_intent": "Коротко показать улику.",
+                        "context_fact": "Контекст этой улики.",
                         "what_to_show": "Архивный кадр и крупная деталь.",
                         "source_quote": "visual evidence one",
+                        "source_url": None,
                         "image_query": "black dress Chanel archive",
                     }
                     for i, (start, end, name) in enumerate(
@@ -133,4 +143,5 @@ def test_personal_story_graph_uses_three_llm_calls():
     assert out["monologue_check"].passes is True
     assert len(out["hook_options"].variants) == 5
     assert out["visual_scenario_plan"].duration_sec == 240
-    assert len(llm.calls) == 5
+    assert out["visual_research_pack"].search_status == "ok"
+    assert len(llm.calls) == 6

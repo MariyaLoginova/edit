@@ -28,6 +28,10 @@ class ProofItem(BaseModel):
         max_length=700,
         description="Дословная непрерывная цитата из первичного текста.",
     )
+    source_url: str | None = Field(
+        None,
+        description="URL внешнего подтверждения; null, если quote из первичного текста.",
+    )
 
 
 class Exhibit(BaseModel):
@@ -64,6 +68,30 @@ class VisualReference(BaseModel):
     description: str = ""
 
 
+class VisualResearchQuery(BaseModel):
+    """Запрос D1.4 к внешнему архиву / web / image search."""
+
+    query: str = Field(..., min_length=1, max_length=300)
+    purpose: str = Field(..., min_length=1, max_length=300)
+
+
+class VisualResearchFinding(BaseModel):
+    query: str = Field(..., min_length=1, max_length=300)
+    purpose: str = Field(..., min_length=1, max_length=300)
+    web_references: list[VisualReference] = Field(default_factory=list, max_length=5)
+    image_references: list[VisualReference] = Field(default_factory=list, max_length=5)
+
+
+class VisualResearchPack(BaseModel):
+    """Внешние материалы, найденные до построения визуального сценария."""
+
+    claim_id: str
+    queries: list[VisualResearchQuery] = Field(..., min_length=4, max_length=8)
+    findings: list[VisualResearchFinding] = Field(default_factory=list)
+    search_status: Literal["ok", "empty", "unavailable"] = "empty"
+    search_error: str | None = None
+
+
 class VisualPlanBeat(BaseModel):
     """Секция сценария: речь D2 строится по этому плану, монтаж — по visual_plan."""
 
@@ -72,12 +100,24 @@ class VisualPlanBeat(BaseModel):
     t_end: float = Field(..., gt=0)
     exhibit_name: str = Field(..., min_length=1, max_length=160)
     narration_intent: str = Field(..., min_length=1, max_length=400)
+    context_fact: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description=(
+            "Новое историческое/социальное знание для речи: не описание кадра."
+        ),
+    )
     what_to_show: str = Field(..., min_length=1, max_length=500)
     source_quote: str = Field(
         ...,
         min_length=1,
         max_length=700,
         description="Дословная опора для визуальной детали из первичного текста.",
+    )
+    source_url: str | None = Field(
+        None,
+        description="URL внешней опоры; null, если цитата из первичного текста.",
     )
     image_query: str = Field(..., min_length=1, max_length=300)
     image_references: list[VisualReference] = Field(default_factory=list, max_length=5)
@@ -133,6 +173,7 @@ class VisualScenarioPlan(BaseModel):
                 {
                     "exhibit_name": beat.exhibit_name,
                     "narration_intent": beat.narration_intent,
+                    "context_fact": beat.context_fact,
                     "what_to_show": beat.what_to_show,
                 }
                 for beat in self.beats
