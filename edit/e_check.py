@@ -68,13 +68,23 @@ def check_monologue(
             summary="Кодовый quality-gate заблокировал монолог без нового LLM-вызова.",
         )
     model = llm or get_personal_story_model(temperature=0.0)
+    notes = (dossier.material_notes or "").strip()
+    if len(notes) > 6000:
+        notes = notes[:6000].rstrip() + "…"
+    web_slim = []
+    for item in dossier.web_confirmations:
+        if not item.supports_claim:
+            continue
+        raw = item.model_dump(mode="json")
+        snip = str(raw.get("snippet") or "")
+        if len(snip) > 500:
+            raw["snippet"] = snip[:500].rstrip() + "…"
+        web_slim.append(raw)
     user = {
         "monologue": monologue.model_dump(mode="json"),
-        "source_material": dossier.material_notes,
+        "source_material": notes,
         "source_citation": dossier.claim.citation.model_dump(mode="json"),
-        "web_confirmations": [
-            item.model_dump(mode="json") for item in dossier.web_confirmations if item.supports_claim
-        ],
+        "web_confirmations": web_slim,
         "check_scope": {
             "only": ["dates", "names", "places", "colors", "numbers", "hard attributions"],
             "ignore": [

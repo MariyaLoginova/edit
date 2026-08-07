@@ -62,6 +62,19 @@ def write_monologue(
         raise ValueError("D2: неполное досье — " + "; ".join(problems))
     lo, hi = _word_bounds()
     model = llm or get_personal_story_model(temperature=0.3)
+    # Полная глава в payload ломает провайдеров («message too long») и жрёт деньги.
+    notes = (dossier.material_notes or "").strip()
+    if len(notes) > 4500:
+        notes = notes[:4500].rstrip() + "…"
+    web_slim = []
+    for c in dossier.web_confirmations:
+        if not c.supports_claim:
+            continue
+        item = c.model_dump(mode="json")
+        snip = str(item.get("snippet") or "")
+        if len(snip) > 500:
+            item["snippet"] = snip[:500].rstrip() + "…"
+        web_slim.append(item)
     user = {
         "dossier": {
             # Claim — якорь темы, не текст для копирования.
@@ -70,10 +83,8 @@ def write_monologue(
                 "object_anchor": dossier.claim.object_anchor,
                 "contrast_pair": dossier.claim.contrast_pair.model_dump(mode="json"),
             },
-            "material_notes": dossier.material_notes,
-            "web_confirmations": [
-                c.model_dump(mode="json") for c in dossier.web_confirmations if c.supports_claim
-            ],
+            "material_notes": notes,
+            "web_confirmations": web_slim,
         },
         "audience": load_audience(),
         "story_brief": {
@@ -176,6 +187,10 @@ def write_monologue(
         text = _MONOLOGUE_LABEL.sub("", text).strip()
         text = _WRITING_ENVELOPE.sub("", text).strip()
         text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
+        if re.search(r"(?i)message you submitted was too long|context length|maximum context", text):
+            text = ""
+            words = 0
+            continue
         if selected_hook and not text.startswith(selected_hook):
             # Жёстко подставляем выбранный хук, если модель снова ушла в свой зачин.
             rest = text
