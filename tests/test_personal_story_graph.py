@@ -63,7 +63,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "gaps": [],
                 "summary": "Фактура добавлена.",
             })
-        if "фактчекер" in system and "личного ролика" in system:
+        if "фактчекер" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
                 "factual_issues": [],

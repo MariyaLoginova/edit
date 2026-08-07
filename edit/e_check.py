@@ -1,4 +1,4 @@
-"""E-проверка личного монолога: факты и перебор (FIX-5)."""
+"""E-проверка личного монолога: только жёсткие факты (даты/имена/места)."""
 
 from __future__ import annotations
 
@@ -75,6 +75,16 @@ def check_monologue(
         "web_confirmations": [
             item.model_dump(mode="json") for item in dossier.web_confirmations if item.supports_claim
         ],
+        "check_scope": {
+            "only": ["dates", "names", "places", "colors", "numbers", "hard attributions"],
+            "ignore": [
+                "figurative framing",
+                "authorial opinion",
+                "sarcasm",
+                "rhetorical questions",
+                "style / slogans / density",
+            ],
+        },
     }
     try:
         raw = invoke_json(
