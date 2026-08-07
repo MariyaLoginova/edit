@@ -98,7 +98,34 @@ def check_monologue(
         )
         if not isinstance(raw, dict):
             raise ValueError("ожидался JSON-объект")
+        for wrapper in ("MonologueCheck", "monologue_check", "check", "result"):
+            if isinstance(raw.get(wrapper), dict):
+                raw = raw[wrapper]
+                break
         raw.setdefault("claim_id", monologue.claim_id)
+        if not raw.get("summary"):
+            raw["summary"] = (
+                raw.get("factcheck_summary")
+                or raw.get("overall_summary")
+                or raw.get("verdict")
+                or raw.get("comment")
+                or ""
+            )
+        if isinstance(raw.get("summary"), str):
+            raw["summary"] = raw["summary"][:500]
+        if "factual_issues" not in raw and "overclaim_issues" not in raw:
+            factual: list[dict] = []
+            overclaim: list[dict] = []
+            for item in raw.get("issues") or raw.get("problems") or []:
+                if not isinstance(item, dict):
+                    continue
+                kind = str(
+                    item.get("type") or item.get("kind") or item.get("category") or ""
+                ).lower()
+                bucket = overclaim if "overclaim" in kind or "density" in kind else factual
+                bucket.append(item)
+            raw["factual_issues"] = factual
+            raw["overclaim_issues"] = overclaim
         for key in ("factual_issues", "overclaim_issues"):
             normalized_issues = []
             for item in raw.get(key, []):
@@ -109,6 +136,7 @@ def check_monologue(
                         item.get("reason")
                         or item.get("explanation")
                         or item.get("comment")
+                        or item.get("problem")
                         or "Проверка не объяснила проблему.",
                     )
                     severity = item.get("severity", 3)

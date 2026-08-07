@@ -7,6 +7,16 @@ A2-прогона. Агентский batch-скрипт уже готов:
 python scripts/mine_barbie_book.py --chapters 7 9 11 14 15
 ```
 
+## Статус прогонов (личный контур E→C1.5→D2→E)
+
+| тема | claim_id | статус |
+|---|---|---|
+| Барби ← Лилли | `barbie-lilli-steal-like-artist` | много прогонов (`lilli-glm-full` и др.) |
+| Safe trend / печать безопасности | `barbie-safe-trend-stamp` | старый editorial (`safe-trend-live`), не новый D2 |
+| Карьерный PR-щит | `barbie-careers-pr-shield` | **новый** `careers-glm-full` (glm-5.2); E-check: fails на хронологии |
+| Коллекционки / лимит 35k | `barbie-collectibles-scarcity` | не прогнан |
+| Беременная Мидж / Саудовская / Lingerie / пирсинг / астронавт | — | второй пул, claims не собраны |
+
 ## Первый тестовый пул
 
 ### 1. Карьерная Барби — не мечта девочки, а PR-щит для родителей
