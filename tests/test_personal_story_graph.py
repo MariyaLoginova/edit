@@ -32,9 +32,10 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "needs_external_research": False,
                 "ending_type": "formula",
             })
+        if "редактор хука" in system:
+            return json.dumps({"text": "Чёрное платье оказалось инфраструктурой дня."})
         if "Говоришь со зрителем вслух" in system or "Рассказываешь от первого лица" in system:
-            # Нужны маркеры идеи — иначе кодовый E-gate режет без LLM.
-            return monologue + " Поэтому я бы вернула этот образ во взрослый регистр."
+            return monologue + " Финальная формула держит историю."
         if "исследователь для личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
@@ -74,6 +75,6 @@ def test_personal_story_graph_uses_three_llm_calls():
         }
     )
     assert 105 <= out["monologue"].word_count <= 115
-    assert "я бы" in out["monologue"].text.lower()
     assert out["monologue_check"].passes is True
-    assert len(llm.calls) == 3
+    assert out["hook_draft"].text
+    assert len(llm.calls) == 4

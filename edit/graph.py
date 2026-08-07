@@ -17,6 +17,7 @@ from edit.e1_traceability import audit_traceability
 from edit.e4_openings import rewrite_openings
 from edit.e_check import check_monologue
 from edit.e_editor import plan_story
+from edit.e_hook import write_hook
 from edit.e7_ideator import (
     apply_probe_to_script,
     parse_include_decision,
@@ -151,7 +152,22 @@ def node_d2_monologue(state: EditState, *, llm: Any = None) -> dict:
     brief = state.get("story_brief")
     if brief is None:
         raise ValueError("D2: нет StoryBrief от E-редактора")
-    return {"monologue": write_monologue(dossier, brief, llm=llm)}
+    hook = state.get("hook_draft")
+    return {
+        "monologue": write_monologue(
+            dossier,
+            brief,
+            hook_text=hook.text if hook is not None else brief.opening,
+            llm=llm,
+        )
+    }
+
+
+def node_e_hook(state: EditState, *, llm: Any = None) -> dict:
+    brief = state.get("story_brief")
+    if brief is None:
+        raise ValueError("E-hook: нет StoryBrief")
+    return {"hook_draft": write_hook(brief, llm=llm)}
 
 
 def node_e_monologue_check(state: EditState, *, llm: Any = None) -> dict:
@@ -540,13 +556,15 @@ def build_personal_story_graph(*, llm: Any = None, searcher: Any = None):
     g.add_node("c1_research", lambda s: node_c1_research(s, searcher=searcher))
     g.add_node("c1_research_enricher", lambda s: node_c1_research_enricher(s, llm=llm))
     g.add_node("c1_freeze_primary", node_c1_freeze_primary)
+    g.add_node("e_hook", lambda s: node_e_hook(s, llm=llm))
     g.add_node("d2_monologue", lambda s: node_d2_monologue(s, llm=llm))
     g.add_node("e_monologue_check", lambda s: node_e_monologue_check(s, llm=llm))
     g.add_edge(START, "e_editor")
     g.add_edge("e_editor", "c1_research")
     g.add_edge("c1_research", "c1_research_enricher")
     g.add_edge("c1_research_enricher", "c1_freeze_primary")
-    g.add_edge("c1_freeze_primary", "d2_monologue")
+    g.add_edge("c1_freeze_primary", "e_hook")
+    g.add_edge("e_hook", "d2_monologue")
     g.add_edge("d2_monologue", "e_monologue_check")
     g.add_edge("e_monologue_check", END)
     return g.compile()

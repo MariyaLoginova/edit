@@ -21,6 +21,7 @@ from edit.c1_research_enricher import enrich_material
 from edit.d2_monologue import write_monologue
 from edit.e_check import check_monologue
 from edit.e_editor import plan_story
+from edit.e_hook import write_hook
 from edit.llm import content_text, get_chat_model
 from edit.search import SearchHit
 from models import ClaimCard, SoftFactcheckResult
@@ -155,6 +156,9 @@ def main() -> int:
     audited.stage = "E-editor"
     brief = plan_story(claim, primary_text=source, llm=audited)
     dump(out / "01_story_brief.json", brief)
+    audited.stage = "E-hook"
+    hook = write_hook(brief, llm=audited)
+    dump(out / "01b_hook.json", hook)
 
     print("== C1/C1.5 ==")
     draft = collect_material(
@@ -179,7 +183,7 @@ def main() -> int:
 
     print("== D2 ==")
     audited.stage = "D2 monologue"
-    monologue = write_monologue(dossier, brief, llm=audited)
+    monologue = write_monologue(dossier, brief, hook_text=hook.text, llm=audited)
     dump(out / "04_monologue.json", monologue)
     print(f"WORDS={monologue.word_count}")
     print(monologue.text)
@@ -208,6 +212,10 @@ def main() -> int:
         "## Монолог",
         "",
         monologue.text,
+        "",
+        "## Хук",
+        "",
+        hook.text,
         "",
         "## E-check summary",
         "",

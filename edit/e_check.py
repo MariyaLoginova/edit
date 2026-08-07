@@ -19,9 +19,6 @@ _SOURCE_IN_SPEECH = re.compile(
     r"|лин[оа]р\s+горалик|полая\s+женщина"
     r")"
 )
-_IDEA_PITCH = re.compile(r"(?i)\b((?:поэтому\s+)?я\s+бы|а\s+если)\b")
-
-
 def _code_gates(monologue: MonologueDraft) -> list[FactIssue]:
     issues: list[FactIssue] = []
     text = monologue.text or ""
@@ -47,14 +44,6 @@ def _code_gates(monologue: MonologueDraft) -> list[FactIssue]:
                     "В озвучке назван источник/автор книги. "
                     "Источники — в описание ролика, не в речь."
                 ),
-                severity=4,
-            )
-        )
-    if not _IDEA_PITCH.search(text):
-        issues.append(
-            FactIssue(
-                quote=text[-280:] or "пустой монолог",
-                issue="Нет блока идеи с маркером «Я бы…» / «А если…?» — личный питч обязателен.",
                 severity=4,
             )
         )

@@ -25,10 +25,9 @@ def test_source_in_speech_is_blocked():
     assert any("источник" in i.issue.lower() or "озвучке" in i.issue.lower() for i in issues)
 
 
-def test_missing_idea_pitch_is_blocked():
+def test_scientific_popular_monologue_needs_no_idea_pitch():
     text = "Барби не придумали с нуля. " * 30
-    issues = _code_gates(_draft(text))
-    assert any("идеи" in i.issue.lower() or "питч" in i.issue.lower() for i in issues)
+    assert _code_gates(_draft(text)) == []
 
 
 def test_clean_monologue_passes_code_gates():
@@ -36,7 +35,6 @@ def test_clean_monologue_passes_code_gates():
         "Барби не придумали с нуля — её поставили на детскую полку из магазина для взрослых. "
         "Создательница Барби с дочкой была в Европе и привезла оттуда куклу Лилли. "
         "Фигуру оставили, соски убрали. "
-        "Поэтому я бы вернула Лилли в Agent Provocateur. "
         "Форма та же — меняется, кому она адресована."
     )
     # Добить до 120 слов без источников/дыр.

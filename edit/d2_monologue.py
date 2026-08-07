@@ -33,6 +33,7 @@ def write_monologue(
     dossier: Dossier,
     brief: StoryBrief,
     *,
+    hook_text: str | None = None,
     llm: ChatModel | None = None,
 ) -> MonologueDraft:
     if not dossier.frozen:
@@ -60,12 +61,10 @@ def write_monologue(
         "story_brief": brief.model_dump(mode="json"),
         "must_include": {
             "proof_plan": [item.model_dump(mode="json") for item in brief.proof_plan],
-            "idea_pitch": brief.idea_pitch,
-            "hook_draft": brief.opening,
+            "hook_draft": hook_text or brief.opening,
             "structure": [
                 "hook 1-2 sentences",
-                "facts/history/visual with connective tissue",
-                "idea pitch Я бы / А если",
+                "historical/scientific-popular story through three visual proofs",
                 "formula or question",
             ],
             "never_in_speech": [

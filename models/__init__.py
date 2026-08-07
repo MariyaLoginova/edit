@@ -25,6 +25,7 @@ from models.pipeline import ScoredClaim
 from models.personal_story import (
     EndingType,
     FactIssue,
+    HookDraft,
     MonologueCheck,
     MonologueDraft,
     ProofItem,
@@ -53,6 +54,7 @@ __all__ = [
     "DropReason",
     "EndingType",
     "FactIssue",
+    "HookDraft",
     "GenerationBrief",
     "IdeaProbe",
     "ImageBuckets",

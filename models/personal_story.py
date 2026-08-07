@@ -22,6 +22,10 @@ class ProofItem(BaseModel):
     )
 
 
+class HookDraft(BaseModel):
+    text: str = Field(..., min_length=1, max_length=280)
+
+
 class StoryBrief(BaseModel):
     claim_id: str
     main_thought: str = Field("", max_length=400)
