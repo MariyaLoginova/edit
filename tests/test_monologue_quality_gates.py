@@ -26,7 +26,7 @@ def test_source_in_speech_is_blocked():
 
 
 def test_scientific_popular_monologue_needs_no_idea_pitch():
-    text = "Барби не придумали с нуля. " * 30
+    text = "Барби не придумали с нуля. " * 50
     assert _code_gates(_draft(text)) == []
 
 
@@ -37,6 +37,6 @@ def test_clean_monologue_passes_code_gates():
         "Фигуру оставили, соски убрали. "
         "Форма та же — меняется, кому она адресована."
     )
-    # Добить до 120 слов без источников/дыр.
-    text = text + (" И дальше ещё жёстче по деталям." * 20)
+    # Добить до 200+ слов без источников/дыр.
+    text = text + (" И дальше ещё жёстче по деталям." * 40)
     assert _code_gates(_draft(text)) == []

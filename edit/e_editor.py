@@ -11,6 +11,13 @@ from edit.audience import load_audience
 from edit.config import ROOT
 from edit.llm import ChatModel, content_text, parse_json_payload
 from edit.model_routing import get_personal_story_model
+from edit.library import (
+    NONE_ID,
+    idea_trigger_menu,
+    load_idea_triggers,
+    normalize_library_id,
+)
+from edit.structures import normalize_structure_id, structure_menu
 from models import ClaimCard, EndingType, StoryBrief
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_editor.txt"
@@ -101,6 +108,8 @@ def plan_story(
                         "primary_text": primary_text,
                         "audience": load_audience(),
                         "menu_story_methods": load_story_methods(),
+                        "menu_reel_structures": structure_menu(),
+                        "menu_idea_triggers": idea_trigger_menu(),
                         "hook_triggers": load_hook_triggers(),
                         "contract_repair": _repair_note,
                     }
@@ -136,6 +145,11 @@ def plan_story(
         "pitch": "idea_pitch",
         "idea": "idea_pitch",
         "idea_probe": "idea_pitch",
+        "structure": "selected_structure",
+        "structure_id": "selected_structure",
+        "reel_structure": "selected_structure",
+        "idea_trigger": "selected_idea_trigger",
+        "idea_angle": "selected_idea_trigger",
     }
     for source, target in aliases.items():
         if target not in raw and source in raw:
@@ -294,6 +308,13 @@ def plan_story(
         ]
     raw.setdefault("claim_id", claim.claim_id)
     raw.setdefault("ending_type", EndingType.formula.value)
+    raw["selected_structure"] = normalize_structure_id(
+        raw.get("selected_structure")
+    )
+    raw["selected_idea_trigger"] = normalize_library_id(
+        raw.get("selected_idea_trigger"),
+        known_ids={item["id"] for item in load_idea_triggers()} | {NONE_ID},
+    )
     try:
         brief = StoryBrief.model_validate(raw)
         _validate_visual_contract(brief, primary_text)

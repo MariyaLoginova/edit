@@ -10,7 +10,7 @@ from tests.fakes import FakeLLM, FakeSearcher
 
 def test_personal_story_graph_uses_three_llm_calls():
     claim = make_claim()
-    monologue = " ".join(["я"] * 104)
+    monologue = " ".join(["я"] * 210)
 
     def router(messages):
         system = messages[0]["content"]
@@ -30,6 +30,8 @@ def test_personal_story_graph_uses_three_llm_calls():
                     {"point": "деталь 3", "source_quote": "visual evidence three"},
                 ],
                 "needs_external_research": False,
+                "selected_structure": "myth_bust",
+                "selected_idea_trigger": "myth_series",
                 "ending_type": "formula",
             })
         if "первые 3 секунды" in system:
@@ -47,8 +49,8 @@ def test_personal_story_graph_uses_three_llm_calls():
                     for move in ("залипание", "спрятанное", "переворот", "тихий кадр", "потеря")
                 ]
             )
-        if "Говоришь со зрителем вслух" in system or "Рассказываешь от первого лица" in system:
-            return monologue + " Финальная формула держит историю."
+        if "Говоришь со зрителем" in system or "Рассказываешь от первого лица" in system:
+            return monologue + " Спиздели или вдохновились?"
         if "исследователь для личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
@@ -63,7 +65,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "gaps": [],
                 "summary": "Фактура добавлена.",
             })
-        if "фактчекер" in system and "личного ролика" in system:
+        if "фактчекер" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
                 "factual_issues": [],
@@ -87,7 +89,7 @@ def test_personal_story_graph_uses_three_llm_calls():
             ),
         }
     )
-    assert 105 <= out["monologue"].word_count <= 115
+    assert 200 <= out["monologue"].word_count <= 300
     assert out["monologue_check"].passes is True
     assert len(out["hook_options"].variants) == 5
     assert len(llm.calls) == 4

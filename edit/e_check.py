@@ -1,4 +1,4 @@
-"""E-проверка личного монолога: факты и перебор (FIX-5)."""
+"""E-проверка личного монолога: только жёсткие факты (даты/имена/места)."""
 
 from __future__ import annotations
 
@@ -22,13 +22,13 @@ _SOURCE_IN_SPEECH = re.compile(
 def _code_gates(monologue: MonologueDraft) -> list[FactIssue]:
     issues: list[FactIssue] = []
     text = monologue.text or ""
-    if monologue.word_count < 105:
+    if monologue.word_count < 200:
         issues.append(
             FactIssue(
                 quote=text[:280] or "пустой монолог",
                 issue=(
                     f"Монолог слишком короткий ({monologue.word_count} слов): "
-                    "в нём нельзя удержать три доказательные детали."
+                    "нужно 200–300 слов мяса, не конспект."
                 ),
                 severity=4,
             )
@@ -68,13 +68,33 @@ def check_monologue(
             summary="Кодовый quality-gate заблокировал монолог без нового LLM-вызова.",
         )
     model = llm or get_personal_story_model(temperature=0.0)
+    notes = (dossier.material_notes or "").strip()
+    if len(notes) > 6000:
+        notes = notes[:6000].rstrip() + "…"
+    web_slim = []
+    for item in dossier.web_confirmations:
+        if not item.supports_claim:
+            continue
+        raw = item.model_dump(mode="json")
+        snip = str(raw.get("snippet") or "")
+        if len(snip) > 500:
+            raw["snippet"] = snip[:500].rstrip() + "…"
+        web_slim.append(raw)
     user = {
         "monologue": monologue.model_dump(mode="json"),
-        "source_material": dossier.material_notes,
+        "source_material": notes,
         "source_citation": dossier.claim.citation.model_dump(mode="json"),
-        "web_confirmations": [
-            item.model_dump(mode="json") for item in dossier.web_confirmations if item.supports_claim
-        ],
+        "web_confirmations": web_slim,
+        "check_scope": {
+            "only": ["dates", "names", "places", "colors", "numbers", "hard attributions"],
+            "ignore": [
+                "figurative framing",
+                "authorial opinion",
+                "sarcasm",
+                "rhetorical questions",
+                "style / slogans / density",
+            ],
+        },
     }
     try:
         raw = invoke_json(

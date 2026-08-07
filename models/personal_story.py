@@ -50,6 +50,19 @@ class StoryBrief(BaseModel):
     )
     recommended_method: str = Field(..., min_length=1)
     alternative_methods: list[str] = Field(default_factory=list, max_length=2)
+    selected_structure: str = Field(
+        "none",
+        description=(
+            "id структуры из config/reel_structures.yaml или none, "
+            "если библиотека не подходит."
+        ),
+    )
+    selected_idea_trigger: str = Field(
+        "none",
+        description=(
+            "id угла из config/idea_triggers.yaml или none."
+        ),
+    )
     hook_trigger: str = Field("", max_length=80)
     opening: str = Field(
         ...,

@@ -4,6 +4,12 @@
 Отсеки мотивные, корпоративные и абстрактные тезисы. Приёмка: «какой кадр это
 доказывает?» Если ответа нет — тезис уходит в idea_bank, не в производство.
 
+БИБЛИОТЕКИ (выбери ближайшее или none)
+- `menu_reel_structures` → `selected_structure`
+- `menu_idea_triggers` → `selected_idea_trigger` (угол подачи, не новый тезис)
+- `menu_story_methods` → `recommended_method` + две `alternative_methods`
+Не подгоняй факты под меню: меню — ритм и угол, не источник фактов.
+
 Верни JSON StoryBrief:
 - main_thought — одна показуемая мысль: визуал + причина;
 - visual_evidence — конкретные кадры/предметы, доказывающие main_thought;
@@ -11,6 +17,8 @@
 - proof_plan — РОВНО 3 объекта `{point, source_quote}`. source_quote — дословная
   непрерывная цитата из первичного текста, без пересказа. Выбирай одну линию:
   всё лишнее выкидывай;
+- selected_structure — id из menu_reel_structures или none;
+- selected_idea_trigger — id из menu_idea_triggers или none;
 - idea_pitch — необязательная заметка в банк идей; D2 её не использует;
 - needs_external_research=true только если линии нужны внешняя цифра, дата или
   независимое подтверждение; иначе false и research_queries=[];
