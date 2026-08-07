@@ -1,33 +1,16 @@
 from __future__ import annotations
 
 from edit.d2_monologue import write_monologue
-from models import EndingType, ProofItem, StoryBrief
+from models import EndingType
+from tests.brief_factory import make_argument_brief
 from tests.claim_factory import make_frozen_dossier
 from tests.fakes import FakeLLM
 
 
-def test_d2_user_payload_includes_full_structure_example():
+def test_d2_user_payload_includes_full_structure_example_for_argument():
     dossier = make_frozen_dossier()
-    brief = StoryBrief(
-        claim_id="x",
-        main_thought="Костюм показывает разрешённый образ работы.",
-        angle="сделать наоборот — костюм не профессия, а разрешение",
-        why_viewer="Ты тоже собираешь «безопасный» образ на работу.",
-        visual_evidence="твидовый костюм, длинные перчатки и разноцветных динозавриков",
-        recommended_method="a_vot_nifiga",
-        alternative_methods=[],
+    brief = make_argument_brief(
         selected_structure="myth_bust",
-        opening="Кадр ломает ожидание.",
-        audience_reason="Ты тоже собираешь «безопасный» образ на работу.",
-        share_reason="Есть конкретный образ.",
-        proof_plan=[
-            ProofItem(point=f"деталь {i}", source_quote=q)
-            for i, q in enumerate(
-                ("твидовый костюм", "длинные перчатки", "разноцветных динозавриков"),
-                start=1,
-            )
-        ],
-        idea_pitch="Я бы поставила эти костюмы в один ряд.",
         ending_type=EndingType.reactive,
     )
     seen: dict = {}
@@ -40,3 +23,32 @@ def test_d2_user_payload_includes_full_structure_example():
     assert "myth_bust" in seen["user"]
     assert "full_example" in seen["user"]
     assert "Ретроградный Меркурий" in seen["user"]
+    # Служебные поля не должны утечь в D2.
+    assert "why_viewer" not in seen["user"]
+    assert "audience_reason" not in seen["user"]
+    assert "share_reason" not in seen["user"]
+    assert "idea_pitch" not in seen["user"]
+    assert "Кому это интересно" not in seen["user"]
+
+
+def test_d2_retries_on_service_speech_leak():
+    dossier = make_frozen_dossier()
+    brief = make_argument_brief()
+    calls = 0
+
+    def router(messages):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return (
+                "Кадр ломает ожидание. "
+                + ("деталь " * 200)
+                + "Кому это интересно? Всем, кто рисует. Что думаешь?"
+            )
+        return ("текст " * 220) + "Какая больше нравится?"
+
+    monologue = write_monologue(
+        dossier, brief, hook_text="Кадр ломает ожидание.", llm=FakeLLM(router)
+    )
+    assert "кому это интересно" not in monologue.text.lower()
+    assert calls == 2

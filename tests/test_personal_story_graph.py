@@ -14,27 +14,33 @@ def test_personal_story_graph_uses_three_llm_calls():
 
     def router(messages):
         system = messages[0]["content"]
-        if "редактор личного канала" in system:
+        if "редактор канала" in system or "редактор личного канала" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
+                "format": "argument",
                 "main_thought": "Платье работает как инфраструктура городского дня.",
                 "angle": "увеличить до предела — платье как городская инженерия",
-                "why_viewer": "Ты надеваешь «нейтральное», чтобы день тебя не тормозил.",
+                "why_viewer": "Служебно: нейтральное платье как инженерия дня.",
                 "visual_evidence": "чёрное прямое платье и городская коммютерша",
                 "recommended_method": "a_vot_nifiga",
                 "alternative_methods": ["bylo_stalo"],
                 "opening": "Неожиданный факт.",
-                "audience_reason": "Ты надеваешь «нейтральное», чтобы день тебя не тормозил.",
+                "audience_reason": "Служебно.",
                 "share_reason": "Есть чем поделиться.",
                 "proof_plan": [
                     {"point": "деталь 1", "source_quote": "visual evidence one"},
                     {"point": "деталь 2", "source_quote": "visual evidence two"},
                     {"point": "деталь 3", "source_quote": "visual evidence three"},
                 ],
+                "conclusion": {
+                    "source_quote": "visual evidence one",
+                    "plain": "Платье держит день целиком.",
+                },
                 "needs_external_research": False,
                 "selected_structure": "myth_bust",
                 "selected_idea_trigger": "myth_series",
                 "ending_type": "formula",
+                "topic_ready": True,
             })
         if "первые 3 секунды" in system:
             return json.dumps(
@@ -51,8 +57,12 @@ def test_personal_story_graph_uses_three_llm_calls():
                     for move in ("залипание", "спрятанное", "переворот", "тихий кадр", "потеря")
                 ]
             )
-        if "Говоришь со зрителем" in system or "Рассказываешь от первого лица" in system:
-            return monologue + " Спиздели или вдохновились?"
+        if (
+            "рассматриваешь" in system.lower()
+            or "Говоришь со зрителем" in system
+            or "от первого лица" in system
+        ):
+            return monologue + " Какое страннее?"
         if "исследователь для личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
@@ -75,7 +85,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "passes": True,
                 "summary": "Факты и перебор в норме.",
             })
-        raise AssertionError(system)
+        raise AssertionError(system[:200])
 
     searcher = FakeSearcher(
         web=[SearchHit(url="https://example.com", title="source", snippet="evidence")]

@@ -109,9 +109,7 @@ def check_monologue(
     notes = (dossier.material_notes or "").strip()
     anchors = [dossier.claim.citation.quote]
     if brief is not None:
-        anchors.extend(item.source_quote for item in brief.proof_plan)
-        if brief.visual_evidence:
-            anchors.append(brief.visual_evidence)
+        anchors.extend(brief.source_anchors())
     source_material = _compose_source_for_check(notes, anchors)
     web_slim = []
     for item in dossier.web_confirmations:

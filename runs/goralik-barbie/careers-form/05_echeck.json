@@ -1,0 +1,13 @@
+{
+  "claim_id": "barbie-career-costume-permission",
+  "factual_issues": [
+    {
+      "quote": "Барби-астронавт. Тут уже появляется космическая форма",
+      "issue": "В источнике и proof_anchors для первой Барби-астронавта указан 1965 год, но в монологе год не назван. Проверяемого противоречия нет.",
+      "severity": 3
+    }
+  ],
+  "overclaim_issues": [],
+  "passes": true,
+  "summary": "pass"
+}

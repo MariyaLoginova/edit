@@ -71,22 +71,11 @@ def main() -> int:
     dump(OUT / "02_editor_brief.json", brief)
     results = []
     for method in METHODS:
-        selected = StoryBrief(
-            claim_id=brief.claim_id,
-            main_thought=brief.main_thought,
-            angle=brief.angle,
-            why_viewer=brief.why_viewer,
-            visual_evidence=brief.visual_evidence,
-            recommended_method=method,
-            alternative_methods=[m for m in METHODS if m != method],
-            hook_trigger=brief.hook_trigger,
-            opening=brief.opening,
-            audience_reason=brief.audience_reason,
-            share_reason=brief.share_reason,
-            proof_plan=brief.proof_plan,
-            idea_pitch=brief.idea_pitch,
-            needs_external_research=brief.needs_external_research,
-            ending_type=brief.ending_type,
+        selected = brief.model_copy(
+            update={
+                "recommended_method": method,
+                "alternative_methods": [m for m in METHODS if m != method],
+            }
         )
         monologue = write_monologue(dossier, selected, llm=llm)
         check = check_monologue(monologue, dossier, brief=selected, llm=llm)
