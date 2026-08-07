@@ -24,7 +24,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                 "share_reason": "Есть чем поделиться.",
                 "ending_type": "formula",
             })
-        if "Расскажи от первого лица" in system:
+        if "Рассказываешь от первого лица" in system:
             return monologue
         if "фактчекер личного ролика" in system:
             return json.dumps({
