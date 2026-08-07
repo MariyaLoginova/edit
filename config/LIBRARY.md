@@ -14,10 +14,13 @@
 | `knowledge/e_editor_menu.txt` | 8 углов фантограммы + 4 признака темы → system E | FIX-7 · владелец |
 | `knowledge/e_hook_menu.txt` | 5 ходов открытия + стоп-лист → system E-hook | FIX-7 |
 | `knowledge/d2_methods_menu.txt` | 9 методик name+when → system D2 | FIX-7 · Фломастер |
+| `stop_lists.yaml` | служебные обороты + banned phrases для валидатора D2 | EDIT-FORM |
 
 Знания в `knowledge/*.txt` — **статичные меню** (не RAG). Вставляются в
 system prompt при сборке (`edit.library.compose_system_prompt`). Держать
 короткими: длинный промпт сушит текст.
+
+Форма ролика: `docs/FORM.md`.
 
 ## Что взяли
 

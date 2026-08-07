@@ -61,3 +61,14 @@ def test_compose_system_prompt_appends_knowledge_menu():
     assert "УГЛЫ ФАНТОГРАММЫ" in text
     assert "ЗНАНИЯ" in compose_system_prompt(E_HOOK_PROMPT, "e_hook_menu")
     assert "МЕТОДИКИ" in compose_system_prompt(D2_PROMPT, "d2_methods_menu")
+
+
+def test_stop_lists_loaded_from_config():
+    from edit.library import banned_speech_phrases, load_stop_lists
+
+    lists = load_stop_lists()
+    assert "кому это интересно" in lists["service_speech"]
+    assert "досмотри" in lists["service_speech"]
+    banned = banned_speech_phrases()
+    assert "а вот нифига" in banned
+    assert "всем, кто" in banned

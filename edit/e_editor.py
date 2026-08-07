@@ -19,7 +19,7 @@ from edit.library import (
     normalize_library_id,
 )
 from edit.structures import normalize_structure_id, structure_menu
-from models import ClaimCard, EndingType, StoryBrief
+from models import ClaimCard, EndingType, ReelFormat, StoryBrief
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_editor.txt"
 METHODS_PATH = ROOT / "config" / "story_methods.yaml"
@@ -158,10 +158,27 @@ def plan_story(
         "reel_structure": "selected_structure",
         "idea_trigger": "selected_idea_trigger",
         "idea_angle": "selected_idea_trigger",
+        "reel_format": "format",
+        "story_format": "format",
+        "вывод": "conclusion",
+        "final_thought": "conclusion",
     }
     for source, target in aliases.items():
         if target not in raw and source in raw:
             raw[target] = raw[source]
+    fmt = str(raw.get("format") or "excursion").strip().lower()
+    if fmt in {"visual_research", "excursion", "экскурсия", "tour"}:
+        raw["format"] = ReelFormat.excursion.value
+    elif fmt in {"argument", "аргумент", "proof"}:
+        raw["format"] = ReelFormat.argument.value
+    else:
+        raw["format"] = ReelFormat.excursion.value
+    if "topic_ready" in raw:
+        tr = raw["topic_ready"]
+        if isinstance(tr, str):
+            raw["topic_ready"] = tr.strip().lower() not in {"false", "0", "нет", "no"}
+    else:
+        raw["topic_ready"] = True
     raw.setdefault("main_thought", raw.get("claim") or claim.claim)
     if isinstance(raw.get("main_thought"), str):
         raw["main_thought"] = raw["main_thought"][:400]
@@ -210,7 +227,7 @@ def plan_story(
                 str(x).strip() for x in raw["visual_evidence"] if str(x).strip()
             )
     if isinstance(raw.get("visual_evidence"), str):
-        raw["visual_evidence"] = raw["visual_evidence"][:200]
+        raw["visual_evidence"] = raw["visual_evidence"][:400]
     method = (
         raw.get("story_method")
         or raw.get("story_type")
@@ -312,6 +329,85 @@ def plan_story(
             else {"point": str(item), "source_quote": ""}
             for item in proof_plan
         ]
+    else:
+        raw["proof_plan"] = []
+    exhibits = raw.get("exhibits") or raw.get("exhibit_list") or raw.get("items")
+    if isinstance(exhibits, list):
+        normalized_exhibits = []
+        for item in exhibits:
+            if isinstance(item, str):
+                normalized_exhibits.append(
+                    {"name": item[:120], "what_to_see": item[:280]}
+                )
+                continue
+            if not isinstance(item, dict):
+                continue
+            normalized_exhibits.append(
+                {
+                    "name": (
+                        item.get("name")
+                        or item.get("title")
+                        or item.get("label")
+                        or ""
+                    ),
+                    "what_to_see": (
+                        item.get("what_to_see")
+                        or item.get("see")
+                        or item.get("detail")
+                        or item.get("visual")
+                        or item.get("note")
+                        or ""
+                    ),
+                    "note": item.get("note") or item.get("line") or None,
+                    "source_quote": (
+                        item.get("source_quote")
+                        or item.get("quote")
+                        or item.get("citation")
+                        or None
+                    ),
+                }
+            )
+        raw["exhibits"] = normalized_exhibits
+    else:
+        raw.setdefault("exhibits", [])
+    conclusion = raw.get("conclusion")
+    if isinstance(conclusion, str):
+        raw["conclusion"] = {
+            "source_quote": raw.get("conclusion_quote") or "",
+            "plain": conclusion,
+        }
+    elif isinstance(conclusion, dict):
+        raw["conclusion"] = {
+            "source_quote": (
+                conclusion.get("source_quote")
+                or conclusion.get("quote")
+                or conclusion.get("citation")
+                or ""
+            ),
+            "plain": (
+                conclusion.get("plain")
+                or conclusion.get("text")
+                or conclusion.get("spoken")
+                or conclusion.get("line")
+                or ""
+            ),
+        }
+    elif not conclusion:
+        raw["conclusion"] = {
+            "source_quote": raw.get("conclusion_quote") or "",
+            "plain": raw.get("conclusion_plain") or raw.get("takeaway") or "",
+        }
+    if (
+        raw.get("format") == ReelFormat.excursion.value
+        and not raw.get("visual_evidence")
+        and raw.get("exhibits")
+    ):
+        names = [
+            str(e.get("name") or "").strip()
+            for e in raw["exhibits"]
+            if isinstance(e, dict) and e.get("name")
+        ]
+        raw["visual_evidence"] = "; ".join(names)[:400]
     if isinstance(raw.get("idea_pitch"), dict):
         pitch = raw["idea_pitch"]
         raw["idea_pitch"] = (
@@ -354,6 +450,17 @@ def plan_story(
         raw.get("selected_idea_trigger"),
         known_ids={item["id"] for item in load_idea_triggers()} | {NONE_ID},
     )
+    if raw.get("topic_ready") is False:
+        pitch = raw.get("idea_pitch") or "нет вывода в источнике"
+        raise ValueError(
+            f"тема не готова (нет вывода в источнике) — в банк идей: {pitch}"
+        )
+    if isinstance(raw.get("conclusion"), dict) and not raw["conclusion"].get("plain"):
+        raise ValueError("нужен conclusion.plain — вывод источника живыми словами")
+    if isinstance(raw.get("conclusion"), dict) and not raw["conclusion"].get(
+        "source_quote"
+    ):
+        raise ValueError("нужен conclusion.source_quote из первичного текста")
     try:
         brief = StoryBrief.model_validate(raw)
         _validate_visual_contract(brief, primary_text)
@@ -368,15 +475,16 @@ def plan_story(
             _repair_attempt=1,
             _repair_note=(
                 f"Предыдущий ответ отклонён валидатором: {exc}. Верни заново валидный "
-                "StoryBrief: angle (не хронология), why_viewer (связь со зрителем), "
-                "visual_evidence, ровно 3 proof_plan с дословными source_quote — "
-                "каждая quote должна буквально встречаться в primary_text."
+                "StoryBrief по EDIT-FORM: format=excursion (6–10 exhibits) или "
+                "argument (ровно 3 proof_plan); angle не хронология; "
+                "conclusion.source_quote — дословная цитата из primary_text; "
+                "conclusion.plain — то же живыми словами."
             ),
         )
 
 
 def _validate_visual_contract(brief: StoryBrief, primary_text: str) -> None:
-    """Кодовая приёмка: angle/why_viewer и три дословные опоры."""
+    """Кодовая приёмка EDIT-FORM: angle, вывод из источника, единицы формата."""
     if not brief.angle.strip():
         raise ValueError("нужен angle — ход, ломающий линейность")
     if _CHRONOLOGY_ANGLE.search(brief.angle.strip()):
@@ -384,15 +492,38 @@ def _validate_visual_contract(brief: StoryBrief, primary_text: str) -> None:
             "angle не должен быть хронологией; возьми ход фантограммы"
         )
     if not brief.why_viewer.strip():
-        raise ValueError("нужен why_viewer — связь со зрителем")
+        raise ValueError("нужен why_viewer — служебная связь со зрителем")
     if not primary_text:
-        raise ValueError("нужен primary_text для проверки proof_plan")
-    missing: list[str] = []
-    for item in brief.proof_plan:
-        located = _locate_source_quote(item.source_quote, primary_text)
-        if located is None:
-            missing.append(item.source_quote)
-        else:
-            item.source_quote = located[:700]
-    if missing:
-        raise ValueError("source_quote не найдена в первичном тексте: " + missing[0][:120])
+        raise ValueError("нужен primary_text для проверки цитат")
+    located_conclusion = _locate_source_quote(
+        brief.conclusion.source_quote, primary_text
+    )
+    if located_conclusion is None:
+        raise ValueError(
+            "conclusion.source_quote не найдена в первичном тексте: "
+            + brief.conclusion.source_quote[:120]
+        )
+    brief.conclusion.source_quote = located_conclusion[:500]
+    if brief.format == ReelFormat.argument:
+        missing: list[str] = []
+        for item in brief.proof_plan:
+            located = _locate_source_quote(item.source_quote, primary_text)
+            if located is None:
+                missing.append(item.source_quote)
+            else:
+                item.source_quote = located[:700]
+        if missing:
+            raise ValueError(
+                "source_quote не найдена в первичном тексте: " + missing[0][:120]
+            )
+    else:
+        for exhibit in brief.exhibits:
+            if not exhibit.source_quote:
+                continue
+            located = _locate_source_quote(exhibit.source_quote, primary_text)
+            if located is None:
+                raise ValueError(
+                    "exhibit.source_quote не найдена в первичном тексте: "
+                    + exhibit.source_quote[:120]
+                )
+            exhibit.source_quote = located[:700]

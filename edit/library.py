@@ -42,6 +42,22 @@ def compose_system_prompt(prompt_path: Path, knowledge_name: str | None = None) 
     )
 
 
+def load_stop_lists() -> dict[str, list[str]]:
+    path = ROOT / "config" / "stop_lists.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: ожидался объект")
+    return {
+        "service_speech": [str(x) for x in (data.get("service_speech") or [])],
+        "banned_phrases": [str(x) for x in (data.get("banned_phrases") or [])],
+    }
+
+
+def banned_speech_phrases() -> list[str]:
+    lists = load_stop_lists()
+    return [*lists["service_speech"], *lists["banned_phrases"]]
+
+
 def load_idea_triggers() -> list[dict[str, Any]]:
     return _load_list(ROOT / "config" / "idea_triggers.yaml")
 
