@@ -73,6 +73,8 @@ def main() -> int:
     for method in METHODS:
         selected = StoryBrief(
             claim_id=brief.claim_id,
+            main_thought=brief.main_thought,
+            visual_evidence=brief.visual_evidence,
             recommended_method=method,
             alternative_methods=[m for m in METHODS if m != method],
             hook_trigger=brief.hook_trigger,
@@ -80,6 +82,8 @@ def main() -> int:
             audience_reason=brief.audience_reason,
             share_reason=brief.share_reason,
             proof_plan=brief.proof_plan,
+            idea_pitch=brief.idea_pitch,
+            needs_external_research=brief.needs_external_research,
             ending_type=brief.ending_type,
         )
         monologue = write_monologue(dossier, selected, llm=llm)

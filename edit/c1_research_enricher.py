@@ -20,6 +20,13 @@ def enrich_material(
     """Добавляет в material_notes только факты, привязанные к web confirmation."""
     if dossier.frozen:
         raise ValueError("C1.5: dossier уже frozen")
+    if not brief.needs_external_research:
+        return dossier, ResearchPack(
+            claim_id=dossier.claim_id,
+            facts=[],
+            gaps=[],
+            summary="C1.5 пропущен: визуальный тезис полностью опирается на первичный текст.",
+        )
     model = llm or get_personal_story_model(temperature=0.0)
     response = model.invoke(
         [

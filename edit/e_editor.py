@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -15,6 +16,11 @@ from models import ClaimCard, EndingType, StoryBrief
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_editor.txt"
 METHODS_PATH = ROOT / "config" / "story_methods.yaml"
 HOOKS_PATH = ROOT / "config" / "hook_triggers.yaml"
+_ABSTRACT_THESIS = re.compile(
+    r"(?i)\b(репутацион\w*|pr[- ]?щит|маркетингов\w*|бизнес[- ]?логик\w*|"
+    r"корпоративн\w*|прибыл\w*)\b"
+)
+_VISUAL_WORD = re.compile(r"[а-яё]{4,}", re.I)
 
 
 def load_story_methods() -> list[dict]:
@@ -30,6 +36,8 @@ def plan_story(
     *,
     primary_text: str = "",
     llm: ChatModel | None = None,
+    _repair_attempt: int = 0,
+    _repair_note: str = "",
 ) -> StoryBrief:
     model = llm or get_personal_story_model(temperature=0.2)
     response = model.invoke(
@@ -44,6 +52,7 @@ def plan_story(
                         "audience": load_audience(),
                         "menu_story_methods": load_story_methods(),
                         "hook_triggers": load_hook_triggers(),
+                        "contract_repair": _repair_note,
                     }
                 ),
             },
@@ -84,6 +93,8 @@ def plan_story(
     raw.setdefault("main_thought", raw.get("claim") or claim.claim)
     if isinstance(raw.get("main_thought"), str):
         raw["main_thought"] = raw["main_thought"][:400]
+    if isinstance(raw.get("visual_evidence"), str):
+        raw["visual_evidence"] = raw["visual_evidence"][:200]
     method = (
         raw.get("story_method")
         or raw.get("story_type")
@@ -171,11 +182,19 @@ def plan_story(
     proof_plan = raw.get("proof_plan")
     if isinstance(proof_plan, list):
         raw["proof_plan"] = [
-            item.get("detail") or item.get("text") or item.get("fact") or ""
+            {
+                "point": item.get("point") or item.get("detail") or item.get("text") or item.get("fact") or "",
+                "source_quote": (
+                    item.get("source_quote")
+                    or item.get("quote")
+                    or item.get("citation")
+                    or ""
+                ),
+            }
             if isinstance(item, dict)
-            else item
+            else {"point": str(item), "source_quote": ""}
             for item in proof_plan
-        ][:3]
+        ]
     if isinstance(raw.get("idea_pitch"), dict):
         pitch = raw["idea_pitch"]
         raw["idea_pitch"] = (
@@ -191,7 +210,9 @@ def plan_story(
         raw["idea_pitch"] = (
             "А если вернуть этот образ туда, откуда он родом — во взрослый регистр?"
         )
-    if not raw.get("research_queries"):
+    if not raw.get("needs_external_research"):
+        raw["research_queries"] = []
+    elif not raw.get("research_queries"):
         raw["research_queries"] = (
             raw.get("queries")
             or raw.get("search_queries")
@@ -209,4 +230,44 @@ def plan_story(
         ]
     raw.setdefault("claim_id", claim.claim_id)
     raw.setdefault("ending_type", EndingType.formula.value)
-    return StoryBrief.model_validate(raw)
+    try:
+        brief = StoryBrief.model_validate(raw)
+        _validate_visual_contract(brief, primary_text)
+        return brief
+    except Exception as exc:
+        if _repair_attempt >= 1:
+            raise ValueError(f"E-редактор не выполнил контракт после retry: {exc}") from exc
+        return plan_story(
+            claim,
+            primary_text=primary_text,
+            llm=model,
+            _repair_attempt=1,
+            _repair_note=(
+                f"Предыдущий ответ отклонён валидатором: {exc}. Верни заново валидный "
+                "StoryBrief: visual_evidence, ровно 3 proof_plan с дословными "
+                "source_quote, каждая quote должна буквально встречаться в primary_text."
+            ),
+        )
+
+
+def _validate_visual_contract(brief: StoryBrief, primary_text: str) -> None:
+    """Кодовая приёмка: показываемый тезис и три дословные опоры."""
+    if _ABSTRACT_THESIS.search(brief.main_thought):
+        raise ValueError(
+            "main_thought мотивный/корпоративный; нужен показываемый визуальный тезис"
+        )
+    if not primary_text:
+        raise ValueError("нужен primary_text для проверки proof_plan")
+    missing = [
+        item.source_quote
+        for item in brief.proof_plan
+        if item.source_quote not in primary_text
+    ]
+    if missing:
+        raise ValueError("source_quote не найдена в первичном тексте: " + missing[0][:120])
+    source_words = set(_VISUAL_WORD.findall(primary_text.lower()))
+    evidence_words = set(_VISUAL_WORD.findall(brief.visual_evidence.lower()))
+    if len(source_words & evidence_words) < 2:
+        raise ValueError(
+            "visual_evidence не называет конкретные предметы/кадры из первичного текста"
+        )

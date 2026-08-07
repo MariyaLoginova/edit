@@ -25,7 +25,7 @@ _IDEA_PITCH = re.compile(r"(?i)\b((?:поэтому\s+)?я\s+бы|а\s+если)
 def _code_gates(monologue: MonologueDraft) -> list[FactIssue]:
     issues: list[FactIssue] = []
     text = monologue.text or ""
-    if monologue.word_count < 120:
+    if monologue.word_count < 105:
         issues.append(
             FactIssue(
                 quote=text[:280] or "пустой монолог",

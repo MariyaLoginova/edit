@@ -20,8 +20,7 @@ _MONOLOGUE_LABEL = re.compile(r"(?im)^\s*готовый\s+монолог\s*:\s*"
 
 
 def _word_bounds() -> tuple[int, int]:
-    # Личный формат: 150–300 слов, как задано редакционным контрактом.
-    return 150, 300
+    return 105, 115
 
 
 def _methods() -> list[dict]:
@@ -60,7 +59,7 @@ def write_monologue(
         "audience": load_audience(),
         "story_brief": brief.model_dump(mode="json"),
         "must_include": {
-            "proof_plan": brief.proof_plan,
+            "proof_plan": [item.model_dump(mode="json") for item in brief.proof_plan],
             "idea_pitch": brief.idea_pitch,
             "hook_draft": brief.opening,
             "structure": [
@@ -81,22 +80,41 @@ def write_monologue(
         ),
         "word_limit": {"min": lo, "max": hi},
     }
-    text = content_text(
-        model.invoke(
-            [
-                {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
-                {"role": "user", "content": str(user)},
-            ]
-        )
-    ).strip()
-    if is_policy_text(text):
-        raise PolicyBlockedError(text)
-    text = re.sub(r"^```.*?\n|\n```$", "", text, flags=re.S).strip()
-    text = _MONOLOGUE_LABEL.sub("", text).strip()
-    text = _WRITING_ENVELOPE.sub("", text).strip()
-    text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
-    words = len(re.findall(r"\S+", text))
-    # Длина, источники в речи и блок идеи — на E-проверке, без D2-retry.
+    text = ""
+    words = 0
+    for attempt in range(3):
+        response = content_text(
+            model.invoke(
+                [
+                    {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
+                    {
+                        "role": "user",
+                        "content": str(
+                            user
+                            if attempt == 0
+                            else {
+                                **user,
+                                "length_repair": (
+                                    f"Вышло {words} слов; нужно строго {lo}–{hi}. "
+                                    "Перепиши, сохранив только одну линию и три proof_plan."
+                                ),
+                            }
+                        ),
+                    },
+                ]
+            )
+        ).strip()
+        if is_policy_text(response):
+            raise PolicyBlockedError(response)
+        text = re.sub(r"^```.*?\n|\n```$", "", response, flags=re.S).strip()
+        text = _MONOLOGUE_LABEL.sub("", text).strip()
+        text = _WRITING_ENVELOPE.sub("", text).strip()
+        text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
+        words = len(re.findall(r"\S+", text))
+        if lo <= words <= hi:
+            break
+    if not lo <= words <= hi:
+        raise ValueError(f"D2: вышло {words} слов после retry; нужно {lo}–{hi}")
     return MonologueDraft(
         claim_id=dossier.claim_id,
         text=text,

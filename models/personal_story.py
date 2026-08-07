@@ -12,9 +12,28 @@ class EndingType(str, Enum):
     reactive = "reactive"
 
 
+class ProofItem(BaseModel):
+    point: str = Field(..., min_length=1, max_length=300)
+    source_quote: str = Field(
+        ...,
+        min_length=1,
+        max_length=700,
+        description="Дословная непрерывная цитата из первичного текста.",
+    )
+
+
 class StoryBrief(BaseModel):
     claim_id: str
     main_thought: str = Field("", max_length=400)
+    visual_evidence: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description=(
+            "Что зритель увидит на экране в доказательство тезиса: "
+            "конкретные кадры/предметы, не рассуждение."
+        ),
+    )
     recommended_method: str = Field(..., min_length=1)
     alternative_methods: list[str] = Field(default_factory=list, max_length=2)
     hook_trigger: str = Field("", max_length=80)
@@ -27,14 +46,20 @@ class StoryBrief(BaseModel):
     audience_reason: str = Field(..., min_length=1, max_length=300)
     share_reason: str = Field(..., min_length=1, max_length=300)
     research_queries: list[str] = Field(default_factory=list, max_length=4)
-    proof_plan: list[str] = Field(
-        default_factory=list,
-        description="Три конкретные детали из материала, без которых история развалится.",
+    proof_plan: list[ProofItem] = Field(
+        ...,
+        min_length=3,
+        max_length=3,
+        description="Ровно три доказательства с дословной опорой в первичном тексте.",
     )
     idea_pitch: str = Field(
         "",
         max_length=280,
         description="Личный питч «Я бы…» / «А если…?» — куда образ ляжет сейчас.",
+    )
+    needs_external_research: bool = Field(
+        False,
+        description="True только если линии нужны внешняя дата, цифра или независимое подтверждение.",
     )
     ending_type: EndingType
 

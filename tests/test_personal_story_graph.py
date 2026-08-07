@@ -10,18 +10,26 @@ from tests.fakes import FakeLLM, FakeSearcher
 
 def test_personal_story_graph_uses_three_llm_calls():
     claim = make_claim()
-    monologue = " ".join(["я"] * 180)
+    monologue = " ".join(["я"] * 104)
 
     def router(messages):
         system = messages[0]["content"]
         if "редактор личного канала" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
+                "main_thought": "Платье работает как инфраструктура городского дня.",
+                "visual_evidence": "чёрное прямое платье и городская коммютерша",
                 "recommended_method": "a_vot_nifiga",
                 "alternative_methods": ["bylo_stalo"],
                 "opening": "Неожиданный факт.",
                 "audience_reason": "Не банально.",
                 "share_reason": "Есть чем поделиться.",
+                "proof_plan": [
+                    {"point": "деталь 1", "source_quote": "visual evidence one"},
+                    {"point": "деталь 2", "source_quote": "visual evidence two"},
+                    {"point": "деталь 3", "source_quote": "visual evidence three"},
+                ],
+                "needs_external_research": False,
                 "ending_type": "formula",
             })
         if "Говоришь со зрителем вслух" in system or "Рассказываешь от первого лица" in system:
@@ -56,9 +64,16 @@ def test_personal_story_graph_uses_three_llm_calls():
     )
     llm = FakeLLM(router)
     out = build_personal_story_graph(llm=llm, searcher=searcher).invoke(
-        {"claims": [claim], "selected_claim_id": claim.claim_id}
+        {
+            "claims": [claim],
+            "selected_claim_id": claim.claim_id,
+            "primary_text": (
+                "visual evidence one. visual evidence two. visual evidence three. "
+                "чёрное прямое платье и городская коммютерша"
+            ),
+        }
     )
-    assert out["monologue"].word_count >= 180
+    assert 105 <= out["monologue"].word_count <= 115
     assert "я бы" in out["monologue"].text.lower()
     assert out["monologue_check"].passes is True
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
