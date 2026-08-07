@@ -21,6 +21,56 @@ _ABSTRACT_THESIS = re.compile(
     r"корпоративн\w*|прибыл\w*)\b"
 )
 _VISUAL_WORD = re.compile(r"[а-яё]{4,}", re.I)
+_QUOTE_CHARS = str.maketrans(
+    {
+        "«": '"',
+        "»": '"',
+        "“": '"',
+        "”": '"',
+        "„": '"',
+        "‚": "'",
+        "‘": "'",
+        "’": "'",
+        "–": "-",
+        "—": "-",
+        "\u00a0": " ",
+    }
+)
+
+
+def _normalize_quote_text(text: str) -> str:
+    cleaned = text.translate(_QUOTE_CHARS)
+    cleaned = cleaned.lower()
+    # Пунктуация на границах слов не должна валить дословную опору.
+    cleaned = re.sub(r"[^\w\s\-]+", " ", cleaned, flags=re.UNICODE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
+
+def _locate_source_quote(quote: str, primary_text: str) -> str | None:
+    """Находит дословную опору с допуском на кавычки/пробелы; возвращает фрагмент из источника."""
+    if not quote:
+        return None
+    if quote in primary_text:
+        return quote
+    needle = _normalize_quote_text(quote)
+    if not needle:
+        return None
+    # Скользящее окно по словам источника: ищем совпадение нормализованной строки.
+    words = re.findall(r"\S+", primary_text)
+    needle_words = needle.split()
+    if not needle_words or len(needle_words) > len(words):
+        return None
+    for start in range(0, len(words) - len(needle_words) + 1):
+        window = words[start : start + len(needle_words)]
+        if _normalize_quote_text(" ".join(window)) == needle:
+            # Вернуть фрагмент источника без хвостовой пунктуации последнего слова,
+            # если цитата её не содержала.
+            joined = " ".join(window)
+            if not re.search(r"[.!?…]$", quote.strip()) and joined[-1:] in ".!?…":
+                joined = joined[:-1]
+            return joined
+    return None
 
 
 def load_story_methods() -> list[dict]:
@@ -93,6 +143,20 @@ def plan_story(
     raw.setdefault("main_thought", raw.get("claim") or claim.claim)
     if isinstance(raw.get("main_thought"), str):
         raw["main_thought"] = raw["main_thought"][:400]
+    evidence = raw.get("visual_evidence")
+    if isinstance(evidence, list):
+        raw["visual_evidence"] = "; ".join(str(x).strip() for x in evidence if str(x).strip())
+    elif isinstance(evidence, dict):
+        raw["visual_evidence"] = (
+            evidence.get("text")
+            or evidence.get("frames")
+            or evidence.get("description")
+            or ""
+        )
+        if isinstance(raw["visual_evidence"], list):
+            raw["visual_evidence"] = "; ".join(
+                str(x).strip() for x in raw["visual_evidence"] if str(x).strip()
+            )
     if isinstance(raw.get("visual_evidence"), str):
         raw["visual_evidence"] = raw["visual_evidence"][:200]
     method = (
@@ -258,11 +322,13 @@ def _validate_visual_contract(brief: StoryBrief, primary_text: str) -> None:
         )
     if not primary_text:
         raise ValueError("нужен primary_text для проверки proof_plan")
-    missing = [
-        item.source_quote
-        for item in brief.proof_plan
-        if item.source_quote not in primary_text
-    ]
+    missing: list[str] = []
+    for item in brief.proof_plan:
+        located = _locate_source_quote(item.source_quote, primary_text)
+        if located is None:
+            missing.append(item.source_quote)
+        else:
+            item.source_quote = located[:700]
     if missing:
         raise ValueError("source_quote не найдена в первичном тексте: " + missing[0][:120])
     source_words = set(_VISUAL_WORD.findall(primary_text.lower()))

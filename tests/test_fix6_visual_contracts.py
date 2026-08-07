@@ -43,6 +43,14 @@ def test_proof_quote_must_be_verbatim_in_primary_source():
         _validate_visual_contract(brief, source)
 
 
+def test_proof_quote_accepts_guillemets_vs_ascii_quotes():
+    from edit.e_editor import _locate_source_quote
+
+    source = 'манера изображать "дамочек" в комиксах 50-х годов'
+    quote = "манера изображать «дамочек» в комиксах 50-х годов"
+    assert _locate_source_quote(quote, source) == 'манера изображать "дамочек" в комиксах 50-х годов'
+
+
 def test_d2_retries_until_monologue_is_in_fixed_word_range():
     dossier = make_frozen_dossier()
     brief = _brief()

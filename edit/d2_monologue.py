@@ -17,6 +17,12 @@ _WRITING_ENVELOPE = re.compile(
     r"^:::writing[^\n]*\n?|^:::\s*$", re.MULTILINE | re.IGNORECASE
 )
 _MONOLOGUE_LABEL = re.compile(r"(?im)^\s*готовый\s+монолог\s*:\s*")
+_BANNED_OPENERS = (
+    "а вот нифига",
+    "все думают",
+    "на самом деле",
+    "секрет, который",
+)
 
 
 def _word_bounds() -> tuple[int, int]:
@@ -63,7 +69,7 @@ def write_monologue(
             "proof_plan": [item.model_dump(mode="json") for item in brief.proof_plan],
             "hook_draft": hook_text or brief.opening,
             "structure": [
-                "hook 1-2 sentences",
+                "start with the given hook_draft first_line verbatim",
                 "historical/scientific-popular story through three visual proofs",
                 "formula or question",
             ],
@@ -72,6 +78,8 @@ def write_monologue(
                 "название книги",
                 "читаю у…",
                 "по данным исследования",
+                "а вот нифига",
+                "все думают",
             ],
         },
         "story_method": next(
@@ -79,9 +87,22 @@ def write_monologue(
         ),
         "word_limit": {"min": lo, "max": hi},
     }
+    selected_hook = (hook_text or "").strip()
     text = ""
     words = 0
     for attempt in range(3):
+        repair = ""
+        if attempt > 0:
+            problems = []
+            if not lo <= words <= hi:
+                problems.append(f"вышло {words} слов; нужно строго {lo}–{hi}")
+            lowered = text.lower()
+            banned = [phrase for phrase in _BANNED_OPENERS if phrase in lowered]
+            if banned:
+                problems.append("убери стоп-фразы: " + ", ".join(banned))
+            if selected_hook and not text.startswith(selected_hook):
+                problems.append(f"начни ровно с хука: {selected_hook}")
+            repair = "Перепиши. " + " ".join(problems)
         response = content_text(
             model.invoke(
                 [
@@ -89,15 +110,7 @@ def write_monologue(
                     {
                         "role": "user",
                         "content": str(
-                            user
-                            if attempt == 0
-                            else {
-                                **user,
-                                "length_repair": (
-                                    f"Вышло {words} слов; нужно строго {lo}–{hi}. "
-                                    "Перепиши, сохранив только одну линию и три proof_plan."
-                                ),
-                            }
+                            user if not repair else {**user, "length_repair": repair}
                         ),
                     },
                 ]
@@ -109,11 +122,22 @@ def write_monologue(
         text = _MONOLOGUE_LABEL.sub("", text).strip()
         text = _WRITING_ENVELOPE.sub("", text).strip()
         text = re.sub(r"\bформула\s+простая\s*:\s*", "", text, flags=re.I)
+        if selected_hook and not text.startswith(selected_hook):
+            # Жёстко подставляем выбранный хук, если модель снова ушла в свой зачин.
+            rest = text
+            for phrase in _BANNED_OPENERS:
+                rest = re.sub(rf"(?is)^.*?{re.escape(phrase)}[:!]?\s*", "", rest, count=1)
+            text = f"{selected_hook} {rest}".strip()
         words = len(re.findall(r"\S+", text))
-        if lo <= words <= hi:
+        banned_hit = any(phrase in text.lower() for phrase in _BANNED_OPENERS)
+        if lo <= words <= hi and not banned_hit and (
+            not selected_hook or text.startswith(selected_hook)
+        ):
             break
     if not lo <= words <= hi:
         raise ValueError(f"D2: вышло {words} слов после retry; нужно {lo}–{hi}")
+    if any(phrase in text.lower() for phrase in _BANNED_OPENERS):
+        raise ValueError("D2: стоп-фраза хука осталась после retry")
     return MonologueDraft(
         claim_id=dossier.claim_id,
         text=text,

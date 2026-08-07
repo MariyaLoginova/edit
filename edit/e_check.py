@@ -95,6 +95,7 @@ def check_monologue(
         if not raw.get("summary"):
             raw["summary"] = (
                 raw.get("factcheck_summary")
+                or raw.get("overall_assessment")
                 or raw.get("overall_summary")
                 or raw.get("verdict")
                 or raw.get("comment")
@@ -142,7 +143,13 @@ def check_monologue(
                 )
             raw[key] = normalized_issues
         if not raw.get("summary"):
-            raise ValueError("пустой summary")
+            passed = raw.get("passed_checks") or []
+            if isinstance(passed, list) and passed:
+                raw["summary"] = "Проверка завершена; см. issues и passed_checks."
+            else:
+                raw["summary"] = "Проверка завершена без текстового summary."
+        if isinstance(raw.get("summary"), str):
+            raw["summary"] = raw["summary"][:500]
         blocked = any(
             issue.severity >= 4
             for issue in [
