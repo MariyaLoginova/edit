@@ -60,7 +60,10 @@ def test_compose_system_prompt_appends_knowledge_menu():
     assert "научпоп про историю визуала" in text
     assert "УГЛЫ ФАНТОГРАММЫ" in text
     assert "ЗНАНИЯ" in compose_system_prompt(E_HOOK_PROMPT, "e_hook_menu")
-    assert "МЕТОДИКИ" in compose_system_prompt(D2_PROMPT, "d2_methods_menu")
+    d2 = compose_system_prompt(D2_PROMPT, "d2_methods_menu")
+    assert "МЕТОДИКИ" in d2
+    assert "ЖИВОЙ РАЗГОВОР" in d2
+    assert "как тебе эта?" in d2
 
 
 def test_stop_lists_loaded_from_config():
