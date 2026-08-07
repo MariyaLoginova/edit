@@ -22,6 +22,7 @@ from models.editorial import (
 from models.idea import GenerationBrief, IdeaProbe, ProbeRegister
 from models.learning import RolloutMetrics, ScoringWeights, WeightUpdate
 from models.pipeline import ScoredClaim
+from models.topic_scoring import AxisScore, ScoredTopic, TopicCandidate
 from models.personal_story import (
     Conclusion,
     EndingType,
@@ -57,6 +58,7 @@ __all__ = [
     "Citation",
     "ClaimCard",
     "ClaimKind",
+    "AxisScore",
     "CompressionReport",
     "Conclusion",
     "ContrastPair",
@@ -89,6 +91,7 @@ __all__ = [
     "RolloutMetrics",
     "Scope",
     "ScoredClaim",
+    "ScoredTopic",
     "ScoringWeights",
     "ScriptDraft",
     "ScriptLine",
@@ -101,6 +104,7 @@ __all__ = [
     "StoryBrief",
     "SourceSegment",
     "ToneOfVoice",
+    "TopicCandidate",
     "TraceIssue",
     "TraceReason",
     "TraceReport",

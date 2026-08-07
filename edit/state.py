@@ -26,6 +26,8 @@ from models import (
     SourceMap,
     StoryBrief,
     TraceReport,
+    TopicCandidate,
+    ScoredTopic,
     VisualScenarioPlan,
     VisualResearchPack,
     WeightUpdate,
@@ -44,6 +46,8 @@ class EditState(TypedDict, total=False):
     primary_text: str
     claims: Annotated[list[ClaimCard], _merge_claims]
     scored_claims: list[ScoredClaim]
+    topic_candidates: list[TopicCandidate]
+    scored_topics: list[ScoredTopic]
     rejected_notes: list[str]
     selected_claim_id: str | None
     dossier: Dossier | None

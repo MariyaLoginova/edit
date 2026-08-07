@@ -8,6 +8,7 @@ from langgraph.graph import END, START, StateGraph
 
 from edit.a2_claim_miner import mine_claims
 from edit.b1_scoring import score_claims
+from edit.b1_topic_scoring import score_topics
 from edit.c1_material import collect_material
 from edit.c1_research_enricher import enrich_material
 from edit.c2_images import collect_images
@@ -41,6 +42,17 @@ def node_a2_mine(state: EditState, *, llm: Any = None) -> dict:
 def node_b1_score(state: EditState) -> dict:
     claims = state.get("claims") or []
     return {"scored_claims": score_claims(claims)}
+
+
+def node_b1_score_topics(state: EditState, *, llm: Any = None) -> dict:
+    """EDIT-B1: пакетный тематический скоринг; не выбирает тему вместо человека."""
+    topics = state.get("topic_candidates") or []
+    produced = {
+        item.topic_id
+        for item in (state.get("scored_topics") or [])
+        if item.verdict == "produce"
+    }
+    return {"scored_topics": score_topics(topics, produced_topic_ids=produced, llm=llm)}
 
 
 def node_b2_select_stub(state: EditState) -> dict:
