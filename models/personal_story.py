@@ -57,6 +57,12 @@ class StoryBrief(BaseModel):
             "если библиотека не подходит."
         ),
     )
+    selected_idea_trigger: str = Field(
+        "none",
+        description=(
+            "id угла из config/idea_triggers.yaml или none."
+        ),
+    )
     hook_trigger: str = Field("", max_length=80)
     opening: str = Field(
         ...,

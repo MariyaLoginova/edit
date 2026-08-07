@@ -31,6 +31,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                 ],
                 "needs_external_research": False,
                 "selected_structure": "myth_bust",
+                "selected_idea_trigger": "myth_series",
                 "ending_type": "formula",
             })
         if "первые 3 секунды" in system:

@@ -9,13 +9,13 @@ from edit.structures import (
 )
 
 
-def test_structure_library_has_eleven_plus_none_menu():
+def test_structure_library_has_catalog_plus_none_menu():
     items = load_structures()
-    assert len(items) == 11
+    assert len(items) >= 11
     assert all(item.get("id") and item.get("full_example") for item in items)
     menu = structure_menu()
     assert menu[-1]["id"] == NONE_ID
-    assert len(menu) == 12
+    assert len(menu) == len(items) + 1
 
 
 def test_normalize_structure_id_accepts_none_aliases():

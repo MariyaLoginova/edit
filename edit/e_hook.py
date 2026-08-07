@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from edit.library import load_hook_formulas, load_open_second_triggers
 from edit.llm import ChatModel, content_text, parse_json_payload
 from edit.model_routing import get_personal_story_model
 from models import HookOptions, StoryBrief
@@ -22,7 +23,13 @@ def write_hook(brief: StoryBrief, *, llm: ChatModel | None = None) -> HookOption
                     {
                         "main_thought": brief.main_thought,
                         "visual_evidence": brief.visual_evidence,
-                        "proof_plan": [item.model_dump(mode="json") for item in brief.proof_plan],
+                        "proof_plan": [
+                            item.model_dump(mode="json") for item in brief.proof_plan
+                        ],
+                        "selected_structure": brief.selected_structure,
+                        "selected_idea_trigger": brief.selected_idea_trigger,
+                        "menu_hook_formulas": load_hook_formulas(),
+                        "menu_open_second_triggers": load_open_second_triggers(),
                     }
                 ),
             },
