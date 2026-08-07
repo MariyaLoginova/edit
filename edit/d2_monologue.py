@@ -9,6 +9,7 @@ from edit.audience import load_audience
 from edit.config import ROOT
 from edit.llm import ChatModel, content_text
 from edit.model_routing import PolicyBlockedError, get_personal_story_model, is_policy_text
+from edit.structures import get_structure
 from models import Dossier, MonologueDraft, StoryBrief, can_freeze
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "d2_monologue.txt"
@@ -102,6 +103,7 @@ def write_monologue(
             "structure": [
                 "start with the given hook_draft first_line verbatim",
                 "immediately name the objects/prototype — no filler warmup",
+                "follow reel_structure beats/full_example if provided",
                 "aggressive sarcastic story through three visual proofs",
                 "more meat/scenes, zero empty intensifiers",
                 "viewer questions at the end; no opaque slogan",
@@ -127,6 +129,20 @@ def write_monologue(
         ),
         "word_limit": {"min": lo, "max": hi},
     }
+    selected = get_structure(brief.selected_structure)
+    if selected is not None:
+        user["reel_structure"] = {
+            "id": selected["id"],
+            "name": selected.get("name"),
+            "beats": selected.get("beats") or [],
+            "full_example": selected.get("full_example") or "",
+            "adapt_note": (
+                "Используй ритм и биты примера. CTA/продажу из примера "
+                "замени вопросом зрителю, если канал не про оффер."
+            ),
+        }
+    else:
+        user["reel_structure"] = None
     selected_hook = (hook_text or "").strip()
     text = ""
     words = 0

@@ -25,6 +25,7 @@ def _brief(*, main_thought: str = "Костюм показывает разре�
             for i, quote in enumerate(source_quotes, start=1)
         ],
         idea_pitch="Я бы поставила эти костюмы в один ряд.",
+        selected_structure="none",
         ending_type=EndingType.formula,
     )
 

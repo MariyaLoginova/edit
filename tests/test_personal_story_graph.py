@@ -30,6 +30,7 @@ def test_personal_story_graph_uses_three_llm_calls():
                     {"point": "деталь 3", "source_quote": "visual evidence three"},
                 ],
                 "needs_external_research": False,
+                "selected_structure": "myth_bust",
                 "ending_type": "formula",
             })
         if "первые 3 секунды" in system:
