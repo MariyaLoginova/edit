@@ -1,4 +1,4 @@
-"""Слой D: структура и сценарий (веха 3)."""
+"""Слой D: структура и сценарий (веха 3 / FIX-3)."""
 
 from __future__ import annotations
 
@@ -10,14 +10,13 @@ from models.claim import ClaimCard
 
 
 class BeatRole(str, Enum):
-    """Формула тела: улика → разрыв → причина → доказательство → перенос → кода."""
+    """Норма канала (FIX-3): хук → ложное объяснение → A/B → механизм → формула."""
 
-    hook_evidence = "hook_evidence"  # улика / объект в первом кадре
-    rupture = "rupture"  # разрыв ожидания
-    cause = "cause"  # причина
-    proof = "proof"  # доказательство
-    transfer = "transfer"  # перенос на сегодня
-    coda = "coda"  # кода-формула
+    hook_evidence = "hook_evidence"  # object_anchor
+    false_explanation = "false_explanation"  # counter_expectation
+    contrast_ab = "contrast_ab"  # contrast_pair
+    mechanism = "mechanism"  # mechanism_term + explain
+    coda = "coda"  # формула
 
 
 class Beat(BaseModel):
@@ -50,7 +49,6 @@ class BeatList(BaseModel):
     def _require_timecodes_and_coverage(self) -> BeatList:
         if not self.beats:
             raise ValueError("BeatList пуст — D1 обязан отдать структуру с таймкодами")
-        # отсортируем проверку по времени
         ordered = sorted(self.beats, key=lambda b: b.t_start)
         if ordered[0].t_start > 0.05:
             raise ValueError("первый бит должен начинаться с t_start≈0 (блокер E2)")
@@ -66,26 +64,29 @@ class BeatList(BaseModel):
         roles = {b.role for b in self.beats}
         required = {
             BeatRole.hook_evidence,
-            BeatRole.rupture,
-            BeatRole.cause,
-            BeatRole.proof,
+            BeatRole.false_explanation,
+            BeatRole.contrast_ab,
+            BeatRole.mechanism,
             BeatRole.coda,
         }
         missing = required - roles
         if missing:
             raise ValueError(f"в BeatList не хватает ролей: {sorted(r.value for r in missing)}")
+        # механизм/формула не раньше 55% длительности
+        mech = next(b for b in ordered if b.role == BeatRole.mechanism)
+        if mech.t_start < self.duration_sec * 0.55 - 0.5:
+            raise ValueError(
+                f"mechanism слишком рано ({mech.t_start}s < 55% от {self.duration_sec}s)"
+            )
         return self
 
 
 class ScriptLine(BaseModel):
-    """Фраза сценария с привязкой ко времени и claim_id (трассируемость E1)."""
-
     t_start: float = Field(..., ge=0)
     t_end: float = Field(..., ge=0)
     text: str = Field(..., min_length=1)
     claim_id: str | None = Field(
-        None,
-        description="None допустим только для связок/маркеров мнения; факты — обязателен",
+        None, description="Если line несёт факт — обязателен claim_id из досье"
     )
     beat_id: str | None = None
 
@@ -97,8 +98,6 @@ class ScriptLine(BaseModel):
 
 
 class ScriptDraft(BaseModel):
-    """D2/D3 → вход E1–E6. Без таймкодов E2 не работает."""
-
     script_id: str
     claim_id: str
     lines: list[ScriptLine]
@@ -106,21 +105,41 @@ class ScriptDraft(BaseModel):
     tov_applied: bool = False
 
     @model_validator(mode="after")
-    def _require_timed_lines(self) -> ScriptDraft:
+    def _non_empty_and_timecodes(self) -> ScriptDraft:
         if not self.lines:
-            raise ValueError("ScriptDraft.lines пуст — нет таймкодов для E2")
+            raise ValueError("ScriptDraft.lines пуст")
+        ordered = sorted(self.lines, key=lambda ln: ln.t_start)
+        if ordered[0].t_start > 0.05:
+            raise ValueError("первая реплика должна начинаться с t_start≈0")
+        prev_end = ordered[0].t_start
+        for ln in ordered:
+            if ln.t_start < prev_end - 0.05:
+                raise ValueError(f"перекрытие реплик около {ln.t_start}s")
+            if ln.t_start > prev_end + 0.51:
+                raise ValueError(f"разрыв таймкодов перед {ln.t_start}s")
+            prev_end = ln.t_end
+        if abs(self.duration_sec - ordered[-1].t_end) > 0.51:
+            raise ValueError("duration_sec должен совпадать с концом последней реплики")
         return self
 
 
 class ToneOfVoice(BaseModel):
-    """Словарь персонажа для D3 (отдельный проход, не генерация фактов)."""
+    """Словарь персонажа (D3) — не факты."""
 
-    name: str = "default"
+    name: str = "visual-culture-host"
     principles: list[str] = Field(default_factory=list)
     prefer: list[str] = Field(default_factory=list)
     avoid: list[str] = Field(default_factory=list)
     sample_phrases: list[str] = Field(default_factory=list)
 
 
-# re-export ClaimCard for typing convenience in scenario helpers
-ClaimCardRef = ClaimCard
+# re-export for type checkers that imported ClaimCard from here historically
+__all__ = [
+    "Beat",
+    "BeatList",
+    "BeatRole",
+    "ClaimCard",
+    "ScriptDraft",
+    "ScriptLine",
+    "ToneOfVoice",
+]

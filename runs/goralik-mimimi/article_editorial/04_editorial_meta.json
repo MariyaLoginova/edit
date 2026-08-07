@@ -1,0 +1,13 @@
+{
+  "blocked_for_production": true,
+  "trace_passes": true,
+  "retention_passes": false,
+  "red_passes": false,
+  "retell_passes": true,
+  "compression_passes": false,
+  "dropoff_score": 48,
+  "red_severity_max": 4,
+  "reduction_ratio": 0.0939,
+  "opening_chosen": "Перед тобой один котик. Через секунду их станет пятьдесят — и улыбка исчезнет.",
+  "retell": "«Мимими» — это не про котиков, а про нашу благодарность за возможность встретить в мире что-то безобидное, хрупкое и мирное, пока оно не исчезло."
+}

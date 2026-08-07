@@ -33,6 +33,10 @@ _STOP = {
 }
 
 
+class SearchUnavailableError(RuntimeError):
+    """Поиск не отработал (нет ключа / сеть / API). ≠ «нашёл 0»."""
+
+
 @dataclass
 class SearchHit:
     url: str
@@ -63,15 +67,16 @@ def soft_metadata_match(query: str, title: str, description: str) -> bool:
 
 
 class NullSearcher:
-    """Пустой поиск — для офлайна / когда нет API-ключа."""
+    """Явно недоступный поиск — для тестов «поиск не отработал».
+
+    Не маскирует сбой пустым списком: бросает SearchUnavailableError.
+    """
 
     def search(self, query: str, *, max_results: int = 5) -> list[SearchHit]:
-        logger.warning("NullSearcher: web search skipped for %r", query)
-        return []
+        raise SearchUnavailableError("NullSearcher: web search unavailable")
 
     def search_images(self, query: str, *, max_results: int = 8) -> list[SearchHit]:
-        logger.warning("NullSearcher: image search skipped for %r", query)
-        return []
+        raise SearchUnavailableError("NullSearcher: image search unavailable")
 
 
 class BraveSearcher:
@@ -96,12 +101,15 @@ class BraveSearcher:
 
     def search(self, query: str, *, max_results: int = 5) -> list[SearchHit]:
         if not self.api_key:
-            return NullSearcher().search(query, max_results=max_results)
+            raise SearchUnavailableError("BRAVE_API_KEY не задан — web search не отработал")
         url = (
             "https://api.search.brave.com/res/v1/web/search"
             f"?q={quote_plus(query)}&count={max_results}"
         )
-        data = self._get(url)
+        try:
+            data = self._get(url)
+        except Exception as exc:  # noqa: BLE001 — оборачиваем сеть/API
+            raise SearchUnavailableError(f"Brave web search failed: {exc}") from exc
         hits: list[SearchHit] = []
         for item in data.get("web", {}).get("results", [])[:max_results]:
             hits.append(
@@ -115,12 +123,17 @@ class BraveSearcher:
 
     def search_images(self, query: str, *, max_results: int = 8) -> list[SearchHit]:
         if not self.api_key:
-            return NullSearcher().search_images(query, max_results=max_results)
+            raise SearchUnavailableError(
+                "BRAVE_API_KEY не задан — image search не отработал"
+            )
         url = (
             "https://api.search.brave.com/res/v1/images/search"
             f"?q={quote_plus(query)}&count={max_results}"
         )
-        data = self._get(url)
+        try:
+            data = self._get(url)
+        except Exception as exc:  # noqa: BLE001
+            raise SearchUnavailableError(f"Brave image search failed: {exc}") from exc
         hits: list[SearchHit] = []
         for item in data.get("results", [])[:max_results]:
             props = item.get("properties") or {}

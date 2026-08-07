@@ -1,0 +1,57 @@
+{
+  "script_id": "script-barbie-face-must-stay-recognizable",
+  "claim_id": "barbie-face-must-stay-recognizable",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 8.0,
+      "text": "Перед тобой самая первая Барби OSS в полосатом купальнике. Девочка в музее смотрит на неё и уверенно говорит: «Это не Барби».",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 8.0,
+      "t_end": 19.0,
+      "text": "И тут легко поверить в простое объяснение: наверное, лицо Барби всегда просто подгоняли под идеал красоты своего времени.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 19.0,
+      "t_end": 33.0,
+      "text": "Но присмотрись. Первая Барби смотрит в сторону и вниз. Тяжёлый макияж, яркие губы, взрослое выражение лица.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 33.0,
+      "t_end": 47.0,
+      "text": "Часть этой странности пришла от Лилли — трёхмерной версии героини послевоенного комикса пятидесятых. Отсюда и преувеличенные черты, и почти карикатурные пропорции.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 47.0,
+      "t_end": 64.0,
+      "text": "А теперь перед тобой Малибу Барби 1972 года. Впервые смотрит прямо в глаза, улыбается, почти без косметики, а длинные волосы лежат естественно.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b5"
+    },
+    {
+      "t_start": 64.0,
+      "t_end": 79.0,
+      "text": "Кажется, будто это совсем другая кукла. Но компания раз за разом меняла детали так, чтобы лицо становилось лучше и не теряло узнаваемости.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b6"
+    },
+    {
+      "t_start": 79.0,
+      "t_end": 90.0,
+      "text": "Поэтому Барби никогда не была точной копией моды. Лучше — но не другая. Узнаваемое бренд-лицо.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b7"
+    }
+  ],
+  "duration_sec": 90.0,
+  "tov_applied": true
+}

@@ -1,0 +1,47 @@
+{
+  "script_id": "script-cake-candy-faceake-candy-face-destruction",
+  "claim_id": "cake-candy-face-destruction",
+  "beats": [
+    {
+      "beat_id": "b1",
+      "t_start": 0.0,
+      "t_end": 3.5,
+      "role": "hook_evidence",
+      "claim_id": "cake-candy-face-destruction",
+      "intent": "Показать мордочку из конфет на пирожном как один объект с акцентом на её целостность и ожидаемую недолговечность."
+    },
+    {
+      "beat_id": "b2",
+      "t_start": 3.5,
+      "t_end": 10.5,
+      "role": "false_explanation",
+      "claim_id": "cake-candy-face-destruction",
+      "intent": "Зафиксировать зрительское ожидание, что украшение само по себе делает десерт милым независимо от дальнейших изменений."
+    },
+    {
+      "beat_id": "b3",
+      "t_start": 10.5,
+      "t_end": 27.0,
+      "role": "contrast_ab",
+      "claim_id": "cake-candy-face-destruction",
+      "intent": "Сопоставить целое пирожное с неповреждённой мордочкой и то же пирожное после нескольких укусов, подчеркнув сдвиг: умиление исчезает вместе с разрушением узнаваемой формы."
+    },
+    {
+      "beat_id": "b4",
+      "t_start": 27.0,
+      "t_end": 38.5,
+      "role": "mechanism",
+      "claim_id": "cake-candy-face-destruction",
+      "intent": "Объяснить через термин «хрупкость-как-таймер», что эффект держится на целостности рисунка и прекращается после распада композиции."
+    },
+    {
+      "beat_id": "b5",
+      "t_start": 38.5,
+      "t_end": 45.0,
+      "role": "coda",
+      "claim_id": "cake-candy-face-destruction",
+      "intent": "Завершить формулой: сильнее всего умиляет форма, которая воспринимается как обречённая исчезнуть."
+    }
+  ],
+  "duration_sec": 45.0
+}

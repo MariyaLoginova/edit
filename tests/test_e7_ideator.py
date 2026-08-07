@@ -16,37 +16,40 @@ from edit.e7_ideator import (
 from edit.graph import build_e7_graph
 from models import (
     Citation,
-    ClaimCard,
     ClaimKind,
+    ContrastPair,
     Dossier,
     IdeaProbe,
     ProbeRegister,
     Scope,
     ScriptDraft,
     ScriptLine,
-    SoftFactcheckResult,
 )
+from tests.claim_factory import make_claim, make_frozen_dossier
 from tests.fakes import FakeLLM
 
 
 def _dossier() -> Dossier:
-    claim = ClaimCard(
+    claim = make_claim(
         claim_id="bild-lilli-barbie-prototype",
         kind=ClaimKind.origin,
         claim="Bild-Lilli стала прототипом Барби",
         counter_expectation="Думают, что Барби придумали с нуля в США",
         visual_hint="Bild-Lilli doll, 1955 German comic",
+        object_anchor="Bild-Lilli",
+        contrast_pair=ContrastPair(
+            state_a="американская Барби как «новинка»",
+            state_b="немецкая Bild-Lilli из комикса",
+            shift="узнаваемое старое маскируется под новый бренд",
+        ),
+        mechanism_term="узнавание-вместо-новизны",
+        mechanism_explain="Покупатель цепляется на форму, которую уже видел в другом контексте.",
         citation=Citation(locator="гл.1", quote="Lilli was the prototype for Barbie"),
         scope=Scope(period="1950s", region="Germany", author_or_work="Bild-Lilli"),
         source_segment_id="s1",
         confidence=0.9,
     )
-    return Dossier(
-        claim_id=claim.claim_id,
-        claim=claim,
-        material_notes="prototype link",
-        soft_factcheck=SoftFactcheckResult(ok=True, rationale="ok"),
-    ).freeze()
+    return make_frozen_dossier(claim, material_notes="prototype link")
 
 
 def _script() -> ScriptDraft:

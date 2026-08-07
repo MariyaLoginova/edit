@@ -1,0 +1,7 @@
+{
+  "script_id": "script-goralik-mimimi-whole",
+  "dossier_claim_id": "goralik-mimimi-whole",
+  "passes": true,
+  "issues": [],
+  "summary": "Все фактические реплики трассируются к claim_id досье."
+}

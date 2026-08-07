@@ -1,0 +1,43 @@
+{
+  "script_id": "script-cake-candy-faceake-candy-face-destruction",
+  "claim_id": "cake-candy-face-destruction",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.5,
+      "text": "Мордочка из конфет сидит на пирожном. Целая. Даже кусать жалко.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.5,
+      "t_end": 10.5,
+      "text": "Кажется, всё дело просто в украшении. Пирожное ведь останется тем же.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 10.5,
+      "t_end": 27.0,
+      "text": "Но вот первый укус. Потом ещё. Мордочка из конфет распалась. Перед тобой уже не смешная мордочка, а надкусанное пирожное. Недаром говорят: выложенная конфетами мордочка на пирожном рано или поздно будет съедена.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 27.0,
+      "t_end": 38.5,
+      "text": "Вот она — хрупкость как таймер. Пока рисунок целый, мордочка живёт. Рассыпался рисунок — вместе с ним уходит и это чувство.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 38.5,
+      "t_end": 45.0,
+      "text": "Сильнее всего трогает та мордочка, которая будто обречена исчезнуть.",
+      "claim_id": "cake-candy-face-destruction",
+      "beat_id": "b5"
+    }
+  ],
+  "duration_sec": 45.0,
+  "tov_applied": true
+}

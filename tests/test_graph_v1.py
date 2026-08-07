@@ -1,11 +1,27 @@
 from __future__ import annotations
 
+import json
+
 from edit.a2_claim_miner import validate_claim_payload
 from edit.graph import build_a2_only_graph, build_e2_only_graph, build_vertical_slice_graph
 from models import ClaimKind
+from tests.claim_factory import make_frozen_dossier
 from tests.fakes import FakeLLM
 from tests.test_a2_claim_miner import _good_card
 from tests.test_e2_retention_critic import _strong_report, _weak_report
+
+
+def _as_critique(base: dict, script, *, pass_retell: bool) -> dict:
+    """RetentionReport-словарь → CritiqueReport для E-критика."""
+    return {
+        **base,
+        "attacks": [],
+        "severity_max": 1,
+        "retell": "Little black dress маскирует сервис ухода.",
+        "coda_quote": script.lines[-1].text,
+        "coda_is_quotable": pass_retell,
+        "retell_matches_coda": pass_retell,
+    }
 
 
 def test_a2_only_graph(fashion_source):
@@ -18,9 +34,16 @@ def test_a2_only_graph(fashion_source):
 
 
 def test_e2_only_graph_blocks_weak(script_weak):
-    llm = FakeLLM(_weak_report(script_weak.script_id, script_weak.duration_sec))
+    dossier = make_frozen_dossier()
+    payload = _as_critique(
+        _weak_report(script_weak.script_id, script_weak.duration_sec),
+        script_weak,
+        pass_retell=False,
+    )
+    llm = FakeLLM(payload)
     graph = build_e2_only_graph(llm=llm)
-    out = graph.invoke({"script": script_weak})
+    out = graph.invoke({"script": script_weak, "dossier": dossier})
+    assert out["critique"].passes is False
     assert out["retention"].passes is False
     assert out["blocked_for_production"] is True
 
@@ -28,16 +51,20 @@ def test_e2_only_graph_blocks_weak(script_weak):
 def test_vertical_slice_with_manual_script(fashion_source, script_strong):
     segment = fashion_source.segments[0]
     card = _good_card(segment)
-    # E2 fake ignores A2 output; A2 still runs first
+    dossier = make_frozen_dossier()
     calls = {"n": 0}
 
     def router(messages):
         calls["n"] += 1
-        # first call A2, second E2
-        if calls["n"] == 1:
-            return __import__("json").dumps([card], ensure_ascii=False)
-        return __import__("json").dumps(
-            _strong_report(script_strong.script_id, script_strong.duration_sec),
+        sys_msg = messages[0]["content"]
+        if "ClaimCard" in sys_msg or "визуальной культуре" in sys_msg or calls["n"] == 1:
+            return json.dumps([card], ensure_ascii=False)
+        return json.dumps(
+            _as_critique(
+                _strong_report(script_strong.script_id, script_strong.duration_sec),
+                script_strong,
+                pass_retell=True,
+            ),
             ensure_ascii=False,
         )
 
@@ -48,9 +75,11 @@ def test_vertical_slice_with_manual_script(fashion_source, script_strong):
             "source_map": fashion_source,
             "selected_claim_id": card["claim_id"],
             "script": script_strong,
+            "dossier": dossier,
         }
     )
     assert len(out["claims"]) >= 1
+    assert out["critique"].passes is True
     assert out["retention"].passes is True
     assert out["blocked_for_production"] is False
 

@@ -6,6 +6,13 @@ base_url: https://api.kie.ai
 # Дефолт для узлов, если явно не передали model=
 default_model: gpt-5-2
 
+# Применяется только в личном контуре. Переход — один раз и только когда
+# провайдер явно сообщил policy-block; модель помечается непригодной для run.
+personal_story_fallback_models:
+  - gemini-3-6-flash
+  - gemini-3.5-flash
+  - gemini-2.5-flash
+
 # KIE: OpenAI-совместимый путь POST {base_url}/{path_prefix}/chat/completions
 # path_prefix = сегмент из docs.kie.ai / Market (сверять при смене моделей).
 models:
@@ -18,6 +25,17 @@ models:
     temperature: 0.0
   gemini-3.5-flash:
     path_prefix: gemini-3-5-flash-openai/v1
+    temperature: 0.0
+  grok-4-5:
+    path_prefix: grok-4-5-openai/v1
+    temperature: 0.0
+  gemini-3-6-flash:
+    path_prefix: gemini-3-6-flash-openai/v1
+    temperature: 0.0
+  glm-5.2:
+    provider: aihubmix
+    # AIHubMix OpenAI-compatible: https://aihubmix.com/v1
+    path_prefix: v1
     temperature: 0.0
 
 # Матрица первого живого прогона A1→A2 (Часть 3 тикета)

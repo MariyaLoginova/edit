@@ -3,44 +3,34 @@ from __future__ import annotations
 import json
 
 from edit.graph import build_material_graph, build_v2_slice_graph
-from edit.search import SearchHit
-from models import ClaimCard, ClaimKind, Citation, Scope
-from tests.fakes import FakeLLM, FakeSearcher
+from models import ClaimCard
+from tests.claim_factory import abundant_searcher, make_claim
+from tests.fakes import FakeLLM
 from tests.test_a2_claim_miner import _good_card
 
 
 def _claim() -> ClaimCard:
-    return ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело как наряд без ухода, а не как символ роскоши",
-        counter_expectation="Считают, что LBD — про вневременную элегантность и статус",
-        visual_hint="Chanel little black dress Vogue 1926",
-        citation=Citation(
-            locator="гл. 2, с. 61–63",
-            quote="the little black dress succeeded because it required almost no maintenance and looked correct from morning errands to evening",
-        ),
-        scope=Scope(period="1920s", region="Paris", author_or_work="Chanel"),
-        source_segment_id="ch2-s1",
-        confidence=0.9,
-    )
+    return make_claim()
+
+
+def _is_a2(sys_msg: str) -> bool:
+    return "ClaimCard" in sys_msg or "визуальной культуре" in sys_msg or "короткие ролики" in sys_msg
+
+
+def _is_c1(sys_msg: str) -> bool:
+    return "собираешь материал" in sys_msg or "support_flags" in sys_msg
+
+
+def _is_c3(sys_msg: str) -> bool:
+    return "мягкий фактчекер" in sys_msg or "ВЫДУМАННЫХ" in sys_msg or "invented_items" in sys_msg
 
 
 def test_material_graph_freezes_on_ok():
-    searcher = FakeSearcher(
-        web=[SearchHit(url="https://ex.com/a", title="LBD maintenance", snippet="no maintenance")],
-        images=[
-            SearchHit(
-                url="https://img/ex.jpg",
-                title="Chanel little black dress Vogue 1926",
-                snippet="archive",
-            )
-        ],
-    )
+    searcher = abundant_searcher()
 
     def llm_router(messages):
         sys_msg = messages[0]["content"]
-        if "мягкий фактчекер" in sys_msg or "ВЫДУМАННЫХ" in sys_msg:
+        if _is_c3(sys_msg):
             return json.dumps({"ok": True, "invented_items": [], "rationale": "ok"})
         return json.dumps(
             {"material_notes": "подтверждение ухода", "support_flags": [True]}
@@ -52,29 +42,22 @@ def test_material_graph_freezes_on_ok():
 
 
 def test_v2_slice_blocks_on_e1_fail(fashion_source, script_weak):
-    """Слабый сценарий с чужим claim_id → E1 блокирует до E2."""
+    """Слабый сценарий с чужим claim_id → E1 блокирует до E-критика."""
     segment = fashion_source.segments[0]
     card = _good_card(segment)
-    searcher = FakeSearcher(
-        web=[SearchHit(url="https://ex.com/a", title="LBD", snippet="maintenance")],
-        images=[
-            SearchHit(
-                url="https://img/ex.jpg",
-                title="Chanel little black dress Vogue 1926",
-                snippet="dress",
-            )
-        ],
-    )
+    searcher = abundant_searcher()
     step = {"n": 0}
 
     def llm_router(messages):
-        # 1) A2 2) C1 3) C3 — E2 не должен вызваться
+        # 1) A2 2) C1 3) C3 — E-критик не должен вызваться
         step["n"] += 1
-        if step["n"] == 1:
+        sys_msg = messages[0]["content"]
+        if step["n"] == 1 or _is_a2(sys_msg):
             return json.dumps([card], ensure_ascii=False)
-        if step["n"] == 2:
+        if _is_c1(sys_msg):
             return json.dumps(
-                {"material_notes": "ok", "support_flags": [True]}, ensure_ascii=False
+                {"material_notes": "подтверждение ухода", "support_flags": [True]},
+                ensure_ascii=False,
             )
         return json.dumps({"ok": True, "invented_items": [], "rationale": "ok"})
 
@@ -91,6 +74,7 @@ def test_v2_slice_blocks_on_e1_fail(fashion_source, script_weak):
     assert out["trace"] is not None
     assert out["trace"].passes is False
     assert out["blocked_for_production"] is True
+    assert out.get("critique") is None
     assert out.get("retention") is None
 
 
@@ -100,28 +84,19 @@ def test_v2_slice_reaches_e2_when_traced(fashion_source, script_strong):
     # script_strong already uses lbd-maintenance-not-luxury
     assert script_strong.claim_id == card["claim_id"]
 
-    searcher = FakeSearcher(
-        web=[SearchHit(url="https://ex.com/a", title="LBD", snippet="maintenance")],
-        images=[
-            SearchHit(
-                url="https://img/ex.jpg",
-                title="Chanel little black dress Vogue",
-                snippet="1926",
-            )
-        ],
-    )
-    calls = {"n": 0}
+    searcher = abundant_searcher()
 
     def llm_router(messages):
-        calls["n"] += 1
         sys_msg = messages[0]["content"]
-        if "редактор-разведчик" in sys_msg:
+        if _is_a2(sys_msg):
             return json.dumps([card], ensure_ascii=False)
-        if "сборщик материала" in sys_msg:
-            return json.dumps({"material_notes": "ok", "support_flags": [True]})
-        if "фактчекер" in sys_msg or "ВЫДУМАННЫХ" in sys_msg:
+        if _is_c1(sys_msg):
+            return json.dumps(
+                {"material_notes": "подтверждение ухода", "support_flags": [True]}
+            )
+        if _is_c3(sys_msg):
             return json.dumps({"ok": True, "invented_items": [], "rationale": "ok"})
-        # E2
+        # E-критик
         return json.dumps(
             {
                 "script_id": script_strong.script_id,
@@ -130,6 +105,12 @@ def test_v2_slice_reaches_e2_when_traced(fashion_source, script_strong):
                 "open_strength": 5,
                 "risks": [],
                 "dropoff_score": 8,
+                "attacks": [],
+                "severity_max": 1,
+                "retell": "Little black dress маскирует сервис, который исчез.",
+                "coda_quote": script_strong.lines[-1].text,
+                "coda_is_quotable": True,
+                "retell_matches_coda": True,
                 "passes": True,
                 "summary": "ok",
             }
@@ -144,5 +125,6 @@ def test_v2_slice_reaches_e2_when_traced(fashion_source, script_strong):
         }
     )
     assert out["trace"].passes is True
+    assert out["critique"].passes is True
     assert out["retention"].passes is True
     assert out["blocked_for_production"] is False

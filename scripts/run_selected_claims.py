@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Прогон выбранных ClaimCard: C → D → E → (E7 exclude) → F1."""
+"""Прогон выбранных ClaimCard: C → D2 → E1 → E-критик → E4 → F1 (FIX-4)."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from edit.graph import (
+    build_e1_only_graph,
     build_editorial_graph,
     build_f1_only_graph,
     build_material_graph,
@@ -49,31 +50,41 @@ def run_one(claim_path: Path, out_dir: Path, *, model: str) -> int:
     if dossier is None or not dossier.frozen:
         print(f"  BLOCKED: dossier not frozen ({dossier and dossier.soft_factcheck})")
         return 2
-    print(f"  frozen ok; images={len(dossier.image_candidates)} web={len(dossier.web_confirmations)}")
+    imgs = dossier.image_candidates.all_images()
+    print(
+        f"  frozen ok; images={len(imgs)} "
+        f"(a={len(dossier.image_candidates.for_state_a)} "
+        f"b={len(dossier.image_candidates.for_state_b)})"
+    )
 
-    print(f"== {stem}: D1–D3 ==")
+    print(f"== {stem}: D2 ==")
     sc = build_scenario_graph(llm=llm).invoke({"dossier": dossier})
-    _dump(dest / "02_beats.json", sc["beats"])
     _dump(dest / "03_script.json", sc["script"])
     print(f"  script lines={len(sc['script'].lines)} duration={sc['script'].duration_sec}s")
 
-    print(f"== {stem}: E1–E6 ==")
+    print(f"== {stem}: E1 ==")
+    e1 = build_e1_only_graph().invoke({"dossier": dossier, "script": sc["script"]})
+    _dump(dest / "04_trace.json", e1.get("trace"))
+    if not e1["trace"].passes:
+        print("  BLOCKED at E1")
+        return 2
+
+    print(f"== {stem}: E-критик → E4 ==")
     ed = build_editorial_graph(llm=llm).invoke(
         {"dossier": dossier, "script": sc["script"]}
     )
     payload = {
         "blocked_for_production": ed.get("blocked_for_production"),
-        "trace_passes": ed["trace"].passes if ed.get("trace") else None,
-        "retention_passes": ed["retention"].passes if ed.get("retention") else None,
-        "red_passes": ed["red_critique"].passes if ed.get("red_critique") else None,
-        "retell_passes": ed["retell"].passes if ed.get("retell") else None,
-        "compression_passes": ed["compression"].passes if ed.get("compression") else None,
+        "trace_passes": True,
+        "critique_passes": ed["critique"].passes if ed.get("critique") else None,
+        "dropoff_score": ed["critique"].dropoff_score if ed.get("critique") else None,
+        "retell": ed["critique"].retell if ed.get("critique") else None,
     }
     _dump(dest / "04_editorial_meta.json", payload)
+    if ed.get("critique"):
+        _dump(dest / "04b_critique.json", ed["critique"])
     if ed.get("script"):
         _dump(dest / "05_script_edited.json", ed["script"])
-    if ed.get("retention"):
-        _dump(dest / "04b_retention.json", ed["retention"])
     if ed.get("opening_pick"):
         _dump(dest / "04c_openings.json", ed["opening_pick"])
     print("  editorial:", payload)

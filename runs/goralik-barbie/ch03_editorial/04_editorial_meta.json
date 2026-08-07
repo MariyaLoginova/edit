@@ -1,0 +1,14 @@
+{
+  "profile": "barbie-ch03",
+  "blocked_for_production": true,
+  "trace_passes": true,
+  "retention_passes": false,
+  "red_passes": false,
+  "retell_passes": true,
+  "compression_passes": false,
+  "dropoff_score": 45,
+  "red_severity_max": 4,
+  "reduction_ratio": 0.171,
+  "opening_chosen": "Это лицо первой Барби выглядит так, будто его сделали для другого персонажа — но именно его должны были узнать миллионы.",
+  "retell": "Барби меняла лицо не для того, чтобы полностью следовать моде, а чтобы оставаться современной и при этом всегда узнаваемой."
+}

@@ -86,14 +86,21 @@ def collect_material(
     searcher: WebSearcher | None = None,
     llm: ChatModel | None = None,
     existing: Dossier | None = None,
+    primary_text: str = "",
+    research_queries: list[str] | None = None,
 ) -> Dossier:
     """C1: поиск + опциональная LLM-выжимка → черновик Dossier (ещё не frozen)."""
     if existing is not None:
         existing.ensure_mutable()
 
     searcher = searcher or default_searcher()
-    query = build_web_query(claim)
-    hits = searcher.search(query, max_results=_web_count())
+    queries = list(dict.fromkeys(research_queries or [build_web_query(claim)]))
+    hits = []
+    hit_queries: list[str] = []
+    for query in queries:
+        found = searcher.search(query, max_results=_web_count())
+        hits.extend(found)
+        hit_queries.extend([query] * len(found))
 
     notes = ""
     flags: list[bool] | None = None
@@ -108,13 +115,24 @@ def collect_material(
             f"{h.title}: {h.snippet}".strip(": ") for h in hits[:3] if h.title or h.snippet
         )
 
-    confirmations = _hits_to_confirmations(hits, query, flags)
+    confirmations = _hits_to_confirmations(hits, queries[0], flags)
+    for confirmation, query in zip(confirmations, hit_queries):
+        confirmation.query = query
+    if primary_text:
+        notes = (
+            f"{notes}\n\nПЕРВИЧНЫЙ ТЕКСТ ИСТОЧНИКА:\n{primary_text.strip()}"
+        ).strip()
+    from models import ImageBuckets
+
+    prev_images = (
+        existing.image_candidates if existing is not None else ImageBuckets()
+    )
     dossier = Dossier(
         claim_id=claim.claim_id,
         claim=claim,
         material_notes=notes,
         web_confirmations=confirmations,
-        image_candidates=list(existing.image_candidates) if existing else [],
+        image_candidates=prev_images,
         soft_factcheck=None,
         frozen=False,
     )

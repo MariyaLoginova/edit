@@ -8,6 +8,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from edit.audience import load_audience
 from edit.kie_client import load_llm_config
 from edit.llm import ChatModel, get_chat_model, invoke_json
 from models import ClaimCard, SourceMap, SourceSegment
@@ -56,6 +57,8 @@ def validate_claim_payload(
             item.setdefault("kind", "causal")
             item.setdefault("confidence", 0.65)
             item.setdefault("scope", {})
+            if not item.get("object_anchor") and item.get("visual_hint"):
+                item["object_anchor"] = item["visual_hint"]
             if "citation" in item and isinstance(item["citation"], dict):
                 item["citation"] = {
                     **item["citation"],
@@ -92,6 +95,7 @@ def mine_claims_from_segment(
     user = (
         f"segment_id: {segment.segment_id}\n"
         f"locator: {segment.locator}\n\n"
+        f"<audience>\n{load_audience()}\n</audience>\n\n"
         f"<segment>\n{segment.text}\n</segment>"
     )
     raw = invoke_json(

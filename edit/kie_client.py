@@ -24,6 +24,7 @@ class ModelSpec:
     model_id: str
     path_prefix: str
     temperature: float = 0.0
+    provider: str | None = None
 
 
 @lru_cache(maxsize=1)
@@ -57,6 +58,7 @@ def resolve_model_spec(model: str | None = None) -> ModelSpec:
         model_id=model_id,
         path_prefix=path_prefix,
         temperature=float(raw.get("temperature", 0.0)),
+        provider=str(raw.get("provider") or "").lower() or None,
     )
 
 

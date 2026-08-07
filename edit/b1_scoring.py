@@ -15,16 +15,16 @@ def _clamp01(x: float) -> float:
 def score_axes(claim: ClaimCard) -> dict[str, float]:
     """Дешёвые эвристики (веха 5). Не LLM — чтобы G1 мог крутить веса часто."""
     surprise = _clamp01(len(claim.counter_expectation) / 120.0)
-    # visual_hint конкретен, если есть цифра/имя собственное/кавычки-объект
+    # Конкретность факта/якоря, не качество картинки.
     vh = claim.visual_hint
-    visuality = 0.4
+    specificity = 0.4
     if re.search(r"\d{3,4}", vh):
-        visuality += 0.3
+        specificity += 0.3
     if re.search(r"[A-ZА-Я][a-zа-я]{2,}", vh):
-        visuality += 0.2
+        specificity += 0.2
     if len(vh) >= 20:
-        visuality += 0.1
-    visuality = _clamp01(visuality)
+        specificity += 0.1
+    specificity = _clamp01(specificity)
 
     causal_clarity = 0.85 if claim.kind is ClaimKind.causal else 0.65
     if claim.kind is ClaimKind.corrective:
@@ -36,11 +36,11 @@ def score_axes(claim: ClaimCard) -> dict[str, float]:
     if claim.confidence >= 0.8:
         evidence = _clamp01(evidence + 0.15)
 
-    # shareability: контраст claim vs counter + конкретный объект
-    shareability = _clamp01(0.35 * surprise + 0.35 * visuality + 0.3 * causal_clarity)
+    # Shareability: неожиданный факт + конкретность + ясный поворот.
+    shareability = _clamp01(0.4 * surprise + 0.35 * specificity + 0.25 * causal_clarity)
     return {
         "surprise": round(surprise, 4),
-        "visuality": round(visuality, 4),
+        "specificity": round(specificity, 4),
         "causal_clarity": round(causal_clarity, 4),
         "evidence": round(evidence, 4),
         "shareability": round(shareability, 4),

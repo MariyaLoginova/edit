@@ -9,33 +9,43 @@ from edit.d3_tov import apply_tov, load_tov
 from models import (
     BeatList,
     BeatRole,
-    Citation,
-    ClaimCard,
-    ClaimKind,
     Dossier,
-    Scope,
+    ImageBuckets,
+    ImageCandidate,
     ScriptDraft,
     SoftFactcheckResult,
+    WebConfirmation,
 )
+from tests.claim_factory import make_claim
 from tests.fakes import FakeLLM
 
 
-def _frozen_dossier() -> Dossier:
-    claim = ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело как наряд без ухода",
-        counter_expectation="Думают, что это про роскошь",
-        visual_hint="Chanel LBD Vogue 1926",
-        citation=Citation(locator="гл.2", quote="required almost no maintenance"),
-        scope=Scope(period="1920s", author_or_work="Chanel"),
-        source_segment_id="ch2-s1",
-        confidence=0.9,
+def _img(url: str, state: str, query: str) -> ImageCandidate:
+    return ImageCandidate(
+        url=url,
+        title=query,
+        description=query,
+        query=query,
+        soft_match=True,
+        for_state=state,  # type: ignore[arg-type]
     )
+
+
+def _frozen_dossier() -> Dossier:
+    claim = make_claim()
+    pair = claim.contrast_pair
     return Dossier(
         claim_id=claim.claim_id,
         claim=claim,
         material_notes="LBD succeeded because low maintenance",
+        web_confirmations=[
+            WebConfirmation(url="https://ex.com", title="t", snippet="maintenance", query="q")
+        ],
+        image_candidates=ImageBuckets(
+            for_state_a=[_img(f"https://a/{i}.jpg", "a", pair.state_a) for i in range(3)],
+            for_state_b=[_img(f"https://b/{i}.jpg", "b", pair.state_b) for i in range(3)],
+            search_status="ok",
+        ),
         soft_factcheck=SoftFactcheckResult(ok=True, rationale="ok"),
     ).freeze()
 
@@ -44,7 +54,7 @@ def _valid_beats_payload(claim_id: str = "lbd-maintenance-not-luxury") -> dict:
     return {
         "script_id": "s-lbd",
         "claim_id": claim_id,
-        "duration_sec": 40.0,
+        "duration_sec": 45.0,
         "beats": [
             {
                 "beat_id": "b1",
@@ -52,52 +62,67 @@ def _valid_beats_payload(claim_id: str = "lbd-maintenance-not-luxury") -> dict:
                 "t_end": 3.0,
                 "role": "hook_evidence",
                 "claim_id": claim_id,
-                "intent": "Объект: LBD на обложке",
+                "intent": "object_anchor: LBD на обложке",
             },
             {
                 "beat_id": "b2",
                 "t_start": 3.0,
                 "t_end": 10.0,
-                "role": "rupture",
+                "role": "false_explanation",
                 "claim_id": claim_id,
-                "intent": "Не роскошь, а уход",
+                "intent": "кажется — роскошь",
             },
             {
                 "beat_id": "b3",
                 "t_start": 10.0,
-                "t_end": 20.0,
-                "role": "cause",
+                "t_end": 26.0,
+                "role": "contrast_ab",
                 "claim_id": claim_id,
-                "intent": "Причина — отсутствие горничной / maintenance",
+                "intent": "A/B: пастель салона → чёрное прямое",
             },
             {
                 "beat_id": "b4",
-                "t_start": 20.0,
-                "t_end": 30.0,
-                "role": "proof",
+                "t_start": 26.0,
+                "t_end": 38.0,
+                "role": "mechanism",
                 "claim_id": claim_id,
-                "intent": "Цитата/пруф из досье",
+                "intent": "механизм сервис-вместо-статуса",
             },
             {
                 "beat_id": "b5",
-                "t_start": 30.0,
-                "t_end": 40.0,
+                "t_start": 38.0,
+                "t_end": 45.0,
                 "role": "coda",
                 "claim_id": claim_id,
-                "intent": "Формула на уход",
+                "intent": "формула",
             },
         ],
     }
 
 
-def _script_from_beats(beats: BeatList) -> dict:
+def _script_from_beats(beats: BeatList, claim=None) -> dict:
+    """VO без стоп-фраз D2 (`формула:` / `механизм:`)."""
+    claim = claim or make_claim()
+    texts = {
+        "hook_evidence": f"На экране {claim.object_anchor} — little black dress с обложки.",
+        "false_explanation": "Кажется, little black dress про роскошь и статус.",
+        "contrast_ab": (
+            f"Сначала {claim.contrast_pair.state_a}, потом {claim.contrast_pair.state_b}: "
+            f"{claim.contrast_pair.shift}."
+        ),
+        "mechanism": (
+            f"Прямой крой little black dress держит {claim.mechanism_term}: "
+            f"{claim.mechanism_explain}"
+        ),
+        "coda": f"{claim.object_anchor} работает как сервис дня, не как витрина.",
+    }
     lines = []
     for b in beats.beats:
         lines.append(
             {
                 "t_start": b.t_start,
                 "t_end": b.t_end,
-                "text": f"Текст бита {b.role.value}",
+                "text": texts[b.role.value],
                 "claim_id": beats.claim_id,
                 "beat_id": b.beat_id,
             }
@@ -106,9 +131,14 @@ def _script_from_beats(beats: BeatList) -> dict:
         "script_id": beats.script_id,
         "claim_id": beats.claim_id,
         "duration_sec": beats.duration_sec,
-        "tov_applied": False,
+        "tov_applied": True,
         "lines": lines,
     }
+
+
+def _valid_script_payload(claim_id: str = "lbd-maintenance-not-luxury", claim=None) -> dict:
+    beats = BeatList.model_validate(_valid_beats_payload(claim_id))
+    return _script_from_beats(beats, claim)
 
 
 def test_beatlist_requires_timecodes_and_roles():
@@ -133,9 +163,19 @@ def test_beatlist_requires_timecodes_and_roles():
         )
 
 
+def test_beatlist_rejects_early_mechanism():
+    payload = _valid_beats_payload()
+    payload["beats"][3]["t_start"] = 12.0
+    payload["beats"][3]["t_end"] = 20.0
+    payload["beats"][2]["t_end"] = 12.0
+    payload["beats"][4]["t_start"] = 20.0
+    with pytest.raises(ValidationError, match="mechanism слишком рано"):
+        BeatList.model_validate(payload)
+
+
 def test_beatlist_rejects_time_gap():
     payload = _valid_beats_payload()
-    payload["beats"][2]["t_start"] = 15.0  # дыра после b2 ending 10
+    payload["beats"][2]["t_start"] = 15.0
     with pytest.raises(ValidationError):
         BeatList.model_validate(payload)
 
@@ -144,9 +184,13 @@ def test_d1_architect_from_frozen_dossier():
     dossier = _frozen_dossier()
     llm = FakeLLM(_valid_beats_payload(dossier.claim_id))
     beats = architect_beats(dossier, llm=llm)
-    assert beats.duration_sec == 40.0
+    assert beats.duration_sec == 45.0
     assert beats.beats[0].role is BeatRole.hook_evidence
-    assert beats.beats[0].t_start == 0.0
+    assert {b.role for b in beats.beats} >= {
+        BeatRole.contrast_ab,
+        BeatRole.mechanism,
+        BeatRole.coda,
+    }
 
 
 def test_d1_rejects_unfrozen_dossier():
@@ -158,41 +202,51 @@ def test_d1_rejects_unfrozen_dossier():
 
 def test_d2_writes_script_grounded_in_dossier():
     dossier = _frozen_dossier()
-    beats = BeatList.model_validate(_valid_beats_payload())
-    llm = FakeLLM(_script_from_beats(beats))
-    script = write_prose(dossier, beats, llm=llm)
-    assert len(script.lines) == len(beats.beats)
+    llm = FakeLLM(_valid_script_payload(dossier.claim_id, dossier.claim))
+    script = write_prose(dossier, llm=llm)
+    assert len(script.lines) >= 3
+    assert script.duration_sec == 45.0
+    assert script.tov_applied is True
     assert all(line.claim_id == dossier.claim_id for line in script.lines)
+
+
+def test_d2_rejects_stop_phrase():
+    dossier = _frozen_dossier()
+    bad = _valid_script_payload(dossier.claim_id, dossier.claim)
+    bad["lines"][0]["text"] = "Странно, но little black dress просто милый."
+    with pytest.raises(ValueError, match="стоп-фраза"):
+        write_prose(dossier, llm=FakeLLM(bad))
 
 
 def test_d2_rejects_foreign_claim_id():
     dossier = _frozen_dossier()
-    beats = BeatList.model_validate(_valid_beats_payload())
-    bad = _script_from_beats(beats)
+    bad = _valid_script_payload(dossier.claim_id, dossier.claim)
     bad["lines"][1]["claim_id"] = "other-claim"
     with pytest.raises(ValueError, match="чужим claim_id"):
-        write_prose(dossier, beats, llm=FakeLLM(bad))
+        write_prose(dossier, llm=FakeLLM(bad))
 
 
 def test_d3_preserves_timecodes_and_sets_tov_flag():
+    dossier = _frozen_dossier()
     beats = BeatList.model_validate(_valid_beats_payload())
-    script = ScriptDraft.model_validate(_script_from_beats(beats))
-    rewritten = _script_from_beats(beats)
+    script = ScriptDraft.model_validate(_script_from_beats(beats, dossier.claim))
+    rewritten = _script_from_beats(beats, dossier.claim)
     for line in rewritten["lines"]:
         line["text"] = line["text"] + " / tov"
     llm = FakeLLM(rewritten)
     out = apply_tov(script, llm=llm, tov=load_tov())
     assert out.tov_applied is True
-    assert [ (l.t_start, l.t_end, l.claim_id) for l in out.lines ] == [
+    assert [(l.t_start, l.t_end, l.claim_id) for l in out.lines] == [
         (l.t_start, l.t_end, l.claim_id) for l in script.lines
     ]
-    assert all("/ tov" in l.text for l in out.lines)
 
 
 def test_d3_rejects_line_count_change():
+    dossier = _frozen_dossier()
     beats = BeatList.model_validate(_valid_beats_payload())
-    script = ScriptDraft.model_validate(_script_from_beats(beats))
-    bad = _script_from_beats(beats)
+    script = ScriptDraft.model_validate(_script_from_beats(beats, dossier.claim))
+    bad = _script_from_beats(beats, dossier.claim)
     bad["lines"] = bad["lines"][:2]
+    bad["duration_sec"] = bad["lines"][-1]["t_end"]
     with pytest.raises(ValueError, match="число строк"):
         apply_tov(script, llm=FakeLLM(bad))

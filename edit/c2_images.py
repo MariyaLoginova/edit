@@ -1,35 +1,32 @@
-"""C2 · Пачка картинок из веб-поиска; отбор/права — вне графа."""
+"""C2 · Картинки под state_a / state_b (FIX-2)."""
 
 from __future__ import annotations
 
+import logging
+
 from edit.config import load_thresholds
-from edit.search import ImageSearcher, default_searcher, soft_metadata_match
-from models import Dossier, ImageCandidate
+from edit.search import (
+    ImageSearcher,
+    SearchUnavailableError,
+    default_searcher,
+    soft_metadata_match,
+)
+from models import Dossier, ImageBuckets, ImageCandidate
+
+logger = logging.getLogger(__name__)
 
 
 def _image_count() -> int:
     return int(load_thresholds().get("material", {}).get("image_results", 8))
 
 
-def build_image_query(dossier: Dossier) -> str:
-    hint = dossier.claim.visual_hint.strip()
-    if dossier.claim.scope.author_or_work:
-        return f"{hint} {dossier.claim.scope.author_or_work}"
-    return hint
-
-
-def collect_images(
-    dossier: Dossier,
+def _hits_to_candidates(
+    hits: list,
+    query: str,
     *,
-    searcher: ImageSearcher | None = None,
-    keep_non_matching: bool = True,
-) -> Dossier:
-    """C2: дополняет dossier.image_candidates. Не замораживает."""
-    dossier.ensure_mutable()
-    searcher = searcher or default_searcher()
-    query = build_image_query(dossier)
-    hits = searcher.search_images(query, max_results=_image_count())
-
+    for_state: str,
+    keep_non_matching: bool,
+) -> list[ImageCandidate]:
     candidates: list[ImageCandidate] = []
     for hit in hits:
         if not hit.url:
@@ -44,9 +41,55 @@ def collect_images(
                 description=hit.snippet,
                 query=query,
                 soft_match=matched,
+                for_state=for_state,  # type: ignore[arg-type]
             )
         )
-
-    # предпочитаем soft_match=true в начале пачки
     candidates.sort(key=lambda c: (not c.soft_match, c.url))
-    return dossier.model_copy(update={"image_candidates": candidates})
+    return candidates
+
+
+def collect_images(
+    dossier: Dossier,
+    *,
+    searcher: ImageSearcher | None = None,
+    keep_non_matching: bool = True,
+) -> Dossier:
+    """C2: пачки под contrast_pair.state_a / state_b. Не замораживает."""
+    dossier.ensure_mutable()
+    searcher = searcher or default_searcher()
+    pair = dossier.claim.contrast_pair
+    n = _image_count()
+
+    try:
+        hits_a = searcher.search_images(pair.state_a, max_results=n)
+        hits_b = searcher.search_images(pair.state_b, max_results=n)
+    except SearchUnavailableError as exc:
+        logger.error("C2: поиск не отработал: %s", exc)
+        buckets = ImageBuckets(
+            for_state_a=[],
+            for_state_b=[],
+            search_status="unavailable",
+            search_error=str(exc),
+        )
+        return dossier.model_copy(update={"image_candidates": buckets})
+
+    for_a = _hits_to_candidates(
+        hits_a, pair.state_a, for_state="a", keep_non_matching=keep_non_matching
+    )
+    for_b = _hits_to_candidates(
+        hits_b, pair.state_b, for_state="b", keep_non_matching=keep_non_matching
+    )
+    status = "empty" if (not for_a and not for_b) else "ok"
+    if status == "empty":
+        logger.warning(
+            "C2: поиск отработал, но нашёл 0 картинок (state_a=%r state_b=%r)",
+            pair.state_a,
+            pair.state_b,
+        )
+    buckets = ImageBuckets(
+        for_state_a=for_a,
+        for_state_b=for_b,
+        search_status=status,
+        search_error=None,
+    )
+    return dossier.model_copy(update={"image_candidates": buckets})

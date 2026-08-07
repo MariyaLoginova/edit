@@ -1,14 +1,17 @@
 """Сквозные Pydantic-контракты пайплайна EDIT."""
 
-from models.claim import Citation, ClaimCard, ClaimKind, Scope
+from models.claim import Citation, ClaimCard, ClaimKind, ContrastPair, Scope
 from models.dossier import (
     Dossier,
+    ImageBuckets,
     ImageCandidate,
     SoftFactcheckResult,
     WebConfirmation,
+    can_freeze,
 )
 from models.editorial import (
     CompressionReport,
+    CritiqueReport,
     OpeningPick,
     OpeningVariant,
     RedAttack,
@@ -19,6 +22,18 @@ from models.editorial import (
 from models.idea import GenerationBrief, IdeaProbe, ProbeRegister
 from models.learning import RolloutMetrics, ScoringWeights, WeightUpdate
 from models.pipeline import ScoredClaim
+from models.personal_story import (
+    EndingType,
+    FactIssue,
+    HookOptions,
+    HookVariant,
+    MonologueCheck,
+    MonologueDraft,
+    ProofItem,
+    ResearchFact,
+    ResearchPack,
+    StoryBrief,
+)
 from models.retention import BeatRisk, DropReason, RetentionReport
 from models.scenario import Beat, BeatList, BeatRole, ScriptDraft, ScriptLine, ToneOfVoice
 from models.shots import ShotImage, ShotList, ShotPacket
@@ -34,19 +49,31 @@ __all__ = [
     "ClaimCard",
     "ClaimKind",
     "CompressionReport",
+    "ContrastPair",
+    "CritiqueReport",
     "Dossier",
     "DropReason",
+    "EndingType",
+    "FactIssue",
+    "HookOptions",
+    "HookVariant",
     "GenerationBrief",
     "IdeaProbe",
+    "ImageBuckets",
     "ImageCandidate",
     "OpeningPick",
     "OpeningVariant",
+    "MonologueCheck",
+    "MonologueDraft",
     "ProbeRegister",
+    "ProofItem",
     "RedAttack",
     "RedAttackKind",
     "RedCritique",
     "RetentionReport",
     "RetellReport",
+    "ResearchFact",
+    "ResearchPack",
     "RolloutMetrics",
     "Scope",
     "ScoredClaim",
@@ -59,6 +86,7 @@ __all__ = [
     "ShotPacket",
     "SoftFactcheckResult",
     "SourceMap",
+    "StoryBrief",
     "SourceSegment",
     "ToneOfVoice",
     "TraceIssue",
@@ -66,4 +94,5 @@ __all__ = [
     "TraceReport",
     "WebConfirmation",
     "WeightUpdate",
+    "can_freeze",
 ]

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from edit.config import load_thresholds
 from edit.e2_retention_critic import script_as_timed_text
-from edit.llm import ChatModel, content_text, get_chat_model, parse_json_payload
+from edit.llm import ChatModel, get_chat_model, invoke_json
 from models import Dossier, OpeningPick, RetentionReport, ScriptDraft, ScriptLine
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e4_openings.txt"
@@ -61,34 +61,67 @@ def rewrite_openings(
         "script": script.model_dump(mode="json"),
         "script_timed": script_as_timed_text(script),
     }
-    response = model.invoke(
-        [
-            {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
-            {"role": "user", "content": str(user)},
-        ]
-    )
-    raw = parse_json_payload(content_text(response))
-    if not isinstance(raw, dict):
-        raise ValueError("E4: ожидался JSON-объект")
-    raw.setdefault("script_id", script.script_id)
-    # если LLM не вернул полный script — соберём сами из chosen
-    if "script" not in raw or not isinstance(raw.get("script"), dict):
-        pick_tmp = {
-            "script_id": script.script_id,
-            "variants": raw.get("variants", []),
-            "chosen_index": raw.get("chosen_index", 0),
-            "script": script.model_dump(mode="json"),
-        }
-        preview = OpeningPick.model_validate(pick_tmp)
-        raw["script"] = _apply_opening(script, preview.chosen_text).model_dump(mode="json")
-    else:
-        # нормализуем id
-        raw["script"]["script_id"] = script.script_id
-        raw["script"]["claim_id"] = script.claim_id
+    last_error: Exception | None = None
+    for _attempt in range(3):
+        request = user
+        if last_error is not None:
+            request = {
+                **user,
+                "revision_note": f"Предыдущий JSON не прошёл схему: {last_error}",
+                "output_contract": {
+                    "required": ["variants", "chosen_index"],
+                    "variants": f"массив из {vmin}–{vmax} строк или объектов с text/rationale/hook_strength",
+                    "chosen_index": "целое число в диапазоне variants",
+                },
+            }
+        raw = invoke_json(
+            model,
+            [
+                {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
+                {"role": "user", "content": str(request)},
+            ],
+            retries=2,
+        )
+        try:
+            if not isinstance(raw, dict):
+                raise ValueError("ожидался JSON-объект")
+            if "variants" not in raw and isinstance(raw.get("OpeningPick"), dict):
+                raw = raw["OpeningPick"]
+            variants = raw.get("variants") or raw.get("openings") or raw.get("options") or []
+            raw["variants"] = [
+                (
+                    {
+                        "text": item,
+                        "rationale": "Вариант крючка, предложенный моделью.",
+                        "hook_strength": 3,
+                    }
+                    if isinstance(item, str)
+                    else item
+                )
+                for item in variants
+            ]
+            raw.setdefault("script_id", script.script_id)
+            if "script" not in raw or not isinstance(raw.get("script"), dict):
+                pick_tmp = {
+                    "script_id": script.script_id,
+                    "variants": raw["variants"],
+                    "chosen_index": raw.get("chosen_index", raw.get("chosen", 0)),
+                    "script": script.model_dump(mode="json"),
+                }
+                preview = OpeningPick.model_validate(pick_tmp)
+                raw["script"] = _apply_opening(
+                    script, preview.chosen_text
+                ).model_dump(mode="json")
+            else:
+                raw["script"]["script_id"] = script.script_id
+                raw["script"]["claim_id"] = script.claim_id
 
-    pick = OpeningPick.model_validate(raw)
-    # гарантия: opening применён и claim_id не сбит
-    fixed_script = _apply_opening(pick.script, pick.chosen_text)
-    if fixed_script.claim_id != dossier.claim_id:
-        raise ValueError("E4: script.claim_id уехал от досье")
-    return pick.model_copy(update={"script": fixed_script})
+            pick = OpeningPick.model_validate(raw)
+            fixed_script = _apply_opening(pick.script, pick.chosen_text)
+            if fixed_script.claim_id != dossier.claim_id:
+                raise ValueError("script.claim_id уехал от досье")
+            return pick.model_copy(update={"script": fixed_script})
+        except (ValueError, Exception) as exc:
+            last_error = exc
+    assert last_error is not None
+    raise last_error

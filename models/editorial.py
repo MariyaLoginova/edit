@@ -6,6 +6,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, model_validator
 
+from models.retention import BeatRisk
 from models.scenario import ScriptDraft
 
 
@@ -76,7 +77,7 @@ class RetellReport(BaseModel):
 
 
 class CompressionReport(BaseModel):
-    """E6 · Сжатие −20–25% длины без потери смысла/claim_id."""
+    """E6 · Сжатие −20–25% длины без потери смысла/claim_id. (удалён из графа FIX-4)"""
 
     script_id: str
     original_chars: int = Field(..., ge=0)
@@ -85,3 +86,42 @@ class CompressionReport(BaseModel):
     script: ScriptDraft
     passes: bool
     summary: str = Field(..., max_length=400)
+
+
+class CritiqueReport(BaseModel):
+    """FIX-4 · E-критик: динамика + содержание + пересказ в одном вызове."""
+
+    script_id: str
+    duration_sec: float = Field(..., ge=0)
+
+    # динамика (бывш. E2)
+    first3_has_hook: bool
+    open_strength: int = Field(..., ge=1, le=5)
+    risks: list[BeatRisk] = Field(default_factory=list)
+    dropoff_score: int = Field(..., ge=0, le=100)
+
+    # содержание (бывш. E3)
+    attacks: list[RedAttack] = Field(default_factory=list)
+    severity_max: int = Field(..., ge=1, le=5)
+
+    # пересказ (бывш. E5)
+    retell: str = Field(..., min_length=1, max_length=280)
+    coda_quote: str = ""
+    coda_is_quotable: bool = False
+    retell_matches_coda: bool = False
+    virality_factors: list[str] = Field(
+        default_factory=list,
+        description="Неожиданный факт, эскалация и причина переслать.",
+    )
+    provocation: str = Field(
+        "",
+        max_length=280,
+        description="Маркированная как мнение гипотеза, а не мораль.",
+    )
+    missing_evidence: list[str] = Field(
+        default_factory=list,
+        description="Каких конкретных доказательств или нюансов не хватает.",
+    )
+
+    passes: bool
+    summary: str = Field(..., max_length=500)

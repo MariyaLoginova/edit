@@ -1,0 +1,13 @@
+{
+  "claim_id": "barbie-career-costume-permission",
+  "factual_issues": [
+    {
+      "quote": "Первый деловой костюм — твид, перчатки, шапочка — не одежда дизайнера.",
+      "issue": "Проверка не объяснила проблему.",
+      "severity": 3
+    }
+  ],
+  "overclaim_issues": [],
+  "passes": true,
+  "summary": "mostly_clean"
+}

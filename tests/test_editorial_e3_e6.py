@@ -8,9 +8,6 @@ from edit.e4_openings import _apply_opening, rewrite_openings
 from edit.e5_retell import evaluate_retell, finalize_retell
 from edit.e6_compress import compress_script, finalize_compression
 from models import (
-    Citation,
-    ClaimCard,
-    ClaimKind,
     CompressionReport,
     Dossier,
     OpeningPick,
@@ -20,32 +17,15 @@ from models import (
     RedCritique,
     RetentionReport,
     RetellReport,
-    Scope,
     ScriptDraft,
     ScriptLine,
-    SoftFactcheckResult,
 )
+from tests.claim_factory import make_frozen_dossier
 from tests.fakes import FakeLLM
 
 
 def _dossier() -> Dossier:
-    claim = ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело как наряд без ухода",
-        counter_expectation="Думают про роскошь",
-        visual_hint="Chanel LBD Vogue 1926",
-        citation=Citation(locator="гл.2", quote="required almost no maintenance"),
-        scope=Scope(period="1920s", author_or_work="Chanel"),
-        source_segment_id="ch2-s1",
-        confidence=0.9,
-    )
-    return Dossier(
-        claim_id=claim.claim_id,
-        claim=claim,
-        material_notes="low maintenance",
-        soft_factcheck=SoftFactcheckResult(ok=True, rationale="ok"),
-    ).freeze()
+    return make_frozen_dossier(material_notes="low maintenance")
 
 
 def _script() -> ScriptDraft:
@@ -54,11 +34,36 @@ def _script() -> ScriptDraft:
         claim_id="lbd-maintenance-not-luxury",
         duration_sec=40,
         lines=[
-            ScriptLine(t_start=0, t_end=3, text="Привет, сегодня про платье.", claim_id="lbd-maintenance-not-luxury"),
-            ScriptLine(t_start=3, t_end=12, text="Казалось бы, это про роскошь.", claim_id="lbd-maintenance-not-luxury"),
-            ScriptLine(t_start=12, t_end=24, text="На деле — почти не требовало ухода.", claim_id="lbd-maintenance-not-luxury"),
-            ScriptLine(t_start=24, t_end=32, text="Чёрный прятал городскую грязь.", claim_id="lbd-maintenance-not-luxury"),
-            ScriptLine(t_start=32, t_end=40, text="Формула: статус маскирует сервис, который исчез.", claim_id="lbd-maintenance-not-luxury"),
+            ScriptLine(
+                t_start=0,
+                t_end=3,
+                text="На экране little black dress Chanel — не роскошь, а сервис.",
+                claim_id="lbd-maintenance-not-luxury",
+            ),
+            ScriptLine(
+                t_start=3,
+                t_end=12,
+                text="Казалось, пастельное платье салона — символ статуса.",
+                claim_id="lbd-maintenance-not-luxury",
+            ),
+            ScriptLine(
+                t_start=12,
+                t_end=24,
+                text="Чёрное прямое платье почти не требовало ухода.",
+                claim_id="lbd-maintenance-not-luxury",
+            ),
+            ScriptLine(
+                t_start=24,
+                t_end=32,
+                text="Чёрный little black dress прятал городскую грязь.",
+                claim_id="lbd-maintenance-not-luxury",
+            ),
+            ScriptLine(
+                t_start=32,
+                t_end=40,
+                text="Формула: little black dress маскирует сервис, который исчез.",
+                claim_id="lbd-maintenance-not-luxury",
+            ),
         ],
     )
 

@@ -1,38 +1,14 @@
 from __future__ import annotations
 
 from edit.graph import build_f1_only_graph, build_learning_graph
-from edit.search import SearchHit
-from models import (
-    Citation,
-    ClaimCard,
-    ClaimKind,
-    Dossier,
-    RolloutMetrics,
-    Scope,
-    ScriptDraft,
-    ScriptLine,
-    SoftFactcheckResult,
-)
+from models import RolloutMetrics, ScriptDraft, ScriptLine
+from tests.claim_factory import abundant_searcher, make_frozen_dossier
 from tests.fakes import FakeSearcher
 
 
 def test_f1_only_graph():
-    claim = ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело из-за ухода",
-        counter_expectation="Думают про роскошь",
-        visual_hint="Chanel LBD Vogue 1926",
-        citation=Citation(locator="гл.2", quote="required almost no maintenance"),
-        scope=Scope(period="1920s", author_or_work="Chanel"),
-        source_segment_id="ch2",
-        confidence=0.9,
-    )
-    dossier = Dossier(
-        claim_id=claim.claim_id,
-        claim=claim,
-        soft_factcheck=SoftFactcheckResult(ok=True, rationale="ok"),
-    ).freeze()
+    dossier = make_frozen_dossier()
+    claim = dossier.claim
     script = ScriptDraft(
         script_id="s1",
         claim_id=claim.claim_id,
@@ -42,15 +18,7 @@ def test_f1_only_graph():
             ScriptLine(t_start=5, t_end=10, text="Уход.", claim_id=claim.claim_id),
         ],
     )
-    searcher = FakeSearcher(
-        images=[
-            SearchHit(
-                url="https://img/a.jpg",
-                title="Chanel LBD Vogue 1926",
-                snippet="dress",
-            )
-        ]
-    )
+    searcher = abundant_searcher()
     out = build_f1_only_graph(searcher=searcher).invoke(
         {"script": script, "dossier": dossier}
     )

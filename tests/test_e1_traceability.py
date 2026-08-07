@@ -2,44 +2,32 @@ from __future__ import annotations
 
 from edit.e1_traceability import audit_traceability
 from models import (
-    Citation,
-    ClaimCard,
-    ClaimKind,
     Dossier,
-    Scope,
     ScriptDraft,
     ScriptLine,
     SoftFactcheckResult,
     TraceReason,
 )
+from tests.claim_factory import make_claim, make_frozen_dossier
 
 
 def _dossier(*, frozen: bool = True) -> Dossier:
-    claim = ClaimCard(
-        claim_id="lbd-maintenance-not-luxury",
-        kind=ClaimKind.causal,
-        claim="Маленькое чёрное взлетело как наряд без ухода",
-        counter_expectation="Думают, что это про роскошь",
-        visual_hint="Chanel LBD Vogue 1926",
-        citation=Citation(locator="гл.2", quote="required almost no maintenance"),
-        scope=Scope(period="1920s", author_or_work="Chanel"),
-        source_segment_id="ch2-s1",
-        confidence=0.9,
-    )
-    d = Dossier(
+    if frozen:
+        return make_frozen_dossier()
+    claim = make_claim()
+    return Dossier(
         claim_id=claim.claim_id,
         claim=claim,
         material_notes="ok",
         soft_factcheck=SoftFactcheckResult(ok=True, invented_items=[], rationale="ok"),
     )
-    return d.freeze() if frozen else d
 
 
 def test_e1_passes_when_all_facts_traced():
     script = ScriptDraft(
         script_id="s1",
         claim_id="lbd-maintenance-not-luxury",
-        duration_sec=20,
+        duration_sec=10,
         lines=[
             ScriptLine(t_start=0, t_end=5, text="Не роскошь, а отсутствие горничной.", claim_id="lbd-maintenance-not-luxury"),
             ScriptLine(t_start=5, t_end=10, text="Платье почти не требовало ухода.", claim_id="lbd-maintenance-not-luxury"),
@@ -54,7 +42,7 @@ def test_e1_fails_missing_claim_id():
     script = ScriptDraft(
         script_id="s2",
         claim_id="lbd-maintenance-not-luxury",
-        duration_sec=10,
+        duration_sec=5,
         lines=[
             ScriptLine(
                 t_start=0,
@@ -73,7 +61,7 @@ def test_e1_fails_unknown_claim_id():
     script = ScriptDraft(
         script_id="s3",
         claim_id="lbd-maintenance-not-luxury",
-        duration_sec=10,
+        duration_sec=5,
         lines=[
             ScriptLine(
                 t_start=0,
