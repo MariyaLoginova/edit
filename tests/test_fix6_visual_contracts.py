@@ -55,7 +55,7 @@ def test_d2_retries_until_monologue_is_in_fixed_word_range():
     dossier = make_frozen_dossier()
     brief = _brief()
     first = " ".join(["коротко"] * 90)
-    valid = " ".join(["текст"] * 106) + " Я бы поставила эти костюмы в один ряд."
+    valid = " ".join(["текст"] * 106) + " Спиздели или вдохновились?"
     calls = 0
 
     def router(messages):
@@ -65,4 +65,6 @@ def test_d2_retries_until_monologue_is_in_fixed_word_range():
 
     monologue = write_monologue(dossier, brief, llm=FakeLLM(router))
     assert 105 <= monologue.word_count <= 115
+    assert "?" in monologue.text
+    assert monologue.ending_type == EndingType.reactive
     assert calls == 2

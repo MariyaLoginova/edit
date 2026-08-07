@@ -47,8 +47,8 @@ def test_personal_story_graph_uses_three_llm_calls():
                     for move in ("залипание", "спрятанное", "переворот", "тихий кадр", "потеря")
                 ]
             )
-        if "Говоришь со зрителем вслух" in system or "Рассказываешь от первого лица" in system:
-            return monologue + " Финальная формула держит историю."
+        if "Говоришь со зрителем" in system or "Рассказываешь от первого лица" in system:
+            return monologue + " Спиздели или вдохновились?"
         if "исследователь для личного ролика" in system:
             return json.dumps({
                 "claim_id": claim.claim_id,
