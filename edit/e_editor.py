@@ -52,8 +52,11 @@ def plan_story(
     raw = parse_json_payload(content_text(response))
     if not isinstance(raw, dict):
         raise ValueError("E-редактор: ожидался JSON-объект")
-    if "recommended_method" not in raw and isinstance(raw.get("StoryBrief"), dict):
-        raw = raw["StoryBrief"]
+    if "recommended_method" not in raw:
+        for wrapper in ("StoryBrief", "story_brief"):
+            if isinstance(raw.get(wrapper), dict):
+                raw = raw[wrapper]
+                break
     aliases = {
         "key_idea": "main_thought",
         "main_idea": "main_thought",
@@ -65,7 +68,9 @@ def plan_story(
         "hook": "opening",
         "hook_text": "opening",
         "why_audience": "audience_reason",
+        "why_audience_cares": "audience_reason",
         "why_share": "share_reason",
+        "impress_colleagues": "share_reason",
         "methods": "alternative_methods",
         "alternative_story_methods": "alternative_methods",
     }
@@ -73,6 +78,8 @@ def plan_story(
         if target not in raw and source in raw:
             raw[target] = raw[source]
     raw.setdefault("main_thought", raw.get("claim") or claim.claim)
+    if isinstance(raw.get("main_thought"), str):
+        raw["main_thought"] = raw["main_thought"][:400]
     method = (
         raw.get("story_method")
         or raw.get("story_type")
@@ -154,6 +161,9 @@ def plan_story(
     for key in ("audience_reason", "share_reason"):
         if isinstance(raw.get(key), dict):
             raw[key] = raw[key].get("text") or raw[key].get("reason") or ""
+    for key in ("audience_reason", "share_reason"):
+        if isinstance(raw.get(key), str):
+            raw[key] = raw[key][:300]
     proof_plan = raw.get("proof_plan")
     if isinstance(proof_plan, list):
         raw["proof_plan"] = [
