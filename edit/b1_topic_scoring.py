@@ -42,7 +42,7 @@ def gate_topic(
     failures: list[str] = []
     if not topic.source_conclusion_quote.strip():
         failures.append("нет дословного вывода автора в источнике")
-    minimum = 6 if topic.format == "excursion" else 3
+    minimum = 6 if topic.format in {"excursion", "narrative"} else 3
     if len(topic.visual_examples) < minimum:
         failures.append(
             f"нечего показать: {len(topic.visual_examples)}<{minimum} визуальных экземпляров"
