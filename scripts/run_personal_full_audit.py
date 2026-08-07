@@ -26,6 +26,7 @@ from edit.costing import (
 )
 from edit.d2_monologue import write_monologue
 from edit.d1_visual_planner import plan_visual_scenario
+from edit.d1_visual_research import research_visual_material
 from edit.e_check import check_monologue
 from edit.e_editor import plan_story
 from edit.e_hook import write_hook
@@ -426,12 +427,24 @@ def main() -> int:
     dump(out / "02_research_pack.json", pack)
     dump(out / "03_dossier.json", dossier)
 
+    print("== D1.4 external visual research ==")
+    audited.stage = "D1.4 visual research"
+    visual_research = research_visual_material(
+        dossier,
+        brief,
+        primary_text=source,
+        searcher=default_searcher(),
+        llm=audited,
+    )
+    dump(out / "03a_visual_research.json", visual_research)
+
     print("== D1.5 visual plan / image search ==")
     audited.stage = "D1.5 visual plan"
     visual_plan = plan_visual_scenario(
         dossier,
         brief,
         primary_text=source,
+        visual_research=visual_research,
         # C1 uses the pinned primary source; visual refs use Brave Images when configured.
         image_searcher=default_searcher(),
         llm=audited,
