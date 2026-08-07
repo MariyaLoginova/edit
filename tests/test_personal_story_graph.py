@@ -18,11 +18,13 @@ def test_personal_story_graph_uses_three_llm_calls():
             return json.dumps({
                 "claim_id": claim.claim_id,
                 "main_thought": "Платье работает как инфраструктура городского дня.",
+                "angle": "увеличить до предела — платье как городская инженерия",
+                "why_viewer": "Ты надеваешь «нейтральное», чтобы день тебя не тормозил.",
                 "visual_evidence": "чёрное прямое платье и городская коммютерша",
                 "recommended_method": "a_vot_nifiga",
                 "alternative_methods": ["bylo_stalo"],
                 "opening": "Неожиданный факт.",
-                "audience_reason": "Не банально.",
+                "audience_reason": "Ты надеваешь «нейтральное», чтобы день тебя не тормозил.",
                 "share_reason": "Есть чем поделиться.",
                 "proof_plan": [
                     {"point": "деталь 1", "source_quote": "visual evidence one"},

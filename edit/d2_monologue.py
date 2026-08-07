@@ -9,7 +9,7 @@ from edit.audience import load_audience
 from edit.config import ROOT
 from edit.llm import ChatModel, content_text
 from edit.model_routing import PolicyBlockedError, get_personal_story_model, is_policy_text
-from edit.library import get_idea_trigger
+from edit.library import compose_system_prompt, get_idea_trigger
 from edit.structures import get_structure
 from models import Dossier, MonologueDraft, StoryBrief, can_freeze
 
@@ -198,7 +198,12 @@ def write_monologue(
         response = content_text(
             model.invoke(
                 [
-                    {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
+                    {
+                        "role": "system",
+                        "content": compose_system_prompt(
+                            PROMPT_PATH, "d2_methods_menu"
+                        ),
+                    },
                     {
                         "role": "user",
                         "content": str(

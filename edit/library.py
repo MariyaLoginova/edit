@@ -10,6 +10,7 @@ import yaml
 from edit.config import ROOT
 
 NONE_ID = "none"
+KNOWLEDGE_DIR = ROOT / "config" / "knowledge"
 
 
 def _load_list(path: Path) -> list[dict[str, Any]]:
@@ -17,6 +18,28 @@ def _load_list(path: Path) -> list[dict[str, Any]]:
     if not isinstance(data, list):
         raise ValueError(f"{path}: ожидался список")
     return data
+
+
+def load_knowledge_menu(name: str) -> str:
+    """Короткое статичное меню знаний для system prompt (не RAG)."""
+    path = KNOWLEDGE_DIR / f"{name}.txt"
+    text = path.read_text(encoding="utf-8").strip()
+    if not text:
+        raise ValueError(f"пустой knowledge menu: {path}")
+    return text
+
+
+def compose_system_prompt(prompt_path: Path, knowledge_name: str | None = None) -> str:
+    """Склеить базовый промпт + меню знаний. Меню — отдельные файлы для правок."""
+    base = prompt_path.read_text(encoding="utf-8").strip()
+    if not knowledge_name:
+        return base
+    menu = load_knowledge_menu(knowledge_name)
+    return (
+        f"{base}\n\n---\n"
+        "ЗНАНИЯ (меню, не лекция — выбери пункт, не пересказывай блок)\n"
+        f"{menu}"
+    )
 
 
 def load_idea_triggers() -> list[dict[str, Any]]:

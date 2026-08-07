@@ -13,6 +13,7 @@ from edit.llm import ChatModel, content_text, parse_json_payload
 from edit.model_routing import get_personal_story_model
 from edit.library import (
     NONE_ID,
+    compose_system_prompt,
     idea_trigger_menu,
     load_idea_triggers,
     normalize_library_id,
@@ -23,11 +24,10 @@ from models import ClaimCard, EndingType, StoryBrief
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "e_editor.txt"
 METHODS_PATH = ROOT / "config" / "story_methods.yaml"
 HOOKS_PATH = ROOT / "config" / "hook_triggers.yaml"
-_ABSTRACT_THESIS = re.compile(
-    r"(?i)\b(репутацион\w*|pr[- ]?щит|маркетингов\w*|бизнес[- ]?логик\w*|"
-    r"корпоративн\w*|прибыл\w*)\b"
+_CHRONOLOGY_ANGLE = re.compile(
+    r"(?i)^(хронолог|линейн\w*\s*пересказ|по\s*порядк|timeline|"
+    r"сначала.{0,40}потом.{0,40}потом|1960\s*[→\->])"
 )
-_VISUAL_WORD = re.compile(r"[а-яё]{4,}", re.I)
 _QUOTE_CHARS = str.maketrans(
     {
         "«": '"',
@@ -99,7 +99,10 @@ def plan_story(
     model = llm or get_personal_story_model(temperature=0.2)
     response = model.invoke(
         [
-            {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
+            {
+                "role": "system",
+                "content": compose_system_prompt(PROMPT_PATH, "e_editor_menu"),
+            },
             {
                 "role": "user",
                 "content": str(
@@ -135,8 +138,13 @@ def plan_story(
         "main_story_method": "recommended_method",
         "hook": "opening",
         "hook_text": "opening",
-        "why_audience": "audience_reason",
-        "why_audience_cares": "audience_reason",
+        "fantogramma": "angle",
+        "fantogram_angle": "angle",
+        "story_angle": "angle",
+        "viewer_hook": "why_viewer",
+        "why_it_matters": "why_viewer",
+        "why_audience": "why_viewer",
+        "why_audience_cares": "why_viewer",
         "why_share": "share_reason",
         "impress_colleagues": "share_reason",
         "methods": "alternative_methods",
@@ -157,6 +165,36 @@ def plan_story(
     raw.setdefault("main_thought", raw.get("claim") or claim.claim)
     if isinstance(raw.get("main_thought"), str):
         raw["main_thought"] = raw["main_thought"][:400]
+    if isinstance(raw.get("angle"), dict):
+        ang = raw["angle"]
+        raw["angle"] = (
+            ang.get("text")
+            or ang.get("move")
+            or ang.get("name")
+            or " ".join(str(x) for x in ang.values() if x)
+        )
+    if not raw.get("angle"):
+        raw["angle"] = (
+            raw.get("fantogramma_move")
+            or raw.get("angle_move")
+            or "сделать наоборот — привычное чтение ломается деталью"
+        )
+    if isinstance(raw.get("angle"), str):
+        raw["angle"] = raw["angle"][:280]
+    if isinstance(raw.get("why_viewer"), dict):
+        wv = raw["why_viewer"]
+        raw["why_viewer"] = wv.get("text") or wv.get("reason") or wv.get("why") or ""
+    if not raw.get("why_viewer"):
+        raw["why_viewer"] = (
+            raw.get("audience_reason")
+            or raw.get("why_watch")
+            or "Это про то, как ты читаешь знакомый визуал в своей работе."
+        )
+    if isinstance(raw.get("why_viewer"), str):
+        raw["why_viewer"] = raw["why_viewer"][:300]
+    # audience_reason — наследник why_viewer для старых потребителей брифа.
+    if not raw.get("audience_reason"):
+        raw["audience_reason"] = raw["why_viewer"]
     evidence = raw.get("visual_evidence")
     if isinstance(evidence, list):
         raw["visual_evidence"] = "; ".join(str(x).strip() for x in evidence if str(x).strip())
@@ -236,7 +274,8 @@ def plan_story(
         raw["share_reason"] = audience.get("share_reason") or audience.get("status") or ""
     if not raw.get("audience_reason"):
         raw["audience_reason"] = (
-            raw.get("why_watch")
+            raw.get("why_viewer")
+            or raw.get("why_watch")
             or raw.get("why_watch_till_end")
             or (audience.get("why_watch_till_end") if isinstance(audience, dict) else None)
             or raw.get("audience_fit")
@@ -249,7 +288,7 @@ def plan_story(
             or raw.get("flex_for_colleague")
             or (audience.get("flex_value") if isinstance(audience, dict) else None)
             or raw.get("share_value")
-            or "Даёт точный референс и термин для обсуждения с коллегами."
+            or "Есть острый угол и конкретный образ, чтобы спорить с коллегами."
         )
     for key in ("audience_reason", "share_reason"):
         if isinstance(raw.get(key), dict):
@@ -329,18 +368,23 @@ def plan_story(
             _repair_attempt=1,
             _repair_note=(
                 f"Предыдущий ответ отклонён валидатором: {exc}. Верни заново валидный "
-                "StoryBrief: visual_evidence, ровно 3 proof_plan с дословными "
-                "source_quote, каждая quote должна буквально встречаться в primary_text."
+                "StoryBrief: angle (не хронология), why_viewer (связь со зрителем), "
+                "visual_evidence, ровно 3 proof_plan с дословными source_quote — "
+                "каждая quote должна буквально встречаться в primary_text."
             ),
         )
 
 
 def _validate_visual_contract(brief: StoryBrief, primary_text: str) -> None:
-    """Кодовая приёмка: показываемый тезис и три дословные опоры."""
-    if _ABSTRACT_THESIS.search(brief.main_thought):
+    """Кодовая приёмка: angle/why_viewer и три дословные опоры."""
+    if not brief.angle.strip():
+        raise ValueError("нужен angle — ход, ломающий линейность")
+    if _CHRONOLOGY_ANGLE.search(brief.angle.strip()):
         raise ValueError(
-            "main_thought мотивный/корпоративный; нужен показываемый визуальный тезис"
+            "angle не должен быть хронологией; возьми ход фантограммы"
         )
+    if not brief.why_viewer.strip():
+        raise ValueError("нужен why_viewer — связь со зрителем")
     if not primary_text:
         raise ValueError("нужен primary_text для проверки proof_plan")
     missing: list[str] = []
@@ -352,9 +396,3 @@ def _validate_visual_contract(brief: StoryBrief, primary_text: str) -> None:
             item.source_quote = located[:700]
     if missing:
         raise ValueError("source_quote не найдена в первичном тексте: " + missing[0][:120])
-    source_words = set(_VISUAL_WORD.findall(primary_text.lower()))
-    evidence_words = set(_VISUAL_WORD.findall(brief.visual_evidence.lower()))
-    if len(source_words & evidence_words) < 2:
-        raise ValueError(
-            "visual_evidence не называет конкретные предметы/кадры из первичного текста"
-        )

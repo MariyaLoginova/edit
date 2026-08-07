@@ -213,6 +213,9 @@ def write_audit_md(
             v0 = variants[0]
             hook0 = getattr(v0, "first_line", None) or v0.get("first_line", "")
     main_thought = getattr(brief, "main_thought", None) or (brief or {}).get("main_thought", "")
+    angle = getattr(brief, "angle", None) or (brief or {}).get("angle", "")
+    why_viewer = getattr(brief, "why_viewer", None) or (brief or {}).get("why_viewer", "")
+    idea_pitch = getattr(brief, "idea_pitch", None) or (brief or {}).get("idea_pitch", "")
     lines = [
         f"# Аудит · {claim_id}",
         "",
@@ -230,6 +233,9 @@ def write_audit_md(
         "## Brief",
         "",
         f"- **main_thought:** {main_thought}",
+        f"- **angle:** {angle}",
+        f"- **why_viewer:** {why_viewer}",
+        f"- **idea_pitch:** {idea_pitch}",
         f"- **selected hook:** {hook0}",
         "",
         "## Монолог",
@@ -501,6 +507,20 @@ def main() -> int:
         ]
     )
     (out / "REPORT.md").write_text("\n".join(report) + "\n", encoding="utf-8")
+
+    # idea_pitch — в банк идей, чтобы сильные, но не выбранные линии не терялись.
+    if brief.idea_pitch:
+        bank = ROOT / "runs" / "goralik-barbie" / "IDEA_BANK.md"
+        if bank.parent.is_dir():
+            entry = (
+                f"\n## {claim.claim_id} · idea_pitch\n\n"
+                f"**Прогон:** `{out.name}` · angle: {brief.angle}\n\n"
+                f"{brief.idea_pitch}\n"
+            )
+            existing = bank.read_text(encoding="utf-8") if bank.exists() else "# Банк идей\n"
+            if brief.idea_pitch not in existing:
+                bank.write_text(existing.rstrip() + "\n" + entry, encoding="utf-8")
+
     print(out / "audit.csv")
     print(f"COST_USD={cost_summary['cost_usd']:.4f}")
     return 0 if check.passes else 2

@@ -74,6 +74,8 @@ def main() -> int:
         selected = StoryBrief(
             claim_id=brief.claim_id,
             main_thought=brief.main_thought,
+            angle=brief.angle,
+            why_viewer=brief.why_viewer,
             visual_evidence=brief.visual_evidence,
             recommended_method=method,
             alternative_methods=[m for m in METHODS if m != method],
