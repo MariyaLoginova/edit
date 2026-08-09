@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from edit.audience import load_audience
 from edit.kie_client import load_llm_config
 from edit.llm import ChatModel, get_chat_model, invoke_json
+from edit.model_routing import get_topic_pass_model
 from models import ClaimCard, ScoredTopic, SourceMap, SourceSegment
 
 logger = logging.getLogger(__name__)
@@ -262,7 +263,11 @@ def mine_and_score_book(
     )
 
     body = text.strip()
-    chat = llm or get_chat_model(temperature=0.0, model=model)
+    chat = llm or (
+        get_chat_model(temperature=0.0, model=model)
+        if model
+        else get_topic_pass_model(temperature=0.0)
+    )
     retries = json_retries
     if retries is None:
         retries = int((load_llm_config().get("a1_a2_matrix") or {}).get("json_retries", 2))

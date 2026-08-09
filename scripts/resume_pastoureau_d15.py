@@ -36,9 +36,9 @@ def main() -> int:
         json.loads((out / "03a_visual_research.json").read_text())
     )
 
-    # gemini: стабильнее на длинных стадиях после 500 у gpt-5-2
-    base = get_personal_story_model(model="gemini-2.5-flash", temperature=0.2)
-    audited = AuditedLLM(base, "gemini-2.5-flash")
+    # Редактура: gpt-5-2 → gemini-3.6 → gemini-3.5 (2.5 только аварийный хвост).
+    base = get_personal_story_model(model="gpt-5-2", temperature=0.2)
+    audited = AuditedLLM(base, "gpt-5-2")
 
     print("== D1.5 ==")
     audited.stage = "D1.5 visual plan"
@@ -88,7 +88,7 @@ def main() -> int:
     write_audit_md(
         out / "AUDIT.md",
         claim_id=claim.claim_id,
-        model="gemini-2.5-flash(D1.5→E)",
+        model="gpt-5-2→failover(D1.5→E)",
         monologue=monologue,
         check=check,
         hooks=hooks,

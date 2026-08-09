@@ -78,9 +78,30 @@ def _normalize_quote(text: str) -> str:
         .replace("—", "-")
         .replace("–", "-")
         .replace("\u00a0", " ")
+        .replace("ё", "е")
+    )
+    # OCR часто рвёт абзац колонтитулом «134 Все оттенки…»
+    normalized = re.sub(
+        r"\d{1,3}\s+все оттенки черного[^\n]*",
+        " ",
+        normalized,
+        flags=re.IGNORECASE,
     )
     normalized = re.sub(r"[^\w\s-]+", " ", normalized, flags=re.UNICODE)
     return re.sub(r"\s+", " ", normalized).strip()
+
+
+def _quote_in_haystack(quote: str, haystack: str) -> bool:
+    if not quote:
+        return False
+    if quote in haystack:
+        return True
+    # Длинная цитата: достаточно ядра ≥40 символов (OCR-разрывы).
+    if len(quote) >= 48:
+        core = quote[4:-4] if len(quote) > 56 else quote
+        if len(core) >= 40 and core in haystack:
+            return True
+    return False
 
 
 def _validate_source_quotes(
@@ -91,7 +112,7 @@ def _validate_source_quotes(
     haystack = _normalize_quote(source)
     for beat in plan.beats:
         quote = _normalize_quote(beat.source_quote)
-        if quote in haystack:
+        if _quote_in_haystack(quote, haystack):
             continue
         external_text = ""
         if research is not None and beat.source_url:
@@ -99,7 +120,7 @@ def _validate_source_quotes(
                 for ref in finding.web_references:
                     if ref.url == beat.source_url:
                         external_text += f" {ref.title} {ref.description}"
-        if quote not in _normalize_quote(external_text):
+        if not _quote_in_haystack(quote, _normalize_quote(external_text)):
             raise ValueError(
                 "D1.5: source_quote не найдена в первичном тексте для "
                 f"{beat.beat_id}: {beat.source_quote[:120]}"
@@ -165,6 +186,10 @@ def plan_visual_scenario(
     except ValueError as exc:
         if _repair_attempt >= 1:
             raise
+        # Один repair-вызов при битой цитате (часто OCR/колонтитул).
+        # В трейсе AuditedLLM помечаем стадию, чтобы не выглядело как «дубль».
+        if hasattr(model, "stage"):
+            model.stage = "D1.5 visual plan · repair"
         return plan_visual_scenario(
             dossier,
             brief,
@@ -177,7 +202,7 @@ def plan_visual_scenario(
                 f"Предыдущий план отклонён: {exc}. Верни весь VisualScenarioPlan "
                 "заново. source_quote каждого бита должна быть дословной "
                 "непрерывной цитатой из source_material; не сокращай и не "
-                "перефразируй её."
+                "перефразируй её. Не вставляй колонтитулы OCR в середину цитаты."
             ),
         )
     return _image_refs(plan, searcher=image_searcher)

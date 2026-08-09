@@ -79,7 +79,11 @@ class FailoverChatModel:
 def get_personal_story_model(
     *, model: str | None = None, temperature: float = 0.0
 ) -> ChatModel:
-    """Модель личного контура с fallback-цепочкой из config."""
+    """Модель личного контура с fallback-цепочкой из config.
+
+    Цепочка: default (gpt-5-2) → gemini-3-6 → gemini-3.5 → … .
+    gemini-2.5-flash сюда только как аварийный хвост из yaml, не для A1/B1.
+    """
     cfg = load_llm_config()
     ids = [model or str(cfg.get("default_model") or "gpt-5-2")]
     ids.extend(str(x) for x in cfg.get("personal_story_fallback_models", []))
@@ -87,3 +91,16 @@ def get_personal_story_model(
         model_ids=list(dict.fromkeys(ids)),
         temperature=temperature,
     )
+
+
+def get_topic_pass_model(
+    *, model: str | None = None, temperature: float = 0.0
+) -> ChatModel:
+    """Long-context модель для выбора тем/тегов (A1/A2+B1 whole-book).
+
+    По умолчанию topic_pass_model из config (gemini-2.5-flash). В редактуру
+    (E/C/D) эту модель не ставим основной — см. get_personal_story_model.
+    """
+    cfg = load_llm_config()
+    mid = model or str(cfg.get("topic_pass_model") or "gemini-2.5-flash")
+    return get_chat_model(model=mid, temperature=temperature)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from edit.model_routing import FailoverChatModel, is_policy_error
+from edit.model_routing import FailoverChatModel, get_topic_pass_model, is_policy_error
 
 
 def test_policy_error_is_detected():
@@ -67,3 +67,25 @@ def test_failover_switches_when_policy_is_returned_as_content(monkeypatch):
     router = FailoverChatModel(["blocked", "working"])
     assert router.invoke([]) == {"content": "ok"}
     assert router.disabled_models == {"blocked"}
+
+
+def test_topic_pass_model_reads_config(monkeypatch):
+    seen: dict[str, object] = {}
+
+    def factory(*, model, temperature):
+        seen["model"] = model
+        seen["temperature"] = temperature
+
+        class Dummy:
+            def invoke(self, messages):
+                return {"content": "ok"}
+
+        return Dummy()
+
+    monkeypatch.setattr(
+        "edit.model_routing.load_llm_config",
+        lambda: {"topic_pass_model": "gemini-2.5-flash"},
+    )
+    monkeypatch.setattr("edit.model_routing.get_chat_model", factory)
+    get_topic_pass_model(temperature=0.0)
+    assert seen["model"] == "gemini-2.5-flash"

@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT))
 from edit.a1_segment import segment_source
 from edit.a2_claim_miner import mine_and_score_book, mine_claims
 from edit.b1_topic_scoring import append_topic_bank
-from edit.llm import get_chat_model
+from edit.model_routing import get_topic_pass_model
 from models import ClaimCard, SegmentStrategy
 
 UPLOAD = Path(
@@ -178,8 +178,8 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument(
         "--model",
-        default="gemini-2.5-flash",
-        help="один вызов на всю книгу+скоринг (long-context; gpt-5-2 на KIE рвёт ~90k tok)",
+        default=None,
+        help="topic_pass_model из config (gemini-2.5-flash); только A1/B1, не редактура",
     )
     p.add_argument("--force-source", action="store_true")
     p.add_argument(
@@ -195,7 +195,7 @@ def main() -> int:
 
     text = ensure_source(force=args.force_source)
     OUT.mkdir(parents=True, exist_ok=True)
-    llm = get_chat_model(model=args.model, temperature=0.0)
+    llm = get_topic_pass_model(model=args.model, temperature=0.0)
 
     if not args.by_chapter:
         body_end = len(text)

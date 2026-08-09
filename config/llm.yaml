@@ -6,8 +6,12 @@ base_url: https://api.kie.ai
 # Дефолт для узлов, если явно не передали model=
 default_model: gpt-5-2
 
-# Применяется только в личном контуре. Переход — один раз и только когда
-# провайдер явно сообщил policy-block; модель помечается непригодной для run.
+# Первый проход по книге (темы + оценка привлекательности) — long-context.
+# gemini-2.5-flash сюда; в редактуру его не ставим основным.
+topic_pass_model: gemini-2.5-flash
+
+# Личный контур (E/C/D/E-check): gpt-5-2 → более новые gemini.
+# gemini-2.5-flash — только последний аварийный запас, не для выбора тем.
 personal_story_fallback_models:
   - gemini-3-6-flash
   - gemini-3.5-flash

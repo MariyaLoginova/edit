@@ -10,7 +10,7 @@ import yaml
 from edit.audience import load_audience
 from edit.config import ROOT
 from edit.llm import ChatModel, content_text, parse_json_payload
-from edit.model_routing import get_personal_story_model
+from edit.model_routing import get_topic_pass_model
 from models import AxisScore, ClaimCard, ScoredTopic, TopicCandidate
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "b1_topic_scoring.txt"
@@ -201,7 +201,7 @@ def score_topics(
         return dropped
 
     cfg = _config()
-    model = llm or get_personal_story_model(temperature=0.0)
+    model = llm or get_topic_pass_model(temperature=0.0)
     # batch_size оставлен в сигнатуре для совместимости тестов, но чанкинг
     # отключён: только явный allow_batch=... не делаем — один вызов.
     _ = batch_size or cfg.get("batch_size")
