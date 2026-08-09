@@ -66,12 +66,10 @@ def test_compose_system_prompt_appends_knowledge_menu():
     assert "а как тебе эта" in d2
 
 
-def test_stop_lists_loaded_from_config():
+def test_stop_lists_disabled_by_default_flag():
     from edit.library import banned_speech_phrases, load_stop_lists
 
     lists = load_stop_lists()
-    assert "кому это интересно" in lists["service_speech"]
-    assert "досмотри" in lists["service_speech"]
-    banned = banned_speech_phrases()
-    assert "а вот нифига" in banned
-    assert "всем, кто" in banned
+    assert lists["service_speech"] == []
+    assert lists["banned_phrases"] == []
+    assert banned_speech_phrases() == []

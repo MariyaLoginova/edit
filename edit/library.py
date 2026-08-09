@@ -47,6 +47,9 @@ def load_stop_lists() -> dict[str, list[str]]:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(data, dict):
         raise ValueError(f"{path}: ожидался объект")
+    # enabled: false — списки в файле остаются как справочник, в рантайм не идут.
+    if data.get("enabled", True) is False:
+        return {"service_speech": [], "banned_phrases": []}
     return {
         "service_speech": [str(x) for x in (data.get("service_speech") or [])],
         "banned_phrases": [str(x) for x in (data.get("banned_phrases") or [])],
