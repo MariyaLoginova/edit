@@ -21,7 +21,7 @@ from edit.kie_client import (
 
 
 class ChatModel(Protocol):
-    def invoke(self, messages: list[dict[str, str]]) -> Any: ...
+    def invoke(self, messages: list[dict[str, str]], **kwargs: Any) -> Any: ...
 
 
 def _is_transient_llm_error(exc: Exception) -> bool:
@@ -58,11 +58,11 @@ class RetryingChatModel:
         self.retries = retries
         self.base_delay = base_delay
 
-    def invoke(self, messages: list[dict[str, str]]) -> Any:
+    def invoke(self, messages: list[dict[str, str]], **kwargs: Any) -> Any:
         last_err: Exception | None = None
         for attempt in range(self.retries + 1):
             try:
-                return self.inner.invoke(messages)
+                return self.inner.invoke(messages, **kwargs)
             except Exception as exc:
                 last_err = exc
                 if not _is_transient_llm_error(exc) or attempt >= self.retries:

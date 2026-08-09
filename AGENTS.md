@@ -19,6 +19,8 @@
 режь текст на N вызовов. Для whole-book A1/A2+B1 (темы/теги):
 `topic_pass_model` = `gemini-2.5-flash`. Редактура E/C/D/E-check:
 `gpt-5-2` → `gemini-3-6-flash` → `gemini-3.5-flash` (2.5 только аварийный хвост).
+C1.5 research: Gemini + `tools: googleSearch` на KIE (`research_enrich_model`);
+статья/бриф — контекст, факты — новые из поиска, не пересказ.
 
 A1-сегментация — локальный preprocessing без LLM, не повод плодить вызовы.
 

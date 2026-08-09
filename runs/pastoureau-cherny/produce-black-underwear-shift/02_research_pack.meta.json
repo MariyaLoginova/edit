@@ -1,5 +1,12 @@
 {
-  "search_mode": "primary-only",
-  "web_hits": 1,
-  "llm_calls": 1
+  "search_mode": "kie-googleSearch",
+  "llm_calls": 1,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "googleSearch"
+      }
+    }
+  ]
 }

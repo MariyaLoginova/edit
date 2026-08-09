@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Перепрогон C1+C1.5 для black-underwear-shift (чёрный как эротический цвет).
+"""C1.5 retest: Gemini + googleSearch на KIE для black-underwear-shift.
 
-Ровно 1 LLM-вызов (C1.5). C1 — код + Brave Search.
+1 LLM-вызов (возможен 1 repair). Статья/бриф — контекст; факты — новые с сети.
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ sys.path.insert(0, str(ROOT))
 
 from edit.c1_material import collect_material
 from edit.c1_research_enricher import enrich_material
-from edit.model_routing import get_personal_story_model
-from edit.search import EmptySearcher, SearchUnavailableError, require_web_searcher, web_search_enabled
+from edit.model_routing import get_research_enrich_model
+from edit.search import EmptySearcher
 from models import ClaimCard, SoftFactcheckResult, StoryBrief
 from scripts.run_personal_full_audit import AuditedLLM, dump
 
@@ -27,38 +27,26 @@ def main() -> int:
     source = (out / "00_source_block.txt").read_text(encoding="utf-8")
     brief = StoryBrief.model_validate(json.loads((out / "01_story_brief.json").read_text()))
 
-    print("web_search_enabled=", web_search_enabled())
-    try:
-        searcher = require_web_searcher()
-        mode = "brave"
-    except SearchUnavailableError as exc:
-        print("WARN:", exc)
-        print("Falling back to EmptySearcher (primary_text only, no fake web hits).")
-        searcher = EmptySearcher()
-        mode = "primary-only"
-
-    print("== C1 collect_material ==")
+    print("== C1 collect_material (primary only; web идёт внутри C1.5/KIE) ==")
     draft = collect_material(
         claim,
-        searcher=searcher,
+        searcher=EmptySearcher(),
         llm=None,
         primary_text=source,
         research_queries=brief.research_queries,
     )
     print("web_confirmations=", len(draft.web_confirmations))
-    for item in draft.web_confirmations[:12]:
-        print(f"  - {item.url[:80]} | {item.title[:60]}")
 
-    print("== C1.5 enrich_material (1 LLM call) ==")
-    base = get_personal_story_model(model="gpt-5-2", temperature=0.0)
-    audited = AuditedLLM(base, "gpt-5-2")
+    print("== C1.5 googleSearch enrich ==")
+    base = get_research_enrich_model(temperature=0.2)
+    audited = AuditedLLM(base, "research-enrich-failover")
     audited.stage = "C1.5 research enricher"
     enriched, pack = enrich_material(draft, brief, llm=audited)
     dossier = enriched.model_copy(
         update={
             "soft_factcheck": SoftFactcheckResult(
                 ok=True,
-                rationale="C1.5 retest: primary + web enrichment.",
+                rationale="C1.5 googleSearch retest.",
             )
         }
     ).freeze(require_images=False)
@@ -68,9 +56,9 @@ def main() -> int:
     dump(
         out / "02_research_pack.meta.json",
         {
-            "search_mode": mode,
-            "web_hits": len(draft.web_confirmations),
+            "search_mode": "kie-googleSearch",
             "llm_calls": len(audited.calls),
+            "tools": (audited.calls[0].get("tools") if audited.calls else None),
         },
     )
     dump(out / "calls_c15_retest.json", audited.calls)
@@ -81,6 +69,8 @@ def main() -> int:
     print("GAPS=", pack.gaps)
     print("SUMMARY=", pack.summary)
     print("LLM_CALLS=", len(audited.calls))
+    for call in audited.calls:
+        print("  stage=", call.get("stage"), "tools=", bool(call.get("tools")), "err=", call.get("error"))
     print("DONE", out / "02_research_pack.json")
     return 0 if pack.facts else 2
 

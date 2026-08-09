@@ -13,9 +13,11 @@ class FakeLLM:
         self.payload = payload
         self._queue = list(queue) if queue is not None else None
         self.calls: list[list[dict[str, str]]] = []
+        self.kwargs_list: list[dict[str, Any]] = []
 
-    def invoke(self, messages: list[dict[str, str]]):
+    def invoke(self, messages: list[dict[str, str]], **kwargs: Any):
         self.calls.append(messages)
+        self.kwargs_list.append(kwargs)
         if self._queue is not None:
             if not self._queue:
                 raise AssertionError("FakeLLM queue исчеркана")

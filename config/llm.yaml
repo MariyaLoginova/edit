@@ -17,6 +17,14 @@ personal_story_fallback_models:
   - gemini-3.5-flash
   - gemini-2.5-flash
 
+# C1.5 research enrich: Gemini + tools.googleSearch на KIE (долгий поиск).
+# Статья/бриф — контекст «что уже есть»; модель ищет НОВЫЕ материалы в сети.
+research_enrich_model: gemini-3-6-flash
+research_enrich_fallback_models:
+  - gemini-2.5-flash
+research_enrich_web_search: true
+research_enrich_timeout_sec: 360
+
 # KIE: OpenAI-совместимый путь POST {base_url}/{path_prefix}/chat/completions
 # path_prefix = сегмент из docs.kie.ai / Market (сверять при смене моделей).
 models:

@@ -149,6 +149,10 @@ class _SimpleResponse:
         return {"token_usage": usage, "model_name": self.raw.get("model")}
 
 
+# KIE Gemini: Google Search grounding (docs.kie.ai Market → tools.googleSearch).
+GOOGLE_SEARCH_TOOL = {"type": "function", "function": {"name": "googleSearch"}}
+
+
 class KieChatModel:
     """Прямой OpenAI-совместимый клиент KIE с понятными ошибками квоты."""
 
@@ -158,13 +162,21 @@ class KieChatModel:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
 
-    def invoke(self, messages: list[dict[str, str]]) -> _SimpleResponse:
+    def invoke(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        tools: list[dict[str, Any]] | None = None,
+        timeout: float | None = None,
+    ) -> _SimpleResponse:
         url = f"{self.base_url}/chat/completions"
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
             "messages": messages,
         }
+        if tools:
+            payload["tools"] = tools
         req = urllib.request.Request(
             url,
             data=json.dumps(payload).encode("utf-8"),
@@ -174,8 +186,10 @@ class KieChatModel:
             },
             method="POST",
         )
+        # googleSearch / длинный research — дольше обычного chat.
+        wait = 600.0 if timeout is None else float(timeout)
         try:
-            with urllib.request.urlopen(req, timeout=600) as resp:
+            with urllib.request.urlopen(req, timeout=wait) as resp:
                 raw_text = resp.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
