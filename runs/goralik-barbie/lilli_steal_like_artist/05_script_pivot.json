@@ -1,0 +1,50 @@
+{
+  "script_id": "script-barbie-lilli-steal-like-artist-pivot",
+  "claim_id": "barbie-lilli-steal-like-artist",
+  "duration_sec": 45.0,
+  "tov_applied": true,
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 5.0,
+      "text": "Барби не придумали с нуля. В 1959-м в США на детскую полку поставили куклу, которую до этого продавали взрослым.",
+      "claim_id": "barbie-lilli-steal-like-artist"
+    },
+    {
+      "t_start": 5.0,
+      "t_end": 12.0,
+      "text": "Её звали Лилли. В 1955-м она стала трёхмерной версией героини комикса Bild и продавалась в магазинах для взрослых.",
+      "claim_id": "barbie-lilli-steal-like-artist"
+    },
+    {
+      "t_start": 12.0,
+      "t_end": 20.0,
+      "text": "Рут Хендлер привезла Лилли из Европы и попросила дизайнеров сделать из неё тинэйджера.",
+      "claim_id": "barbie-lilli-steal-like-artist"
+    },
+    {
+      "t_start": 20.0,
+      "t_end": 27.0,
+      "text": "Они смягчили лицо, убрали соски — но фигура первой Барби осталась фигурой Лилли.",
+      "claim_id": "barbie-lilli-steal-like-artist"
+    },
+    {
+      "t_start": 27.0,
+      "t_end": 35.0,
+      "text": "Для меня это не калька. Крадут не форму. Крадут напряжение формы — и меняют, кому оно адресовано.",
+      "claim_id": null
+    },
+    {
+      "t_start": 35.0,
+      "t_end": 40.0,
+      "text": "Вот что значит «кради как художник»: найди чужое напряжение и отдай его другой аудитории.",
+      "claim_id": "barbie-lilli-steal-like-artist"
+    },
+    {
+      "t_start": 40.0,
+      "t_end": 45.0,
+      "text": "Поэтому я бы вернула Лилли в Agent Provocateur или рекламу сигарет: взрослая девочка для взрослых девочек.",
+      "claim_id": null
+    }
+  ]
+}

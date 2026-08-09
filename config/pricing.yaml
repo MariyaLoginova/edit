@@ -1,0 +1,22 @@
+# Примерные цены USD за 1M токенов (input / output).
+# Обновляй при смене прайса провайдера; отчёт COST считает по ним.
+currency: USD
+models:
+  gpt-5-2:
+    input_per_mtok: 1.75
+    output_per_mtok: 14.0
+  gemini-2.5-flash:
+    input_per_mtok: 0.30
+    output_per_mtok: 2.50
+  gemini-3.5-flash:
+    input_per_mtok: 0.30
+    output_per_mtok: 2.50
+  gemini-3-6-flash:
+    input_per_mtok: 0.30
+    output_per_mtok: 2.50
+  grok-4-5:
+    input_per_mtok: 3.00
+    output_per_mtok: 15.0
+  glm-5.2:
+    input_per_mtok: 0.60
+    output_per_mtok: 2.20

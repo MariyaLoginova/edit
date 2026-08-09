@@ -1,0 +1,37 @@
+{
+  "script_id": "fixture-weak-open",
+  "claim_id": "lbd-maintenance-not-luxury",
+  "duration_sec": 45.0,
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Привет! В этом видео мы поговорим про историю моды.",
+      "claim_id": null
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 12.0,
+      "text": "Маленькое чёрное казалось вечной элегантностью, но причина была проще.",
+      "claim_id": "lbd-maintenance-not-luxury"
+    },
+    {
+      "t_start": 12.0,
+      "t_end": 22.0,
+      "text": "Его выбрали, потому что за ним почти не нужно ухаживать без горничной.",
+      "claim_id": "lbd-maintenance-not-luxury"
+    },
+    {
+      "t_start": 22.0,
+      "t_end": 32.0,
+      "text": "А ещё отдельно про цвет: синий в геральдике значил совсем другое.",
+      "claim_id": "heraldic-blue-aside"
+    },
+    {
+      "t_start": 32.0,
+      "t_end": 45.0,
+      "text": "Ну вот, как-то так. Подписывайтесь, если интересно.",
+      "claim_id": null
+    }
+  ]
+}

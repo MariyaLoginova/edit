@@ -1,0 +1,43 @@
+{
+  "script_id": "script-cats-crowd-predator-threshold",
+  "claim_id": "cats-crowd-predator-threshold",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Перед тобой котик. Смотрит. И сразу хочется сказать: ми.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 10.0,
+      "text": "Кажется, добавь ещё котиков — станет только милее. Больше пушистых мордочек. Больше тепла.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 10.0,
+      "t_end": 26.0,
+      "text": "Но один котик и пятьдесят котиков — уже совсем разные сцены. Только что перед тобой был один. А теперь плотная группа. Котики стоят. Смотрят.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 26.0,
+      "t_end": 38.0,
+      "text": "Вот он, порог количества. Взгляд уже не держится за одну мордочку. Перед тобой масса. Плотность. Десятки одинаковых котиков. И ты замираешь.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 38.0,
+      "t_end": 45.0,
+      "text": "И выходит просто: когда одинаковых котиков слишком много, милота может превратиться в настороженность.",
+      "claim_id": "cats-crowd-predator-threshold",
+      "beat_id": "b5"
+    }
+  ],
+  "duration_sec": 45.0,
+  "tov_applied": true
+}

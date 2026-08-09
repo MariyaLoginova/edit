@@ -1,0 +1,36 @@
+{
+  "claim_id": "barbie-lilli-steal-like-artist",
+  "queries": [
+    {
+      "query": "Bild Lilli comic 1952 Bild Zeitung archive scan Reinhard Beuthien",
+      "purpose": "показать комикс-оригинал и визуальный стиль, из которого возник образ Лилли"
+    },
+    {
+      "query": "Bild Lilli doll 1955 Hausser Elastolin original packaging advertisement catalog",
+      "purpose": "найти фотографии первой куклы Лилли, упаковки, каталожных страниц и рекламы"
+    },
+    {
+      "query": "Bild Lilli doll 1955 souvenir shop adult novelty store photo advertisement windshield mascot",
+      "purpose": "найти документальные свидетельства контекста продажи и использования куклы взрослыми (реклама, витрины, фотографии, сувенирные магазины)"
+    },
+    {
+      "query": "Barbie Original Teenage Fashion Model 1959 black and white swimsuit official Mattel archive",
+      "purpose": "показать первую Барби OSS в официальных архивных материалах и ранней рекламе"
+    },
+    {
+      "query": "Bild Lilli Barbie side by side comparison original dolls body proportions museum collection",
+      "purpose": "найти музейные или коллекционерские сравнения силуэта Лилли и первой Барби"
+    },
+    {
+      "query": "1950s German comic women caricature fashion illustration narrow waist curl hairstyle archive",
+      "purpose": "показать художественный язык немецких комиксов 1950-х, объясняющий форму головы, талии и причёски Лилли"
+    },
+    {
+      "query": "1959 Barbie patent sculpt early production Japan doll close-up face makeup earrings",
+      "purpose": "найти крупные планы ранней Барби для анализа макияжа, формы головы и деталей лица"
+    }
+  ],
+  "findings": [],
+  "search_status": "unavailable",
+  "search_error": "BRAVE_API_KEY не задан — web search не отработал"
+}

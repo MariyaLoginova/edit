@@ -1,0 +1,47 @@
+{
+  "currency": "USD",
+  "calls": 4,
+  "input_tokens": 32396,
+  "output_tokens": 3354,
+  "total_tokens": 35750,
+  "cost_usd": 0.103649,
+  "by_stage": {
+    "E-editor": {
+      "calls": 1,
+      "input_tokens": 16385,
+      "output_tokens": 1199,
+      "cost_usd": 0.04546,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "E-hook": {
+      "calls": 1,
+      "input_tokens": 2855,
+      "output_tokens": 1389,
+      "cost_usd": 0.024442,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "D2 monologue": {
+      "calls": 1,
+      "input_tokens": 7635,
+      "output_tokens": 653,
+      "cost_usd": 0.022503,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "E-check": {
+      "calls": 1,
+      "input_tokens": 5521,
+      "output_tokens": 113,
+      "cost_usd": 0.011244,
+      "models": [
+        "gpt-5-2"
+      ]
+    }
+  },
+  "pricing_source": "config/pricing.yaml"
+}

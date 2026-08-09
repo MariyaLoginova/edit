@@ -1,0 +1,267 @@
+{
+  "source_id": "goralik-mimimi",
+  "strategy": "semantic",
+  "model": "gpt-5-2",
+  "segment_count": 7,
+  "citation_check": {
+    "total": 7,
+    "hits": 7,
+    "rate": 1.0
+  },
+  "cards": [
+    {
+      "claim_id": "cuteness-as-minimal-social-currency",
+      "kind": "causal",
+      "claim": "Мимими работает как визуальная «социальная монета», потому что требует от зрителя минимального душевного отклика.",
+      "counter_expectation": "Картинка с милым животным кажется способом вызвать заметную эмоцию или побудить зрителя к действию.",
+      "visual_hint": "Большеголовая собачка держит поводочек, внизу подпись «Гулять пойдем?»",
+      "citation": {
+        "locator": "seg-2",
+        "quote": "Просьба о мими — просьба о самом малом душевном движении из всех возможных, мельчайшей социальной монете."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0002",
+      "confidence": 0.93
+    },
+    {
+      "claim_id": "cuteness-built-on-fragility",
+      "kind": "causal",
+      "claim": "Умиление возникает как многомерная эмоция, потому что любой «милый» объект воспринимается как неизбежно хрупкий.",
+      "counter_expectation": "Милое кажется простой, беззаботной и одномерной эмоцией без внутреннего конфликта.",
+      "visual_hint": "Пирожное с мордочкой, выложенной из конфет, до того как его съедят.",
+      "citation": {
+        "locator": "seg-4",
+        "quote": "все умиляющее — невыносимо хрупко."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Gary Baseman / Damien Hirst / Mark Ryden / Takashi Murakami / Simon Legno / Natalia Fabia"
+      },
+      "source_segment_id": "goralik-mimimi-0004",
+      "confidence": 0.99
+    },
+    {
+      "claim_id": "cute-needs-time-awareness",
+      "kind": "causal",
+      "claim": "Умиление становится тревожным, потому что воображение достраивает судьбу объекта до и после идеального момента.",
+      "counter_expectation": "Милый образ воспринимается как полностью существующий в счастливом настоящем моменте.",
+      "visual_hint": "Мордочка из конфет на пирожном, которую позже съедят.",
+      "citation": {
+        "locator": "seg-4",
+        "quote": "До и после — неуверенность, тревога, ад повседневности."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0004",
+      "confidence": 0.88
+    },
+    {
+      "claim_id": "cute-supports-art-through-duality",
+      "kind": "causal",
+      "claim": "Художники используют умиление как основу произведений, потому что в нём скрыта мучительная двойственность.",
+      "counter_expectation": "Умиление кажется слишком поверхностной эмоцией, чтобы служить основой серьёзного искусства.",
+      "visual_hint": "Работы Марка Райдена с милыми персонажами, сочетающими детскую эстетику и тревогу.",
+      "citation": {
+        "locator": "seg-4",
+        "quote": "Мимими включает в себя эти неуверенность и тревогу — что и позволяет Гэри Бейсману, Дэмьену Херсту, Марку Райдену, Такеши Мураками, Симону Легно, Наталии Фабиа и другим авторам находить в умилении опору для искусства, легко обнажаемую мучительную двойственность."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Gary Baseman / Damien Hirst / Mark Ryden / Takashi Murakami / Simon Legno / Natalia Fabia"
+      },
+      "source_segment_id": "goralik-mimimi-0004",
+      "confidence": 0.95
+    },
+    {
+      "claim_id": "childlike-appearance-separates-from-cute-behavior",
+      "kind": "causal",
+      "claim": "Педоморфная внешность может вызывать тревогу, когда умильная телесность намеренно отделена от умилительного поведения.",
+      "counter_expectation": "Если персонаж выглядит по-детски и мило, он должен вести себя невинно и безобидно.",
+      "visual_hint": "Картина Марка Райдена с ребенком, выглядящим невинно, но совершающим агрессивное или двусмысленное действие.",
+      "citation": {
+        "locator": "seg-5",
+        "quote": "в них телесная умильность разлучена с умилительным поведением"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Марк Райден"
+      },
+      "source_segment_id": "goralik-mimimi-0005",
+      "confidence": 0.95
+    },
+    {
+      "claim_id": "cute-composition-undone-by-color",
+      "kind": "causal",
+      "claim": "Даже «мимишный» сюжет перестает восприниматься как милый, если композиция и цветовая гамма создают иное эмоциональное впечатление.",
+      "counter_expectation": "Милые персонажи и сюжет сами по себе гарантируют ощущение умиления.",
+      "visual_hint": "Работа Сеонны Хонг, где персонажи выглядят мило, но композиция и палитра создают тревожное настроение.",
+      "citation": {
+        "locator": "seg-5",
+        "quote": "персонажи и сюжет могли бы вполне сойти за мими, если бы не специфика композиции и цветовой гаммы"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Сеонна Хонг"
+      },
+      "source_segment_id": "goralik-mimimi-0005",
+      "confidence": 0.98
+    },
+    {
+      "claim_id": "cute-is-vulnerable-because-it-represses-horror",
+      "kind": "causal",
+      "claim": "Мимими уязвимо именно потому, что пытается вытеснить скрытый ужас.",
+      "counter_expectation": "Милое кажется устойчивым способом заглушить тревогу и сделать изображение безопасным.",
+      "visual_hint": "Пятьдесят котиков, стоящих перед человеком и смотрящих на него как хищные животные",
+      "citation": {
+        "locator": "seg-6",
+        "quote": "Мимими силится не осознавать, вытеснять, заглушать этот ужас благорастворением сердца, но в самой своей сути уязвимо, и потому обречено."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0006",
+      "confidence": 0.95
+    }
+  ],
+  "cards_raw_unfiltered": [
+    {
+      "claim_id": "cuteness-as-minimal-social-currency",
+      "kind": "causal",
+      "claim": "Мимими работает как визуальная «социальная монета», потому что требует от зрителя минимального душевного отклика.",
+      "counter_expectation": "Картинка с милым животным кажется способом вызвать заметную эмоцию или побудить зрителя к действию.",
+      "visual_hint": "Большеголовая собачка держит поводочек, внизу подпись «Гулять пойдем?»",
+      "citation": {
+        "locator": "seg-2",
+        "quote": "Просьба о мими — просьба о самом малом душевном движении из всех возможных, мельчайшей социальной монете."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0002",
+      "confidence": 0.93
+    },
+    {
+      "claim_id": "cuteness-built-on-fragility",
+      "kind": "causal",
+      "claim": "Умиление возникает как многомерная эмоция, потому что любой «милый» объект воспринимается как неизбежно хрупкий.",
+      "counter_expectation": "Милое кажется простой, беззаботной и одномерной эмоцией без внутреннего конфликта.",
+      "visual_hint": "Пирожное с мордочкой, выложенной из конфет, до того как его съедят.",
+      "citation": {
+        "locator": "seg-4",
+        "quote": "все умиляющее — невыносимо хрупко."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Gary Baseman / Damien Hirst / Mark Ryden / Takashi Murakami / Simon Legno / Natalia Fabia"
+      },
+      "source_segment_id": "goralik-mimimi-0004",
+      "confidence": 0.99
+    },
+    {
+      "claim_id": "cute-needs-time-awareness",
+      "kind": "causal",
+      "claim": "Умиление становится тревожным, потому что воображение достраивает судьбу объекта до и после идеального момента.",
+      "counter_expectation": "Милый образ воспринимается как полностью существующий в счастливом настоящем моменте.",
+      "visual_hint": "Мордочка из конфет на пирожном, которую позже съедят.",
+      "citation": {
+        "locator": "seg-4",
+        "quote": "До и после — неуверенность, тревога, ад повседневности."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0004",
+      "confidence": 0.88
+    },
+    {
+      "claim_id": "cute-supports-art-through-duality",
+      "kind": "causal",
+      "claim": "Художники используют умиление как основу произведений, потому что в нём скрыта мучительная двойственность.",
+      "counter_expectation": "Умиление кажется слишком поверхностной эмоцией, чтобы служить основой серьёзного искусства.",
+      "visual_hint": "Работы Марка Райдена с милыми персонажами, сочетающими детскую эстетику и тревогу.",
+      "citation": {
+        "locator": "seg-4",
+        "quote": "Мимими включает в себя эти неуверенность и тревогу — что и позволяет Гэри Бейсману, Дэмьену Херсту, Марку Райдену, Такеши Мураками, Симону Легно, Наталии Фабиа и другим авторам находить в умилении опору для искусства, легко обнажаемую мучительную двойственность."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Gary Baseman / Damien Hirst / Mark Ryden / Takashi Murakami / Simon Legno / Natalia Fabia"
+      },
+      "source_segment_id": "goralik-mimimi-0004",
+      "confidence": 0.95
+    },
+    {
+      "claim_id": "childlike-appearance-separates-from-cute-behavior",
+      "kind": "causal",
+      "claim": "Педоморфная внешность может вызывать тревогу, когда умильная телесность намеренно отделена от умилительного поведения.",
+      "counter_expectation": "Если персонаж выглядит по-детски и мило, он должен вести себя невинно и безобидно.",
+      "visual_hint": "Картина Марка Райдена с ребенком, выглядящим невинно, но совершающим агрессивное или двусмысленное действие.",
+      "citation": {
+        "locator": "seg-5",
+        "quote": "в них телесная умильность разлучена с умилительным поведением"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Марк Райден"
+      },
+      "source_segment_id": "goralik-mimimi-0005",
+      "confidence": 0.95
+    },
+    {
+      "claim_id": "cute-composition-undone-by-color",
+      "kind": "causal",
+      "claim": "Даже «мимишный» сюжет перестает восприниматься как милый, если композиция и цветовая гамма создают иное эмоциональное впечатление.",
+      "counter_expectation": "Милые персонажи и сюжет сами по себе гарантируют ощущение умиления.",
+      "visual_hint": "Работа Сеонны Хонг, где персонажи выглядят мило, но композиция и палитра создают тревожное настроение.",
+      "citation": {
+        "locator": "seg-5",
+        "quote": "персонажи и сюжет могли бы вполне сойти за мими, если бы не специфика композиции и цветовой гаммы"
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": "Сеонна Хонг"
+      },
+      "source_segment_id": "goralik-mimimi-0005",
+      "confidence": 0.98
+    },
+    {
+      "claim_id": "cute-is-vulnerable-because-it-represses-horror",
+      "kind": "causal",
+      "claim": "Мимими уязвимо именно потому, что пытается вытеснить скрытый ужас.",
+      "counter_expectation": "Милое кажется устойчивым способом заглушить тревогу и сделать изображение безопасным.",
+      "visual_hint": "Пятьдесят котиков, стоящих перед человеком и смотрящих на него как хищные животные",
+      "citation": {
+        "locator": "seg-6",
+        "quote": "Мимими силится не осознавать, вытеснять, заглушать этот ужас благорастворением сердца, но в самой своей сути уязвимо, и потому обречено."
+      },
+      "scope": {
+        "period": null,
+        "region": null,
+        "author_or_work": null
+      },
+      "source_segment_id": "goralik-mimimi-0006",
+      "confidence": 0.95
+    }
+  ]
+}

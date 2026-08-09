@@ -1,0 +1,50 @@
+{
+  "script_id": "script-cuteness-built-on-fragility",
+  "claim_id": "cuteness-built-on-fragility",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Пирожное с мордочкой кажется милее, потому что через минуту его не станет.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 15.0,
+      "text": "Умиление кажется простой эмоцией, но в нём уже есть напряжение.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 15.0,
+      "t_end": 33.0,
+      "text": "За милым образом приходит ощущение хрупкости. Поэтому умиление становится многомерным, а не просто приятным.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 33.0,
+      "t_end": 57.0,
+      "text": "В досье сказано: «все умиляющее — невыносимо хрупко». На этом ощущении строятся работы Gary Baseman, Damien Hirst, Mark Ryden, Takashi Murakami, Simon Legno и Natalia Fabia.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 57.0,
+      "t_end": 68.0,
+      "text": "Милый образ сильнее действует, если кажется, что его легко потерять.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b5"
+    },
+    {
+      "t_start": 68.0,
+      "t_end": 75.0,
+      "text": "Формула: неизбежная хрупкость делает умиление по-настоящему многомерным.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b6"
+    }
+  ],
+  "duration_sec": 75.0,
+  "tov_applied": true
+}

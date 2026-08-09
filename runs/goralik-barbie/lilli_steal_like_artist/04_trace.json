@@ -1,0 +1,7 @@
+{
+  "script_id": "script-barbie-lilli-steal-like-artist",
+  "dossier_claim_id": "barbie-lilli-steal-like-artist",
+  "passes": true,
+  "issues": [],
+  "summary": "Все фактические реплики трассируются к claim_id досье."
+}

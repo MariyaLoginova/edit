@@ -1,0 +1,65 @@
+{
+  "currency": "USD",
+  "calls": 10,
+  "input_tokens": 107596,
+  "output_tokens": 11839,
+  "total_tokens": 119435,
+  "cost_usd": 0.35404,
+  "by_stage": {
+    "E-editor": {
+      "calls": 2,
+      "input_tokens": 27311,
+      "output_tokens": 3192,
+      "cost_usd": 0.092482,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "E-hook": {
+      "calls": 1,
+      "input_tokens": 4278,
+      "output_tokens": 1244,
+      "cost_usd": 0.024903,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "D1.4 visual research": {
+      "calls": 1,
+      "input_tokens": 11714,
+      "output_tokens": 476,
+      "cost_usd": 0.027164,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "D1.5 visual plan": {
+      "calls": 1,
+      "input_tokens": 18460,
+      "output_tokens": 2703,
+      "cost_usd": 0.070147,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "D2 monologue": {
+      "calls": 4,
+      "input_tokens": 37935,
+      "output_tokens": 3797,
+      "cost_usd": 0.119544,
+      "models": [
+        "gpt-5-2"
+      ]
+    },
+    "E-check": {
+      "calls": 1,
+      "input_tokens": 7898,
+      "output_tokens": 427,
+      "cost_usd": 0.0198,
+      "models": [
+        "gpt-5-2"
+      ]
+    }
+  },
+  "pricing_source": "config/pricing.yaml"
+}

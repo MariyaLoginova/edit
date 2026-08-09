@@ -1,0 +1,43 @@
+{
+  "script_id": "script-cute-asks-to-be-taken-home-v2",
+  "claim_id": "cute-asks-to-be-taken-home",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Смотри: маленький плюшевый зверёк. Странно, но первая мысль — не купить, а забрать домой.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 11.0,
+      "text": "И это не потому, что он просто красивый. Заметь, какое желание возникает раньше любых рассуждений.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 11.0,
+      "t_end": 24.0,
+      "text": "Если образ кажется хрупким, беспомощным или будто ждёт тебя, включается совсем другая реакция. Ты уже мысленно начинаешь о нём заботиться.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 24.0,
+      "t_end": 34.0,
+      "text": "Вот в чём формула: работает не милый внешний вид сам по себе, а желание взять объект под свою защиту.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 34.0,
+      "t_end": 40.0,
+      "text": "Как сказано в досье: «мими просит взять его под опеку». Поэтому такие образы так часто хочется унести с собой.",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "beat_id": "b5"
+    }
+  ],
+  "duration_sec": 40.0,
+  "tov_applied": true
+}

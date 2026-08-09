@@ -1,0 +1,55 @@
+{
+  "script_id": "script-cute-asks-to-be-taken-home",
+  "claim_id": "cute-asks-to-be-taken-home",
+  "beats": [
+    {
+      "beat_id": "b1",
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "role": "hook_evidence",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "intent": "Показать визуальную улику, которая сразу вызывает импульс взять объект под опеку, а не просто посмотреть."
+    },
+    {
+      "beat_id": "b2",
+      "t_start": 3.0,
+      "t_end": 15.0,
+      "role": "rupture",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "intent": "Столкнуть первоначальное ожидание о простой «милоте» с заявленным тезисом о другом механизме воздействия."
+    },
+    {
+      "beat_id": "b3",
+      "t_start": 15.0,
+      "t_end": 33.0,
+      "role": "cause",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "intent": "Объяснить, что эстетика организована так, чтобы вызывать желание защитить, не оставлять одного и забрать домой."
+    },
+    {
+      "beat_id": "b4",
+      "t_start": 33.0,
+      "t_end": 60.0,
+      "role": "proof",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "intent": "Подкрепить тезис цитируемым описанием о просьбе взять под опеку, защитить, не оставлять одного и забрать домой."
+    },
+    {
+      "beat_id": "b5",
+      "t_start": 60.0,
+      "t_end": 69.0,
+      "role": "transfer",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "intent": "Перенести внимание зрителя на распознавание такого механизма при встрече с похожими образами сегодня без добавления новых фактов."
+    },
+    {
+      "beat_id": "b6",
+      "t_start": 69.0,
+      "t_end": 75.0,
+      "role": "coda",
+      "claim_id": "cute-asks-to-be-taken-home",
+      "intent": "Закрепить главный вывод: ценность образа связана с побуждением к опеке, а не только с приятным созерцанием."
+    }
+  ],
+  "duration_sec": 75.0
+}

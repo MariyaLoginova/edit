@@ -1,0 +1,13 @@
+{
+  "claim_id": "barbie-lilli-steal-like-artist",
+  "factual_issues": [],
+  "overclaim_issues": [
+    {
+      "quote": "The prompt could not be submitted. The prompt contains sensitive words that violate Google's [Generative AI Prohibited Use policy](https://policies.google.com/terms/generative-ai/use-policy). Try rephrasing the prompt. If you think this was an error, [send feedback](https://ai.go",
+      "issue": "Монолог слишком короткий (32 слов): в нём нельзя удержать три доказательные детали.",
+      "severity": 4
+    }
+  ],
+  "passes": false,
+  "summary": "Кодовый quality-gate заблокировал слишком короткий D2 без нового LLM-вызова."
+}

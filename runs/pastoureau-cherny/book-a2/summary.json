@@ -1,0 +1,8 @@
+{
+  "mode": "whole-book-one-call",
+  "chars": 354349,
+  "approx_tokens": 88587,
+  "claims": 5,
+  "scored": 5,
+  "model": "gemini-2.5-flash"
+}

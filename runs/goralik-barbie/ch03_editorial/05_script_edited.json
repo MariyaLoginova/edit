@@ -1,0 +1,64 @@
+{
+  "script_id": "script-barbie-face-must-stay-recognizable",
+  "claim_id": "barbie-face-must-stay-recognizable",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "Лицо первой Барби будто сделали для другого персонажа — но именно его должны были узнать миллионы.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": null
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 8.0,
+      "text": "Лицо первой Барби будто сделали для другого персонажа — но именно его должны были узнать миллионы.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 8.0,
+      "t_end": 19.0,
+      "text": "Легко решить, что лицо Барби просто подгоняли под идеал красоты своего времени.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 19.0,
+      "t_end": 33.0,
+      "text": "Но присмотрись: первая Барби смотрит в сторону и вниз. Тяжёлый макияж, яркие губы, взрослое лицо.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 33.0,
+      "t_end": 47.0,
+      "text": "Эта странность пришла от Лилли — трёхмерной версии героини послевоенного комикса пятидесятых. Отсюда преувеличенные черты и карикатурные пропорции.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 47.0,
+      "t_end": 64.0,
+      "text": "Перед тобой Малибу Барби 1972 года: впервые смотрит прямо, улыбается, почти без косметики, с естественными длинными волосами.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b5"
+    },
+    {
+      "t_start": 64.0,
+      "t_end": 79.0,
+      "text": "Кажется, это другая кукла. Но компания меняла детали так, чтобы лицо улучшалось и оставалось узнаваемым.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b6"
+    },
+    {
+      "t_start": 79.0,
+      "t_end": 90.0,
+      "text": "Барби никогда не была точной копией моды. Лучше, но не другая — узнаваемое бренд-лицо.",
+      "claim_id": "barbie-face-must-stay-recognizable",
+      "beat_id": "b7"
+    }
+  ],
+  "duration_sec": 90.0,
+  "tov_applied": true
+}

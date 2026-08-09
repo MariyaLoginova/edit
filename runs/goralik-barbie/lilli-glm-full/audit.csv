@@ -1,0 +1,8 @@
+stage,model,sent_summary,received_summary,artifact,status
+0_input,n/a,"claim barbie-lilli-steal-like-artist + primary_text гл.3 Горалик (~17KB)","claim+source сохранены","00_claim.json; 00_source_block.txt",ok
+1_E-editor,glm-5.2,"system e_editor.txt + user{claim, primary_text, audience, story_methods, hook_triggers}","StoryBrief: method=a_vot_nifiga; opening=Барби придумали с нуля…; research_queries×4; proof_plan=[]","01_story_brief.json",ok
+2_C1_material,n/a (PrimarySourceSearcher),"4 research_queries без BRAVE_API_KEY","4 local hits → local://goralik-polaya-zhenshchina/ch03 (весь primary)","03_dossier.json web_confirmations",ok_no_web
+3_C1.5_enricher,glm-5.2,"system c1_research_enricher.txt + user{primary_text, story_brief, web_results×4 local}","ResearchPack: facts=[]; gaps×8 (дата Барби, Bild Lilli, Ryan, Boulon, комикс-стиль, Mattel rights, Westmore)","02_research_pack.json",ok_gaps_only
+3b_freeze,n/a,"soft_factcheck ok + can_freeze(require_images=False)","frozen_at=2026-08-07T10:01:37Z","03_dossier.json",ok
+4_D2_monologue,glm-5.2,"system d2_monologue.txt (Мария 150–300) + user{dossier, audience, story_brief, method=a_vot_nifiga}","194 слова: секс-шоп→Лилли→бриф Хендлер→соски/макияж→цитата рецензентов→кража-с-переносом→вопрос","04_monologue.json",ok
+5_E-check,glm-5.2,"system e_check.txt + user{monologue, source_material, citation, web_confirmations}","passes=true; factual_issues=[]; overclaim_issues=[]; summary: следует Горалик, minor imprecisions упомянуты только в summary","05_echeck.json",ok_pass

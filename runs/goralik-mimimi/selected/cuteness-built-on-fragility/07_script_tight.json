@@ -1,0 +1,43 @@
+{
+  "script_id": "script-cuteness-built-on-fragility",
+  "claim_id": "cuteness-built-on-fragility",
+  "lines": [
+    {
+      "t_start": 0.0,
+      "t_end": 3.0,
+      "text": "На экране пирожное с милой мордочкой. Странно, но жалко его становится раньше, чем хочется съесть.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b1"
+    },
+    {
+      "t_start": 3.0,
+      "t_end": 11.0,
+      "text": "Смотришь на него ещё секунду — и ловишь себя не на голоде, а на мысли, что через миг этого лица уже не будет.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b2"
+    },
+    {
+      "t_start": 11.0,
+      "t_end": 23.0,
+      "text": "Из-за этого обычная милота начинает цеплять сильнее. Ты уже переживаешь не только за то, как это выглядит, но и за то, как быстро это исчезнет.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b3"
+    },
+    {
+      "t_start": 23.0,
+      "t_end": 34.0,
+      "text": "Недаром говорят: «всё умиляющее — невыносимо хрупко». В этой мысли и прячется главный эффект.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b4"
+    },
+    {
+      "t_start": 34.0,
+      "t_end": 40.0,
+      "text": "Формула простая: чем сильнее ощущение, что милый образ легко потерять, тем глубже становится само умиление.",
+      "claim_id": "cuteness-built-on-fragility",
+      "beat_id": "b5"
+    }
+  ],
+  "duration_sec": 40.0,
+  "tov_applied": true
+}

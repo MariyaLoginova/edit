@@ -1,0 +1,7 @@
+{
+  "script_id": "script-barbie-face-must-stay-recognizable",
+  "dossier_claim_id": "barbie-face-must-stay-recognizable",
+  "passes": true,
+  "issues": [],
+  "summary": "Все фактические реплики трассируются к claim_id досье."
+}

@@ -1,0 +1,63 @@
+# LLM-провайдер EDIT. Модель меняется одной строкой (default_model / models.*).
+provider: kie
+api_key_env: KIE_API_KEY
+base_url: https://api.kie.ai
+
+# Дефолт для узлов, если явно не передали model=
+default_model: gpt-5-2
+
+# Первый проход по книге (темы + оценка привлекательности) — long-context.
+# gemini-2.5-flash сюда; в редактуру его не ставим основным.
+topic_pass_model: gemini-2.5-flash
+
+# Личный контур (E/C/D/E-check): gpt-5-2 → более новые gemini.
+# gemini-2.5-flash — только последний аварийный запас, не для выбора тем.
+personal_story_fallback_models:
+  - gemini-3-6-flash
+  - gemini-3.5-flash
+  - gemini-2.5-flash
+
+# KIE: OpenAI-совместимый путь POST {base_url}/{path_prefix}/chat/completions
+# path_prefix = сегмент из docs.kie.ai / Market (сверять при смене моделей).
+models:
+  gpt-5-2:
+    path_prefix: gpt-5-2/v1
+    temperature: 0.0
+  gemini-2.5-flash:
+    # Market path без "-openai" суффикса (проверено smoke'ом)
+    path_prefix: gemini-2.5-flash/v1
+    temperature: 0.0
+  gemini-3.5-flash:
+    path_prefix: gemini-3-5-flash-openai/v1
+    temperature: 0.0
+  grok-4-5:
+    path_prefix: grok-4-5-openai/v1
+    temperature: 0.0
+  gemini-3-6-flash:
+    path_prefix: gemini-3-6-flash-openai/v1
+    temperature: 0.0
+  glm-5.2:
+    provider: aihubmix
+    # AIHubMix OpenAI-compatible: https://aihubmix.com/v1
+    path_prefix: v1
+    temperature: 0.0
+
+# Матрица первого живого прогона A1→A2 (Часть 3 тикета)
+a1_a2_matrix:
+  strategies:
+    - paragraph
+    - semantic
+    - fixed_window
+  models:
+    - gpt-5-2
+    - gemini-2.5-flash
+  json_retries: 2
+
+# Параметры сегментации A1 (не LLM)
+segmentation:
+  # выбрано по прогону goralik-mimimi (см. runs/goralik-mimimi/NOTES.md)
+  default_strategy: semantic
+  fixed_window_tokens: 450
+  fixed_window_overlap: 60
+  semantic_max_tokens: 500
+  semantic_min_tokens: 80
