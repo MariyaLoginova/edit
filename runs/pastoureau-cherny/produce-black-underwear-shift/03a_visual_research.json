@@ -1,0 +1,32 @@
+{
+  "claim_id": "black-underwear-shift",
+  "queries": [
+    {
+      "query": "19th century white linen chemise petticoat Victoria and Albert Museum archive",
+      "purpose": "показать традиционное белое и неокрашенное женское белье XIX века как стандарт морали и гигиены"
+    },
+    {
+      "query": "Edwardian pastel striped silk petticoat underwear museum collection",
+      "purpose": "найти образцы первых цветных и полосатых предметов белья конца XIX — начала XX века"
+    },
+    {
+      "query": "vintage French cabaret courtesan black lace lingerie photography 1900s 1910s archive",
+      "purpose": "показать раннюю связь черного белья с образом куртизанок, кабаре и провокацией"
+    },
+    {
+      "query": "vintage 1950s 1960s black lingerie advertisement magazine scan archive",
+      "purpose": "показать рекламную репрезентацию черного белья середины XX века как рокового и соблазнительного"
+    },
+    {
+      "query": "vintage Maidenform bra advertisement 1960s color choice print archive",
+      "purpose": "показать контраст между «целомудренным» белым и «провокационным» черным бельем в массовой рекламе 1960-х"
+    },
+    {
+      "query": "modern basic black seamless bra T-shirt bra everyday collection retail photo",
+      "purpose": "показать современное черное белье как практичную базовую норму повседневного гардероба"
+    }
+  ],
+  "findings": [],
+  "search_status": "unavailable",
+  "search_error": "BRAVE_API_KEY не задан — web search не отработал"
+}

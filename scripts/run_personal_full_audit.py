@@ -30,7 +30,8 @@ from edit.d1_visual_research import research_visual_material
 from edit.e_check import check_monologue
 from edit.e_editor import plan_story
 from edit.e_hook import write_hook
-from edit.llm import content_text, get_chat_model
+from edit.llm import content_text
+from edit.model_routing import get_personal_story_model
 from edit.search import SearchHit, default_searcher
 from models import ClaimCard, SoftFactcheckResult
 
@@ -380,7 +381,7 @@ def main() -> int:
     dump(out / "00_claim.json", claim)
     (out / "00_source_block.txt").write_text(source, encoding="utf-8")
 
-    base = get_chat_model(model=args.model, temperature=0.2)
+    base = get_personal_story_model(model=args.model, temperature=0.2)
     audited = AuditedLLM(base, args.model)
     searcher = PrimarySourceSearcher(source, args.source_url, args.source_title)
     meta_rows: list[dict[str, str]] = [

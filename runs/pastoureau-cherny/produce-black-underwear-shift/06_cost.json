@@ -1,0 +1,38 @@
+{
+  "currency": "USD",
+  "calls": 4,
+  "input_tokens": 54491,
+  "output_tokens": 4237,
+  "total_tokens": 58728,
+  "cost_usd": 0.026939,
+  "by_stage": {
+    "D1.5 visual plan": {
+      "calls": 2,
+      "input_tokens": 44282,
+      "output_tokens": 3328,
+      "cost_usd": 0.021604,
+      "models": [
+        "gemini-2.5-flash"
+      ]
+    },
+    "D2 monologue": {
+      "calls": 1,
+      "input_tokens": 5381,
+      "output_tokens": 787,
+      "cost_usd": 0.003582,
+      "models": [
+        "gemini-2.5-flash"
+      ]
+    },
+    "E-check": {
+      "calls": 1,
+      "input_tokens": 4828,
+      "output_tokens": 122,
+      "cost_usd": 0.001753,
+      "models": [
+        "gemini-2.5-flash"
+      ]
+    }
+  },
+  "pricing_source": "config/pricing.yaml"
+}

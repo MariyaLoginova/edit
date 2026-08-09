@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from edit.kie_client import load_llm_config
+from edit.kie_client import KieAPIError, load_llm_config
 from edit.llm import ChatModel, get_chat_model
 
 
@@ -55,20 +55,24 @@ class FailoverChatModel:
                     raise PolicyBlockedError(text)
                 return response
             except Exception as exc:
-                if not is_policy_error(exc):
+                policy = is_policy_error(exc) or isinstance(exc, PolicyBlockedError)
+                server = isinstance(exc, KieAPIError) and (
+                    (exc.code in {500, 502, 503, 504})
+                    or "server exception" in str(exc).lower()
+                )
+                if not policy and not server:
                     raise
                 self.disabled_models.add(model_id)
                 self.events.append(
                     {
                         "model": model_id,
-                        "kind": "policy_block",
+                        "kind": "policy_block" if policy else "server_failover",
                         "error": str(exc),
                     }
                 )
                 self._index += 1
         raise RuntimeError(
-            "Все fallback-модели заблокировали запрос политикой: "
-            + ", ".join(self.model_ids)
+            "Все fallback-модели отказали (policy/server): " + ", ".join(self.model_ids)
         )
 
 
