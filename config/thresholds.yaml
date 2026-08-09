@@ -60,6 +60,7 @@ scoring:
 topic_scoring:
   min_axis_for_production: 2
   produce_threshold: 3.4
+  batch_size: 20
   soft_axes:
     - showable
   require_author_conclusion: false

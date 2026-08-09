@@ -107,29 +107,15 @@ def _total(item: ScoredTopic, weights: dict[str, float]) -> float:
     return round(numerator / denominator, 3)
 
 
-def score_topics(
-    topics: list[TopicCandidate],
+def _score_accepted_batch(
+    accepted: list[TopicCandidate],
     *,
-    produced_topic_ids: set[str] | None = None,
-    llm: ChatModel | None = None,
+    llm: ChatModel,
+    cfg: dict,
 ) -> list[ScoredTopic]:
-    """Один LLM-вызов на всю пачку прошедших гейты тем."""
-    dropped: list[ScoredTopic] = []
-    accepted: list[TopicCandidate] = []
-    for topic in topics:
-        failures = gate_topic(topic, produced_topic_ids=produced_topic_ids)
-        if failures:
-            dropped.append(_drop(topic, failures))
-        else:
-            accepted.append(topic)
-    if not accepted:
-        return dropped
-
-    cfg = _config()
-    model = llm or get_personal_story_model(temperature=0.0)
     raw = parse_json_payload(
         content_text(
-            model.invoke(
+            llm.invoke(
                 [
                     {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
                     {
@@ -171,6 +157,7 @@ def score_topics(
     soft_axes = {str(x) for x in (cfg.get("soft_axes") or ["showable"])}
     produce_threshold = float(cfg.get("produce_threshold", 3.4))
     scored: list[ScoredTopic] = []
+    dropped: list[ScoredTopic] = []
     for item in raw:
         if not isinstance(item, dict) or item.get("topic_id") not in by_id:
             continue
@@ -189,9 +176,38 @@ def score_topics(
         low_axis = any(getattr(candidate, axis).value < min_axis for axis in hard_axes)
         verdict = "produce" if total >= produce_threshold and not low_axis else "bank"
         scored.append(candidate.model_copy(update={"total": total, "verdict": verdict}))
-    # Нет ответа на тему — не производить молча.
     for topic in by_id.values():
         dropped.append(_drop(topic, ["скорер не вернул оценку темы"]))
+    return [*scored, *dropped]
+
+
+def score_topics(
+    topics: list[TopicCandidate],
+    *,
+    produced_topic_ids: set[str] | None = None,
+    llm: ChatModel | None = None,
+    batch_size: int | None = None,
+) -> list[ScoredTopic]:
+    """Пакетный скоринг: LLM-вызовы чанками (книга → много тем)."""
+    dropped: list[ScoredTopic] = []
+    accepted: list[TopicCandidate] = []
+    for topic in topics:
+        failures = gate_topic(topic, produced_topic_ids=produced_topic_ids)
+        if failures:
+            dropped.append(_drop(topic, failures))
+        else:
+            accepted.append(topic)
+    if not accepted:
+        return dropped
+
+    cfg = _config()
+    model = llm or get_personal_story_model(temperature=0.0)
+    size = int(batch_size or cfg.get("batch_size") or 20)
+    size = max(1, size)
+    scored: list[ScoredTopic] = []
+    for i in range(0, len(accepted), size):
+        chunk = accepted[i : i + size]
+        scored.extend(_score_accepted_batch(chunk, llm=model, cfg=cfg))
     return sorted([*scored, *dropped], key=lambda x: (-x.total, x.topic_id))
 
 
