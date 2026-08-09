@@ -188,7 +188,7 @@ def score_topics(
     llm: ChatModel | None = None,
     batch_size: int | None = None,
 ) -> list[ScoredTopic]:
-    """Пакетный скоринг: LLM-вызовы чанками (книга → много тем)."""
+    """Один LLM-вызов на весь список. Без чанков (см. AGENTS.md)."""
     dropped: list[ScoredTopic] = []
     accepted: list[TopicCandidate] = []
     for topic in topics:
@@ -202,12 +202,10 @@ def score_topics(
 
     cfg = _config()
     model = llm or get_personal_story_model(temperature=0.0)
-    size = int(batch_size or cfg.get("batch_size") or 20)
-    size = max(1, size)
-    scored: list[ScoredTopic] = []
-    for i in range(0, len(accepted), size):
-        chunk = accepted[i : i + size]
-        scored.extend(_score_accepted_batch(chunk, llm=model, cfg=cfg))
+    # batch_size оставлен в сигнатуре для совместимости тестов, но чанкинг
+    # отключён: только явный allow_batch=... не делаем — один вызов.
+    _ = batch_size or cfg.get("batch_size")
+    scored = _score_accepted_batch(accepted, llm=model, cfg=cfg)
     return sorted([*scored, *dropped], key=lambda x: (-x.total, x.topic_id))
 
 

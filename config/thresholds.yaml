@@ -60,7 +60,8 @@ scoring:
 topic_scoring:
   min_axis_for_production: 2
   produce_threshold: 3.4
-  batch_size: 20
+  # Один вызов на весь shortlist, пока список разумный (см. AGENTS.md).
+  batch_size: 40
   soft_axes:
     - showable
   require_author_conclusion: false

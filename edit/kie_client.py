@@ -107,16 +107,28 @@ def _raise_if_kie_envelope(payload: dict[str, Any]) -> None:
         return
     text = str(msg)
     low = text.lower()
+    code_int = int(code) if isinstance(code, int) else None
     retryable = any(
         marker in low
-        for marker in ("timeout", "temporarily", "try again", "rate limit", "429", "503", "502")
-    )
+        for marker in (
+            "timeout",
+            "temporarily",
+            "try again",
+            "rate limit",
+            "server exception",
+            "429",
+            "500",
+            "502",
+            "503",
+            "504",
+        )
+    ) or code_int in {408, 429, 500, 502, 503, 504}
     # дневной лимит / баланс — не ретраить
-    if "daily limit" in low or "exceeded" in low or code in {402, 433}:
+    if "daily limit" in low or code_int in {402, 433}:
         retryable = False
     raise KieAPIError(
         f"KIE error code={code}: {text or payload}",
-        code=int(code) if isinstance(code, int) else None,
+        code=code_int,
         retryable=retryable,
     )
 

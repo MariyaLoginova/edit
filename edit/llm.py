@@ -53,7 +53,7 @@ def _is_transient_llm_error(exc: Exception) -> bool:
 class RetryingChatModel:
     """Обёртка над ChatModel: ретраи на transient-сбоях провайдера."""
 
-    def __init__(self, inner: ChatModel, *, retries: int = 4, base_delay: float = 2.0):
+    def __init__(self, inner: ChatModel, *, retries: int = 6, base_delay: float = 3.0):
         self.inner = inner
         self.retries = retries
         self.base_delay = base_delay
@@ -67,7 +67,9 @@ class RetryingChatModel:
                 last_err = exc
                 if not _is_transient_llm_error(exc) or attempt >= self.retries:
                     raise
-                time.sleep(self.base_delay * (2**attempt))
+                delay = min(60.0, self.base_delay * (2**attempt))
+                print(f"LLM retry {attempt + 1}/{self.retries}: {exc}; sleep {delay:.0f}s")
+                time.sleep(delay)
         assert last_err is not None
         raise last_err
 

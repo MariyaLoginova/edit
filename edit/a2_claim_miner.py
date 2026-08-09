@@ -11,12 +11,13 @@ from pydantic import ValidationError
 from edit.audience import load_audience
 from edit.kie_client import load_llm_config
 from edit.llm import ChatModel, get_chat_model, invoke_json
-from models import ClaimCard, SourceMap, SourceSegment
+from models import ClaimCard, ScoredTopic, SourceMap, SourceSegment
 
 logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "a2_claim_miner.txt"
 BOOK_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "a2_claim_miner_book.txt"
+BOOK_PASS_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "a2_b1_book_pass.txt"
 
 
 def load_system_prompt() -> str:
@@ -25,6 +26,10 @@ def load_system_prompt() -> str:
 
 def load_book_system_prompt() -> str:
     return BOOK_PROMPT_PATH.read_text(encoding="utf-8").strip()
+
+
+def load_book_pass_prompt() -> str:
+    return BOOK_PASS_PROMPT_PATH.read_text(encoding="utf-8").strip()
 
 
 def _normalize_quote_text(text: str) -> str:
@@ -233,3 +238,113 @@ def citation_hit_rate(
         if seg and _quote_in_segment(card.citation.quote, seg.text):
             hits += 1
     return {"total": len(cards), "hits": hits, "rate": hits / len(cards)}
+
+
+def mine_and_score_book(
+    text: str,
+    *,
+    source_id: str = "book",
+    title: str = "книга",
+    llm: ChatModel | None = None,
+    model: str | None = None,
+    require_quote_substring: bool = True,
+    json_retries: int | None = None,
+) -> tuple[list[ClaimCard], list[ScoredTopic]]:
+    """Ровно один LLM-вызов: темы из книги + оценка привлекательности."""
+    # локальный импорт: без циклического top-level с b1_topic_scoring
+    from edit.b1_topic_scoring import (
+        _AXES,
+        _config,
+        _drop,
+        _total,
+        claim_to_topic_candidate,
+        gate_topic,
+    )
+
+    body = text.strip()
+    chat = llm or get_chat_model(temperature=0.0, model=model)
+    retries = json_retries
+    if retries is None:
+        retries = int((load_llm_config().get("a1_a2_matrix") or {}).get("json_retries", 2))
+
+    segment = SourceSegment(
+        segment_id="book",
+        locator=title,
+        text=body,
+        ordinal=0,
+        heading=title,
+    )
+    user = (
+        f"source_id: {source_id}\n"
+        f"title: {title}\n"
+        f"approx_tokens: {segment.token_estimate}\n\n"
+        f"<audience>\n{load_audience()}\n</audience>\n\n"
+        f"<book>\n{body}\n</book>"
+    )
+    raw = invoke_json(
+        chat,
+        [
+            {"role": "system", "content": load_book_pass_prompt()},
+            {"role": "user", "content": user},
+        ],
+        retries=retries,
+    )
+    if isinstance(raw, dict):
+        raw = raw.get("topics") or raw.get("cards") or raw.get("items") or []
+    if not isinstance(raw, list):
+        raise ValueError("book pass: ожидался JSON-массив тем")
+
+    # topic_id в объединённом ответе = claim_id
+    normalized = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        item = {**item}
+        if not item.get("claim_id") and item.get("topic_id"):
+            item["claim_id"] = item["topic_id"]
+        if not item.get("topic_id") and item.get("claim_id"):
+            item["topic_id"] = item["claim_id"]
+        normalized.append(item)
+
+    cards, _rejected = validate_claim_payload(
+        normalized, segment, require_quote_substring=require_quote_substring
+    )
+    by_id = {card.claim_id: card for card in cards}
+    cfg = _config()
+    weights = {str(k): float(v) for k, v in (cfg.get("weights") or {}).items()}
+    min_axis = int(cfg.get("min_axis_for_production", 2))
+    soft_axes = {str(x) for x in (cfg.get("soft_axes") or ["showable"])}
+    produce_threshold = float(cfg.get("produce_threshold", 3.4))
+    scored: list[ScoredTopic] = []
+
+    for item in normalized:
+        topic_id = str(item.get("topic_id") or "")
+        card = by_id.get(topic_id)
+        if card is None:
+            continue
+        topic = claim_to_topic_candidate(card)
+        failures = gate_topic(topic)
+        if failures:
+            scored.append(_drop(topic, failures))
+            continue
+        try:
+            candidate = ScoredTopic(
+                topic_id=topic.topic_id,
+                gates_passed=True,
+                gate_failures=[],
+                **{axis: item.get(axis) for axis in _AXES},
+                total=0.0,
+                verdict="bank",
+                one_line=topic.one_line,
+            )
+        except Exception:
+            scored.append(_drop(topic, ["неполные оси оценки в ответе модели"]))
+            continue
+        total = _total(candidate, weights)
+        hard_axes = [axis for axis in _AXES if axis not in soft_axes]
+        low_axis = any(getattr(candidate, axis).value < min_axis for axis in hard_axes)
+        verdict = "produce" if total >= produce_threshold and not low_axis else "bank"
+        scored.append(candidate.model_copy(update={"total": total, "verdict": verdict}))
+
+    scored = sorted(scored, key=lambda x: (-x.total, x.topic_id))
+    return cards, scored

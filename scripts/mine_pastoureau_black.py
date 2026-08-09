@@ -18,8 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from edit.a1_segment import segment_source
-from edit.a2_claim_miner import mine_claims, mine_claims_from_book
-from edit.b1_topic_scoring import append_topic_bank, score_mined_claims
+from edit.a2_claim_miner import mine_and_score_book, mine_claims
+from edit.b1_topic_scoring import append_topic_bank
 from edit.llm import get_chat_model
 from models import ClaimCard, SegmentStrategy
 
@@ -144,26 +144,17 @@ def find_chapters(text: str) -> list[tuple[str, str, int, int]]:
     return out
 
 
-def _write_scores(
-    all_claims: list[ClaimCard],
-    *,
-    model: str,
-    score_model: str | None,
-    format: str,
-) -> None:
-    score_llm = get_chat_model(model=score_model or model, temperature=0.0)
-    print(f"B1: скоринг {len(all_claims)} тем …")
-    scored = score_mined_claims(all_claims, format=format, llm=score_llm)
+def _write_shortlist(scored, *, model: str) -> None:
     (OUT / "scored-topics.json").write_text(
         json.dumps([s.model_dump(mode="json") for s in scored], ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     append_topic_bank(OUT / "topic-bank.md", scored)
     lines = [
-        "# Пастуро · Черный · shortlist B1",
+        "# Пастуро · Черный · shortlist (1× LLM)",
         "",
-        f"Модель A2/B1: `{model}` / `{score_model or model}`",
-        f"Режим: whole-book (1×A2 + B1)",
+        f"Модель: `{model}`",
+        f"Режим: whole-book A2+B1 в одном вызове",
         f"Тем: {len(scored)}",
         "",
         "| verdict | total | topic_id | one_line |",
@@ -175,7 +166,7 @@ def _write_scores(
     (OUT / "THEME_SHORTLIST.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     produce = [x for x in scored if x.verdict == "produce"]
     print(
-        f"B1 done: produce={len(produce)} "
+        f"done: produce={len(produce)} "
         f"bank={sum(1 for x in scored if x.verdict == 'bank')} "
         f"drop={sum(1 for x in scored if x.verdict == 'drop')}"
     )
@@ -185,14 +176,16 @@ def _write_scores(
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--model", default="gpt-5-2")
-    p.add_argument("--score-model", default=None)
-    p.add_argument("--no-score", action="store_true")
+    p.add_argument(
+        "--model",
+        default="gemini-2.5-flash",
+        help="один вызов на всю книгу+скоринг (long-context; gpt-5-2 на KIE рвёт ~90k tok)",
+    )
     p.add_argument("--force-source", action="store_true")
     p.add_argument(
         "--by-chapter",
         action="store_true",
-        help="дорогой режим: A2 по каждой главе/сегменту (не нужен при 1M контексте)",
+        help="запрещённый по умолчанию режим; только с явного согласия",
     )
     p.add_argument("--chapters", nargs="*", default=None, help="только с --by-chapter")
     p.add_argument("--resume", action="store_true", help="только с --by-chapter")
@@ -205,7 +198,6 @@ def main() -> int:
     llm = get_chat_model(model=args.model, temperature=0.0)
 
     if not args.by_chapter:
-        # Обрезаем примечания/библиографию — тело книги до маркера.
         body_end = len(text)
         for m in re.finditer(r"(?m)^\d{0,3}\s*Примечания\s*$", text):
             if m.start() > 300000:
@@ -213,9 +205,9 @@ def main() -> int:
                 break
         body = text[:body_end].strip()
         print(
-            f"A2 whole-book: {len(body)} chars ≈ {len(body)//4} tokens → 1 LLM call …"
+            f"A2+B1 whole-book: {len(body)} chars ≈ {len(body)//4} tokens → ровно 1 LLM call …"
         )
-        claims = mine_claims_from_book(
+        claims, scored = mine_and_score_book(
             body,
             source_id="pastoureau-cherny",
             title="Мишель Пастуро · Черный. История цвета",
@@ -224,7 +216,7 @@ def main() -> int:
         (OUT / "book-claims.json").write_text(
             json.dumps(
                 {
-                    "mode": "whole-book",
+                    "mode": "whole-book-one-call",
                     "chars": len(body),
                     "approx_tokens": len(body) // 4,
                     "claims": [c.model_dump(mode="json") for c in claims],
@@ -237,10 +229,11 @@ def main() -> int:
         (OUT / "summary.json").write_text(
             json.dumps(
                 {
-                    "mode": "whole-book",
+                    "mode": "whole-book-one-call",
                     "chars": len(body),
                     "approx_tokens": len(body) // 4,
                     "claims": len(claims),
+                    "scored": len(scored),
                     "model": args.model,
                 },
                 ensure_ascii=False,
@@ -248,19 +241,18 @@ def main() -> int:
             ),
             encoding="utf-8",
         )
-        print(f"  → {len(claims)} тем")
+        print(f"  → {len(claims)} тем / {len(scored)} scored")
         for c in claims:
             print(f"  - {c.claim_id}: {c.claim}")
-        if not args.no_score and claims:
-            _write_scores(
-                claims,
-                model=args.model,
-                score_model=args.score_model,
-                format=args.format,
-            )
+        if scored:
+            _write_shortlist(scored, model=args.model)
         return 0
 
-    # --- дорогой режим по главам (отладка) ---
+    # --- дорогой режим по главам: только с явного согласия ---
+    print(
+        "WARN: --by-chapter нарушает правило «1 LLM-вызов» (AGENTS.md). "
+        "Используй только если пользователь явно разрешил."
+    )
     chapters = find_chapters(text)
     if args.chapters:
         wanted = set(args.chapters)
@@ -366,14 +358,8 @@ def main() -> int:
     (OUT / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-
-    if not args.no_score and all_claims:
-        _write_scores(
-            all_claims,
-            model=args.model,
-            score_model=args.score_model,
-            format=args.format,
-        )
+    # Без отдельного B1: второй проход по shortlist запрещён без согласия.
+    print(f"by-chapter done: {len(all_claims)} claims (без отдельного B1)")
     return 0
 
 
