@@ -51,14 +51,16 @@ class AuditedLLM:
     stage: str = ""
     calls: list[dict[str, Any]] = field(default_factory=list)
 
-    def invoke(self, messages: list[dict[str, str]]) -> Any:
+    def invoke(self, messages: list[dict[str, str]], **kwargs: Any) -> Any:
         item: dict[str, Any] = {
             "model": self.model_id,
             "stage": self.stage,
             "messages": messages,
+            "tools": kwargs.get("tools"),
+            "timeout": kwargs.get("timeout"),
         }
         try:
-            response = self.model.invoke(messages)
+            response = self.model.invoke(messages, **kwargs)
             usage = extract_usage(response)
             item["received"] = content_text(response)
             item["usage"] = usage

@@ -40,7 +40,7 @@ class FailoverChatModel:
     events: list[dict[str, str]] = field(default_factory=list)
     _index: int = 0
 
-    def invoke(self, messages: list[dict[str, str]]) -> Any:
+    def invoke(self, messages: list[dict[str, str]], **kwargs: Any) -> Any:
         while self._index < len(self.model_ids):
             model_id = self.model_ids[self._index]
             if model_id in self.disabled_models:
@@ -48,7 +48,7 @@ class FailoverChatModel:
                 continue
             try:
                 response = get_chat_model(model=model_id, temperature=self.temperature).invoke(
-                    messages
+                    messages, **kwargs
                 )
                 text = str(getattr(response, "content", response))
                 if is_policy_text(text):
@@ -60,13 +60,20 @@ class FailoverChatModel:
                     (exc.code in {500, 502, 503, 504})
                     or "server exception" in str(exc).lower()
                 )
-                if not policy and not server:
+                # googleSearch иногда уходит в долгий timeout — пробуем следующую модель.
+                timed_out = isinstance(exc, TimeoutError) or "timed out" in str(exc).lower()
+                if not policy and not server and not timed_out:
                     raise
+                kind = (
+                    "policy_block"
+                    if policy
+                    else ("timeout_failover" if timed_out else "server_failover")
+                )
                 self.disabled_models.add(model_id)
                 self.events.append(
                     {
                         "model": model_id,
-                        "kind": "policy_block" if policy else "server_failover",
+                        "kind": kind,
                         "error": str(exc),
                     }
                 )
@@ -104,3 +111,18 @@ def get_topic_pass_model(
     cfg = load_llm_config()
     mid = model or str(cfg.get("topic_pass_model") or "gemini-2.5-flash")
     return get_chat_model(model=mid, temperature=temperature)
+
+
+def get_research_enrich_model(
+    *, model: str | None = None, temperature: float = 0.0
+) -> ChatModel:
+    """C1.5: Gemini с googleSearch на KIE (не gpt — у него нет grounding)."""
+    cfg = load_llm_config()
+    ids = [model or str(cfg.get("research_enrich_model") or "gemini-3-6-flash")]
+    ids.extend(str(x) for x in cfg.get("research_enrich_fallback_models", []))
+    # Хвост: 2.5-flash умеет googleSearch (проверено smoke).
+    ids.append("gemini-2.5-flash")
+    return FailoverChatModel(
+        model_ids=list(dict.fromkeys(ids)),
+        temperature=temperature,
+    )
