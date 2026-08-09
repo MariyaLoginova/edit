@@ -212,13 +212,28 @@ def main() -> int:
             continue
 
         print(f"[{n}/{len(chapters)}] A1/A2 {slug} ({len(chapter_text)} chars) …")
-        source_map = segment_source(
-            chapter_text,
-            source_id=f"pastoureau-{slug}",
-            title=f"Пастуро · {title}",
-            strategy=SegmentStrategy.semantic,
-        )
-        claims = mine_claims(source_map, llm=llm)
+        try:
+            source_map = segment_source(
+                chapter_text,
+                source_id=f"pastoureau-{slug}",
+                title=f"Пастуро · {title}",
+                strategy=SegmentStrategy.semantic,
+            )
+            claims = mine_claims(source_map, llm=llm)
+        except Exception as exc:
+            print(f"  !! ошибка главы {slug}: {type(exc).__name__}: {exc}")
+            summary.append(
+                {
+                    "n": n,
+                    "slug": slug,
+                    "title": title,
+                    "segments": None,
+                    "claims": 0,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "resumed": False,
+                }
+            )
+            continue
         all_claims.extend(claims)
         dest.write_text(
             json.dumps(

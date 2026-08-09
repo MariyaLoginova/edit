@@ -22,11 +22,38 @@ def load_system_prompt() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8").strip()
 
 
+def _normalize_quote_text(text: str) -> str:
+    """Нормализация для OCR: пробелы, ё/е, типографика."""
+    text = " ".join(text.split())
+    text = text.replace("ё", "е").replace("Ё", "Е")
+    for a, b in (
+        ("—", "-"),
+        ("–", "-"),
+        ("«", '"'),
+        ("»", '"'),
+        ("“", '"'),
+        ("”", '"'),
+        ("’", "'"),
+        ("…", "..."),
+    ):
+        text = text.replace(a, b)
+    return text
+
+
 def _quote_in_segment(quote: str, segment_text: str) -> bool:
-    """Дословное присутствие цитаты (с нормализацией пробелов)."""
-    norm_q = " ".join(quote.split())
-    norm_t = " ".join(segment_text.split())
-    return bool(norm_q) and norm_q in norm_t
+    """Дословное присутствие цитаты (с нормализацией пробелов/OCR)."""
+    norm_q = _normalize_quote_text(quote)
+    norm_t = _normalize_quote_text(segment_text)
+    if not norm_q:
+        return False
+    if norm_q in norm_t:
+        return True
+    # OCR иногда рвёт длинную цитату — достаточно ядра ≥40 символов.
+    if len(norm_q) >= 48:
+        core = norm_q[4:-4] if len(norm_q) > 56 else norm_q
+        if len(core) >= 40 and core in norm_t:
+            return True
+    return False
 
 
 def validate_claim_payload(

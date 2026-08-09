@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from typing import Any, Protocol
 
 from edit.kie_client import build_kie_chat_model, load_llm_config, resolve_model_spec
@@ -16,6 +17,50 @@ from edit.kie_client import build_kie_chat_model, load_llm_config, resolve_model
 
 class ChatModel(Protocol):
     def invoke(self, messages: list[dict[str, str]]) -> Any: ...
+
+
+def _is_transient_llm_error(exc: Exception) -> bool:
+    """Пустой choices / сеть / 5xx — имеет смысл повторить тот же вызов."""
+    msg = str(exc).lower()
+    if isinstance(exc, TypeError) and "nonetype" in msg:
+        return True
+    return any(
+        marker in msg
+        for marker in (
+            "choices",
+            "timeout",
+            "timed out",
+            "rate limit",
+            "429",
+            "502",
+            "503",
+            "504",
+            "connection",
+            "temporarily unavailable",
+        )
+    )
+
+
+class RetryingChatModel:
+    """Обёртка над ChatModel: ретраи на transient-сбоях провайдера."""
+
+    def __init__(self, inner: ChatModel, *, retries: int = 4, base_delay: float = 2.0):
+        self.inner = inner
+        self.retries = retries
+        self.base_delay = base_delay
+
+    def invoke(self, messages: list[dict[str, str]]) -> Any:
+        last_err: Exception | None = None
+        for attempt in range(self.retries + 1):
+            try:
+                return self.inner.invoke(messages)
+            except Exception as exc:
+                last_err = exc
+                if not _is_transient_llm_error(exc) or attempt >= self.retries:
+                    raise
+                time.sleep(self.base_delay * (2**attempt))
+        assert last_err is not None
+        raise last_err
 
 
 def get_chat_model(
@@ -27,7 +72,7 @@ def get_chat_model(
     spec = resolve_model_spec(model) if model else None
     provider = (spec.provider if spec and spec.provider else str(cfg.get("provider") or "kie")).lower()
     if provider == "kie":
-        return build_kie_chat_model(model=model, temperature=temperature)
+        return RetryingChatModel(build_kie_chat_model(model=model, temperature=temperature))
 
     if provider == "aihubmix":
         from langchain_openai import ChatOpenAI
@@ -36,11 +81,13 @@ def get_chat_model(
         if not key:
             raise RuntimeError("AIHUBMIX_API_KEY не задан")
         temp = spec.temperature if spec and temperature is None else (temperature or 0.0)
-        return ChatOpenAI(
-            model=spec.model_id if spec else (model or "glm-5.2"),
-            temperature=temp,
-            api_key=key,
-            base_url="https://aihubmix.com/v1",
+        return RetryingChatModel(
+            ChatOpenAI(
+                model=spec.model_id if spec else (model or "glm-5.2"),
+                temperature=temp,
+                api_key=key,
+                base_url="https://aihubmix.com/v1",
+            )
         )
 
     # fallback: прямой OpenAI (локальная отладка без KIE)
@@ -50,7 +97,7 @@ def get_chat_model(
     temp = 0.0 if temperature is None else temperature
     if spec is not None and temperature is None:
         temp = spec.temperature
-    return ChatOpenAI(model=mid, temperature=temp)
+    return RetryingChatModel(ChatOpenAI(model=mid, temperature=temp))
 
 
 def content_text(response: Any) -> str:
