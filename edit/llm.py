@@ -12,7 +12,12 @@ import re
 import time
 from typing import Any, Protocol
 
-from edit.kie_client import build_kie_chat_model, load_llm_config, resolve_model_spec
+from edit.kie_client import (
+    KieAPIError,
+    build_kie_chat_model,
+    load_llm_config,
+    resolve_model_spec,
+)
 
 
 class ChatModel(Protocol):
@@ -21,7 +26,11 @@ class ChatModel(Protocol):
 
 def _is_transient_llm_error(exc: Exception) -> bool:
     """Пустой choices / сеть / 5xx — имеет смысл повторить тот же вызов."""
+    if isinstance(exc, KieAPIError):
+        return bool(exc.retryable)
     msg = str(exc).lower()
+    if "daily limit" in msg or "exceeded" in msg:
+        return False
     if isinstance(exc, TypeError) and "nonetype" in msg:
         return True
     return any(

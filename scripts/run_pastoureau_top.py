@@ -34,6 +34,8 @@ def find_claim(topic_id: str) -> tuple[dict, Path]:
 
 
 def chapter_source_for(chapter_json: Path) -> Path:
+    if chapter_json.name == "book-claims.json":
+        return SOURCE
     slug = chapter_json.stem  # ch01-intro
     candidate = CHAPTERS / f"{slug}.txt"
     if candidate.exists():

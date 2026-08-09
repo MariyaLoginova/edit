@@ -2,11 +2,17 @@
 
 Паттерн как в CineFlow: ключ из env, модель/путь из config/llm.yaml,
 узлы зовут LLM только через get_chat_model / этот модуль.
+
+KIE иногда отвечает HTTP 200 с телом `{code, msg, data}` вместо
+OpenAI-формата — тогда langchain видит choices=null. Здесь ловим это явно.
 """
 
 from __future__ import annotations
 
+import json
 import os
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -17,6 +23,15 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 LLM_CONFIG_PATH = ROOT / "config" / "llm.yaml"
+
+
+class KieAPIError(RuntimeError):
+    """Ошибка конверта KIE (лимит, биллинг, пустой data)."""
+
+    def __init__(self, message: str, *, code: int | None = None, retryable: bool = False):
+        super().__init__(message)
+        self.code = code
+        self.retryable = retryable
 
 
 @dataclass(frozen=True)
@@ -82,17 +97,118 @@ def kie_base_url_for(model: str | None = None) -> str:
     return f"{root}/{spec.path_prefix}"
 
 
+def _raise_if_kie_envelope(payload: dict[str, Any]) -> None:
+    """KIE error envelope: {code, msg, data} при HTTP 200."""
+    if "choices" in payload:
+        return
+    code = payload.get("code")
+    msg = payload.get("msg") or payload.get("message") or ""
+    if code is None and not msg:
+        return
+    text = str(msg)
+    low = text.lower()
+    retryable = any(
+        marker in low
+        for marker in ("timeout", "temporarily", "try again", "rate limit", "429", "503", "502")
+    )
+    # дневной лимит / баланс — не ретраить
+    if "daily limit" in low or "exceeded" in low or code in {402, 433}:
+        retryable = False
+    raise KieAPIError(
+        f"KIE error code={code}: {text or payload}",
+        code=int(code) if isinstance(code, int) else None,
+        retryable=retryable,
+    )
+
+
+@dataclass
+class _SimpleMessage:
+    content: str
+
+
+@dataclass
+class _SimpleResponse:
+    content: str
+    raw: dict[str, Any]
+
+    @property
+    def response_metadata(self) -> dict[str, Any]:
+        usage = self.raw.get("usage") or {}
+        return {"token_usage": usage, "model_name": self.raw.get("model")}
+
+
+class KieChatModel:
+    """Прямой OpenAI-совместимый клиент KIE с понятными ошибками квоты."""
+
+    def __init__(self, *, model: str, temperature: float, api_key: str, base_url: str):
+        self.model = model
+        self.temperature = temperature
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
+
+    def invoke(self, messages: list[dict[str, str]]) -> _SimpleResponse:
+        url = f"{self.base_url}/chat/completions"
+        payload = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "messages": messages,
+        }
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=600) as resp:
+                raw_text = resp.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            raise KieAPIError(
+                f"KIE HTTP {exc.code}: {body[:500]}",
+                code=exc.code,
+                retryable=exc.code in {408, 429, 500, 502, 503, 504},
+            ) from exc
+        try:
+            data = json.loads(raw_text)
+        except json.JSONDecodeError as exc:
+            raise KieAPIError(f"KIE вернул не-JSON: {raw_text[:300]}", retryable=True) from exc
+        if not isinstance(data, dict):
+            raise KieAPIError(f"KIE: ожидался объект, получено {type(data).__name__}")
+        _raise_if_kie_envelope(data)
+        choices = data.get("choices")
+        if not choices:
+            raise KieAPIError(
+                f"KIE: пустой choices в ответе: {raw_text[:400]}",
+                retryable=True,
+            )
+        message = choices[0].get("message") or {}
+        content = message.get("content")
+        if content is None:
+            raise KieAPIError("KIE: message.content пуст", retryable=True)
+        if isinstance(content, list):
+            parts = []
+            for block in content:
+                if isinstance(block, dict) and "text" in block:
+                    parts.append(str(block["text"]))
+                else:
+                    parts.append(str(block))
+            content = "".join(parts)
+        return _SimpleResponse(content=str(content), raw=data)
+
+
 def build_kie_chat_model(
     *,
     model: str | None = None,
     temperature: float | None = None,
 ) -> Any:
-    """OpenAI-совместимый клиент на KIE endpoint выбранной модели."""
-    from langchain_openai import ChatOpenAI
-
+    """Клиент KIE с явной диагностикой daily limit / пустого data."""
     spec = resolve_model_spec(model)
     temp = spec.temperature if temperature is None else temperature
-    return ChatOpenAI(
+    return KieChatModel(
         model=spec.model_id,
         temperature=temp,
         api_key=kie_api_key(),
