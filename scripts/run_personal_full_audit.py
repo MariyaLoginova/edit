@@ -32,7 +32,13 @@ from edit.e_editor import plan_story
 from edit.e_hook import write_hook
 from edit.llm import content_text
 from edit.model_routing import get_personal_story_model
-from edit.search import SearchHit, default_searcher
+from edit.search import (
+    EmptySearcher,
+    SearchHit,
+    default_searcher,
+    require_web_searcher,
+    web_search_enabled,
+)
 from models import ClaimCard, SoftFactcheckResult
 
 load_dotenv(ROOT / ".env")
@@ -75,6 +81,8 @@ class AuditedLLM:
 
 
 class PrimarySourceSearcher:
+    """Fallback без Brave: один local hit. Не маскирует отсутствие web."""
+
     def __init__(self, source: str, url: str, title: str):
         self.source = source
         self.url = url
@@ -82,7 +90,7 @@ class PrimarySourceSearcher:
 
     def search(self, query: str, *, max_results: int = 5) -> list[SearchHit]:
         return [
-            SearchHit(url=self.url, title=self.title, snippet=self.source),
+            SearchHit(url=self.url, title=self.title, snippet=self.source[:2000]),
         ]
 
 
@@ -371,6 +379,11 @@ def main() -> int:
     parser.add_argument("--model", default="gpt-5-2")
     parser.add_argument("--source-url", default="local://primary")
     parser.add_argument("--source-title", default="Первичный текст")
+    parser.add_argument(
+        "--allow-primary-only",
+        action="store_true",
+        help="Разрешить C1 без Brave (local only). По умолчанию веб обязателен.",
+    )
     args = parser.parse_args()
 
     claim = load_claim(args.claim, args.claim_id)
@@ -383,7 +396,17 @@ def main() -> int:
 
     base = get_personal_story_model(model=args.model, temperature=0.2)
     audited = AuditedLLM(base, args.model)
-    searcher = PrimarySourceSearcher(source, args.source_url, args.source_title)
+    if web_search_enabled():
+        searcher = require_web_searcher()
+        print("C1 web search: Brave enabled")
+    elif args.allow_primary_only:
+        print("WARN: BRAVE_API_KEY отсутствует — C1 primary-only (без fake web hits)")
+        searcher = EmptySearcher()
+    else:
+        raise SystemExit(
+            "BRAVE_API_KEY не задан — веб-поиск выключен. "
+            "Добавь секрет или передай --allow-primary-only."
+        )
     meta_rows: list[dict[str, str]] = [
         {
             "step": "0",

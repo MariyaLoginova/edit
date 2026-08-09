@@ -338,7 +338,8 @@ class ResearchFact(BaseModel):
 
 class ResearchPack(BaseModel):
     claim_id: str
-    facts: list[ResearchFact] = Field(default_factory=list, max_length=8)
+    # Без потолка: C1.5 отдаёт столько фактов, сколько реально нашёл.
+    facts: list[ResearchFact] = Field(default_factory=list)
     gaps: list[str] = Field(default_factory=list)
     summary: str = Field(..., min_length=1, max_length=800)
 

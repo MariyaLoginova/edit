@@ -18,11 +18,10 @@ from edit.d1_visual_research import research_visual_material
 from edit.d2_monologue import write_monologue
 from edit.e_check import check_monologue
 from edit.model_routing import get_personal_story_model
-from edit.search import default_searcher
+from edit.search import EmptySearcher, default_searcher, require_web_searcher, web_search_enabled
 from models import ClaimCard, HookOptions, SoftFactcheckResult, StoryBrief
 from scripts.run_personal_full_audit import (
     AuditedLLM,
-    PrimarySourceSearcher,
     dump,
     write_audit_csv,
     write_audit_md,
@@ -39,9 +38,12 @@ def main() -> int:
 
     base = get_personal_story_model(model="gpt-5-2", temperature=0.2)
     audited = AuditedLLM(base, "gpt-5-2")
-    searcher = PrimarySourceSearcher(
-        source, "local://pastoureau-cherny", "Пастуро · Черный · нижнее белье"
-    )
+    if web_search_enabled():
+        searcher = require_web_searcher()
+        print("C1 web search: Brave enabled")
+    else:
+        print("WARN: BRAVE_API_KEY missing — C1 primary-only")
+        searcher = EmptySearcher()
 
     print("== C1/C1.5 (resume) ==")
     draft = collect_material(

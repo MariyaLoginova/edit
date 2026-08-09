@@ -22,7 +22,6 @@ def _normalize_gaps(gaps: object) -> list[str]:
         if isinstance(item, str):
             text = item.strip()
         elif isinstance(item, dict):
-            # Старые ответы иногда отдавали эссе про пробелы — сжимаем в query.
             topic = item.get("topic") or item.get("gap") or item.get("title") or ""
             query = item.get("query") or item.get("search") or ""
             text = str(query or topic).strip()
@@ -52,6 +51,10 @@ def _normalize_facts(facts: object) -> list[dict]:
             "source_url",
             row.get("url") or row.get("source") or "",
         )
+        # Частая ошибка модели: local://pastoureau… вместо local://primary
+        url = str(row.get("source_url") or "").strip()
+        if url.startswith("local://"):
+            row["source_url"] = _PRIMARY_URL
         if isinstance(row.get("fact"), str):
             row["fact"] = row["fact"][:500]
         if isinstance(row.get("why_it_matters"), str):
@@ -87,6 +90,47 @@ def _url_allowed(url: str, known_urls: set[str]) -> bool:
     return False
 
 
+def _invoke_pack(
+    *,
+    model: ChatModel,
+    dossier: Dossier,
+    brief: StoryBrief,
+    web_results: list[dict],
+    repair_note: str = "",
+) -> ResearchPack:
+    payload: dict = {
+        "claim_id": dossier.claim_id,
+        "primary_text": dossier.material_notes,
+        "story_brief": brief.model_dump(mode="json"),
+        "web_results": web_results,
+        "instruction": (
+            "Найди дополнительные данные/уточнения/мнения/факты по теме. "
+            "Не составляй список недостатков источника. "
+            "Не ограничивай число facts. "
+            "Если web_results пуст — добывай только из primary_text "
+            "с source_url=local://primary."
+        ),
+    }
+    if repair_note:
+        payload["repair"] = repair_note
+    response = model.invoke(
+        [
+            {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
+            {"role": "user", "content": str(payload)},
+        ]
+    )
+    raw = parse_json_payload(content_text(response))
+    if not isinstance(raw, dict):
+        raise ValueError("C1.5: ожидался JSON-объект")
+    raw.setdefault("claim_id", dossier.claim_id)
+    raw.setdefault("summary", "Исследователь не дал резюме.")
+    if isinstance(raw.get("summary"), str):
+        raw["summary"] = raw["summary"][:800]
+    raw["gaps"] = _normalize_gaps(raw.get("gaps"))
+    raw["facts"] = _normalize_facts(raw.get("facts"))
+    return ResearchPack.model_validate(raw)
+
+
 def enrich_material(
     dossier: Dossier,
     brief: StoryBrief,
@@ -101,43 +145,39 @@ def enrich_material(
     web_results = [
         item.model_dump(mode="json")
         for item in dossier.web_confirmations
-        if item.supports_claim
+        if item.supports_claim and not str(item.url or "").startswith("local://")
     ]
-    response = model.invoke(
-        [
-            {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8").strip()},
-            {
-                "role": "user",
-                "content": str(
-                    {
-                        "claim_id": dossier.claim_id,
-                        "primary_text": dossier.material_notes,
-                        "story_brief": brief.model_dump(mode="json"),
-                        "web_results": web_results,
-                        "instruction": (
-                            "Найди дополнительные данные/уточнения/мнения/факты по теме. "
-                            "Не составляй список недостатков источника."
-                        ),
-                    }
-                ),
-            },
-        ]
-    )
-    raw = parse_json_payload(content_text(response))
-    if not isinstance(raw, dict):
-        raise ValueError("C1.5: ожидался JSON-объект")
-    raw.setdefault("claim_id", dossier.claim_id)
-    raw.setdefault("summary", "Исследователь не дал резюме.")
-    if isinstance(raw.get("summary"), str):
-        raw["summary"] = raw["summary"][:800]
-    raw["gaps"] = _normalize_gaps(raw.get("gaps"))
-    raw["facts"] = _normalize_facts(raw.get("facts"))
-    pack = ResearchPack.model_validate(raw)
-
     known_urls = {item.url for item in dossier.web_confirmations if item.url}
     known_urls.add(_PRIMARY_URL)
+
+    pack = _invoke_pack(
+        model=model,
+        dossier=dossier,
+        brief=brief,
+        web_results=web_results,
+    )
     verified = [fact for fact in pack.facts if _url_allowed(fact.source_url, known_urls)]
-    verified_pack = pack.model_copy(update={"facts": verified[:8], "gaps": pack.gaps[:3]})
+
+    # Один repair: модель часто отдаёт только gaps/summary без facts.
+    if not verified and (dossier.material_notes or "").strip():
+        if hasattr(model, "stage"):
+            model.stage = "C1.5 research enricher · repair"
+        pack = _invoke_pack(
+            model=model,
+            dossier=dossier,
+            brief=brief,
+            web_results=web_results,
+            repair_note=(
+                "Предыдущий ответ отклонён: facts пуст или URL вне allowlist. "
+                "Верни ResearchPack заново. Обязательно заполни facts из "
+                "primary_text (source_url=local://primary): даты, смена нормы, "
+                "рекламный ход, практическая причина. Не выдумывай внешние "
+                "имена и книги. gaps — только 0–3 коротких search query."
+            ),
+        )
+        verified = [fact for fact in pack.facts if _url_allowed(fact.source_url, known_urls)]
+
+    verified_pack = pack.model_copy(update={"facts": verified, "gaps": pack.gaps[:3]})
     if not verified:
         return dossier, verified_pack
 

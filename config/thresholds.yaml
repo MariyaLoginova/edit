@@ -6,8 +6,8 @@ retention:
   dropoff_score_threshold: 40
 
 material:
-  # C1/C2: размеры пачек поиска
-  web_results: 5
+  # C1/C2: размеры пачек поиска (на каждый research_query)
+  web_results: 8
   image_results: 8
   # FIX-2: минимум картинок на каждое состояние A/B для freeze
   min_images_per_state: 3

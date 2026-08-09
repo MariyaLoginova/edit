@@ -122,6 +122,18 @@ def collect_material(
         notes = (
             f"{notes}\n\nПЕРВИЧНЫЙ ТЕКСТ ИСТОЧНИКА:\n{primary_text.strip()}"
         ).strip()
+        # Primary всегда в досье: freeze не зависит от Brave; C1.5 читает текст
+        # из material_notes, а local:// не подмешивается в web_results enricher'а.
+        if not any(str(c.url).startswith("local://") for c in confirmations):
+            confirmations.append(
+                WebConfirmation(
+                    url="local://primary",
+                    title="Первичный текст",
+                    snippet=primary_text.strip()[:800],
+                    query="primary",
+                    supports_claim=True,
+                )
+            )
     from models import ImageBuckets
 
     prev_images = (

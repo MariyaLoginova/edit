@@ -105,3 +105,77 @@ def test_enrich_compresses_gap_dicts_to_short_queries():
     brief = make_argument_brief(claim_id="black-underwear-shift")
     _, pack = enrich_material(_dossier(), brief, llm=llm)
     assert pack.gaps == ["synthetic black dye nylon patent 1960"]
+
+
+def test_enrich_maps_local_urls_to_primary():
+    llm = FakeLLM(
+        {
+            "claim_id": "black-underwear-shift",
+            "facts": [
+                {
+                    "fact": "С 1960-х реклама задаёт тест цвета белья.",
+                    "source_url": "local://pastoureau-cherny",
+                    "source_title": "Пастуро",
+                    "why_it_matters": "Рекламный ход.",
+                }
+            ],
+            "gaps": [],
+            "summary": "Вытащила рекламный тест из текста.",
+        }
+    )
+    brief = make_argument_brief(claim_id="black-underwear-shift")
+    _, pack = enrich_material(_dossier(), brief, llm=llm)
+    assert pack.facts[0].source_url == "local://primary"
+
+
+def test_enrich_repairs_when_facts_empty():
+    llm = FakeLLM(
+        queue=[
+            {
+                "claim_id": "black-underwear-shift",
+                "facts": [],
+                "gaps": ["lingerie ads 1960"],
+                "summary": "Нужен поиск.",
+            },
+            {
+                "claim_id": "black-underwear-shift",
+                "facts": [
+                    {
+                        "fact": "Черный долго читался как непристойный антагонист белого.",
+                        "source_url": "local://primary",
+                        "source_title": "Пастуро",
+                        "why_it_matters": "Моральный код цвета.",
+                    }
+                ],
+                "gaps": ["lingerie ads 1960"],
+                "summary": "Из текста: моральная оппозиция белый/черный.",
+            },
+        ]
+    )
+    brief = make_argument_brief(claim_id="black-underwear-shift")
+    _, pack = enrich_material(_dossier(), brief, llm=llm)
+    assert len(llm.calls) == 2
+    assert len(pack.facts) == 1
+
+
+def test_enrich_keeps_more_than_eight_facts():
+    facts = [
+        {
+            "fact": f"Факт номер {i} про смену нормы цвета белья.",
+            "source_url": "local://primary",
+            "source_title": "Пастуро",
+            "why_it_matters": "Усиливает историю сдвига.",
+        }
+        for i in range(1, 12)
+    ]
+    llm = FakeLLM(
+        {
+            "claim_id": "black-underwear-shift",
+            "facts": facts,
+            "gaps": [],
+            "summary": "Много конкретных деталей из текста.",
+        }
+    )
+    brief = make_argument_brief(claim_id="black-underwear-shift")
+    _, pack = enrich_material(_dossier(), brief, llm=llm)
+    assert len(pack.facts) == 11

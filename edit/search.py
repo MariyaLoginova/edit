@@ -79,6 +79,19 @@ class NullSearcher:
         raise SearchUnavailableError("NullSearcher: image search unavailable")
 
 
+class EmptySearcher:
+    """Поиск доступен, но результатов нет (или намеренно primary-only).
+
+    Не путать с NullSearcher: пустой список ≠ сбой API.
+    """
+
+    def search(self, query: str, *, max_results: int = 5) -> list[SearchHit]:
+        return []
+
+    def search_images(self, query: str, *, max_results: int = 8) -> list[SearchHit]:
+        return []
+
+
 class BraveSearcher:
     """Brave Search API (web + images). Требует BRAVE_API_KEY."""
 
@@ -149,3 +162,20 @@ class BraveSearcher:
 
 def default_searcher() -> BraveSearcher:
     return BraveSearcher()
+
+
+def web_search_enabled() -> bool:
+    """True, если Brave Search API сконфигурирован в окружении."""
+    return bool(os.environ.get("BRAVE_API_KEY", "").strip())
+
+
+def require_web_searcher() -> BraveSearcher:
+    """Brave searcher или явная ошибка — для C1/C1.5 без тихого local-only."""
+    searcher = default_searcher()
+    if not searcher.api_key:
+        raise SearchUnavailableError(
+            "BRAVE_API_KEY не задан: веб-поиск выключен. "
+            "Добавь секрет BRAVE_API_KEY в Cloud Agent environment "
+            "(api.search.brave.com)."
+        )
+    return searcher
