@@ -22,7 +22,10 @@ def load_scored(path: Path) -> list[dict]:
 
 
 def find_claim(topic_id: str) -> tuple[dict, Path]:
-    for path in sorted(BOOK_A2.glob("ch*.json")):
+    book_path = BOOK_A2 / "book-claims.json"
+    candidates = [book_path] if book_path.exists() else []
+    candidates.extend(sorted(BOOK_A2.glob("ch[0-9]*.json")))
+    for path in candidates:
         data = json.loads(path.read_text(encoding="utf-8"))
         for claim in data.get("claims") or []:
             if claim.get("claim_id") == topic_id:

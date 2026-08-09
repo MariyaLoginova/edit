@@ -4,9 +4,11 @@
 
 ## Этапы
 
-1. **A1 → A2 → B1** — `scripts/mine_pastoureau_black.py`  
-   Артефакты: `book-a2/ch*.json`, `book-a2/scored-topics.json`, `THEME_SHORTLIST.md`
-2. **E → C → D → E-check** — `scripts/run_personal_full_audit.py` по top-теме  
+1. **A2 whole-book → B1** — `scripts/mine_pastoureau_black.py`  
+   Книга (~110k tok) уходит **одним** A2-вызовом → shortlist 12–20 тем → B1.  
+   Артефакты: `book-a2/book-claims.json`, `scored-topics.json`, `THEME_SHORTLIST.md`  
+   (`--by-chapter` — старый дорогой режим, не нужен при длинном контексте)
+2. **E → C → D → E-check** — `scripts/run_pastoureau_top.py`  
    Артефакты: `produce-<topic_id>/`
 
 ## Команды

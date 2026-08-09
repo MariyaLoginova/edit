@@ -16,10 +16,15 @@ from models import ClaimCard, SourceMap, SourceSegment
 logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "a2_claim_miner.txt"
+BOOK_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "a2_claim_miner_book.txt"
 
 
 def load_system_prompt() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8").strip()
+
+
+def load_book_system_prompt() -> str:
+    return BOOK_PROMPT_PATH.read_text(encoding="utf-8").strip()
 
 
 def _normalize_quote_text(text: str) -> str:
@@ -160,6 +165,58 @@ def mine_claims(
             )
         )
     return out
+
+
+def mine_claims_from_book(
+    text: str,
+    *,
+    source_id: str = "book",
+    title: str = "книга",
+    llm: ChatModel | None = None,
+    model: str | None = None,
+    require_quote_substring: bool = True,
+    json_retries: int | None = None,
+    max_chars: int | None = None,
+) -> list[ClaimCard]:
+    """Один A2-вызов на всю книгу: дешевле, чем майнинг по сегментам.
+
+    Книга ~100–200k токенов умещается в длинный контекст; платим за input
+    один раз и получаем короткий shortlist, а не сотни карточек.
+    """
+    body = text.strip()
+    if max_chars is not None and len(body) > max_chars:
+        body = body[:max_chars]
+    chat = llm or get_chat_model(temperature=0.0, model=model)
+    retries = json_retries
+    if retries is None:
+        retries = int((load_llm_config().get("a1_a2_matrix") or {}).get("json_retries", 2))
+
+    segment = SourceSegment(
+        segment_id="book",
+        locator=title,
+        text=body,
+        ordinal=0,
+        heading=title,
+    )
+    user = (
+        f"source_id: {source_id}\n"
+        f"title: {title}\n"
+        f"approx_tokens: {segment.token_estimate}\n\n"
+        f"<audience>\n{load_audience()}\n</audience>\n\n"
+        f"<book>\n{body}\n</book>"
+    )
+    raw = invoke_json(
+        chat,
+        [
+            {"role": "system", "content": load_book_system_prompt()},
+            {"role": "user", "content": user},
+        ],
+        retries=retries,
+    )
+    cards, _rejected = validate_claim_payload(
+        raw, segment, require_quote_substring=require_quote_substring
+    )
+    return cards
 
 
 def citation_hit_rate(

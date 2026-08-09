@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """A1→A2→B1 по книге Мишеля Пастуро «Черный. История цвета».
 
-Первый проход: главы → темы + оценка привлекательности (пересылка / факт).
+По умолчанию — один A2-вызов на всю книгу (~110k токенов влезает в
+длинный контекст), затем B1 по shortlist. Режим --by-chapter оставлен
+для отладки, но дороже.
 """
 
 from __future__ import annotations
@@ -16,10 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from edit.a1_segment import segment_source
-from edit.a2_claim_miner import mine_claims
+from edit.a2_claim_miner import mine_claims, mine_claims_from_book
 from edit.b1_topic_scoring import append_topic_bank, score_mined_claims
 from edit.llm import get_chat_model
-from models import SegmentStrategy
+from models import ClaimCard, SegmentStrategy
 
 UPLOAD = Path(
     "/home/ubuntu/.cursor/projects/workspace/uploads/"
@@ -142,19 +144,123 @@ def find_chapters(text: str) -> list[tuple[str, str, int, int]]:
     return out
 
 
+def _write_scores(
+    all_claims: list[ClaimCard],
+    *,
+    model: str,
+    score_model: str | None,
+    format: str,
+) -> None:
+    score_llm = get_chat_model(model=score_model or model, temperature=0.0)
+    print(f"B1: скоринг {len(all_claims)} тем …")
+    scored = score_mined_claims(all_claims, format=format, llm=score_llm)
+    (OUT / "scored-topics.json").write_text(
+        json.dumps([s.model_dump(mode="json") for s in scored], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    append_topic_bank(OUT / "topic-bank.md", scored)
+    lines = [
+        "# Пастуро · Черный · shortlist B1",
+        "",
+        f"Модель A2/B1: `{model}` / `{score_model or model}`",
+        f"Режим: whole-book (1×A2 + B1)",
+        f"Тем: {len(scored)}",
+        "",
+        "| verdict | total | topic_id | one_line |",
+        "|---|---:|---|---|",
+    ]
+    for item in scored:
+        safe = item.one_line.replace("|", "\\|")
+        lines.append(f"| {item.verdict} | {item.total:.3f} | `{item.topic_id}` | {safe} |")
+    (OUT / "THEME_SHORTLIST.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    produce = [x for x in scored if x.verdict == "produce"]
+    print(
+        f"B1 done: produce={len(produce)} "
+        f"bank={sum(1 for x in scored if x.verdict == 'bank')} "
+        f"drop={sum(1 for x in scored if x.verdict == 'drop')}"
+    )
+    for item in scored[:15]:
+        print(f"  {item.verdict:7} {item.total:5.3f}  {item.topic_id}")
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--chapters", nargs="*", default=None, help="slug'и разделов")
     p.add_argument("--model", default="gpt-5-2")
     p.add_argument("--score-model", default=None)
     p.add_argument("--no-score", action="store_true")
     p.add_argument("--force-source", action="store_true")
-    p.add_argument("--resume", action="store_true", help="не переписывать готовые ch-*.json")
+    p.add_argument(
+        "--by-chapter",
+        action="store_true",
+        help="дорогой режим: A2 по каждой главе/сегменту (не нужен при 1M контексте)",
+    )
+    p.add_argument("--chapters", nargs="*", default=None, help="только с --by-chapter")
+    p.add_argument("--resume", action="store_true", help="только с --by-chapter")
     p.add_argument("--format", default="narrative", choices=["excursion", "narrative", "argument"])
-    p.add_argument("--limit", type=int, default=0, help="макс. число глав (0 = все)")
+    p.add_argument("--limit", type=int, default=0, help="только с --by-chapter")
     args = p.parse_args()
 
     text = ensure_source(force=args.force_source)
+    OUT.mkdir(parents=True, exist_ok=True)
+    llm = get_chat_model(model=args.model, temperature=0.0)
+
+    if not args.by_chapter:
+        # Обрезаем примечания/библиографию — тело книги до маркера.
+        body_end = len(text)
+        for m in re.finditer(r"(?m)^\d{0,3}\s*Примечания\s*$", text):
+            if m.start() > 300000:
+                body_end = min(body_end, m.start())
+                break
+        body = text[:body_end].strip()
+        print(
+            f"A2 whole-book: {len(body)} chars ≈ {len(body)//4} tokens → 1 LLM call …"
+        )
+        claims = mine_claims_from_book(
+            body,
+            source_id="pastoureau-cherny",
+            title="Мишель Пастуро · Черный. История цвета",
+            llm=llm,
+        )
+        (OUT / "book-claims.json").write_text(
+            json.dumps(
+                {
+                    "mode": "whole-book",
+                    "chars": len(body),
+                    "approx_tokens": len(body) // 4,
+                    "claims": [c.model_dump(mode="json") for c in claims],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        (OUT / "summary.json").write_text(
+            json.dumps(
+                {
+                    "mode": "whole-book",
+                    "chars": len(body),
+                    "approx_tokens": len(body) // 4,
+                    "claims": len(claims),
+                    "model": args.model,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(f"  → {len(claims)} тем")
+        for c in claims:
+            print(f"  - {c.claim_id}: {c.claim}")
+        if not args.no_score and claims:
+            _write_scores(
+                claims,
+                model=args.model,
+                score_model=args.score_model,
+                format=args.format,
+            )
+        return 0
+
+    # --- дорогой режим по главам (отладка) ---
     chapters = find_chapters(text)
     if args.chapters:
         wanted = set(args.chapters)
@@ -162,7 +268,6 @@ def main() -> int:
     if args.limit:
         chapters = chapters[: args.limit]
 
-    OUT.mkdir(parents=True, exist_ok=True)
     chapters_dir = OUT / "chapters"
     chapters_dir.mkdir(parents=True, exist_ok=True)
     (OUT / "chapters_index.json").write_text(
@@ -183,9 +288,8 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    llm = get_chat_model(model=args.model, temperature=0.0)
     summary = []
-    all_claims = []
+    all_claims: list[ClaimCard] = []
 
     for n, (slug, title, start, end) in enumerate(chapters, start=1):
         dest = OUT / f"ch{n:02d}-{slug}.json"
@@ -194,8 +298,6 @@ def main() -> int:
 
         if args.resume and dest.exists():
             data = json.loads(dest.read_text(encoding="utf-8"))
-            from models import ClaimCard
-
             claims = [ClaimCard.model_validate(c) for c in data.get("claims") or []]
             all_claims.extend(claims)
             summary.append(
@@ -266,39 +368,12 @@ def main() -> int:
     )
 
     if not args.no_score and all_claims:
-        score_llm = get_chat_model(model=args.score_model or args.model, temperature=0.0)
-        print(f"B1: скоринг {len(all_claims)} тем …")
-        scored = score_mined_claims(all_claims, format=args.format, llm=score_llm)
-        (OUT / "scored-topics.json").write_text(
-            json.dumps([s.model_dump(mode="json") for s in scored], ensure_ascii=False, indent=2),
-            encoding="utf-8",
+        _write_scores(
+            all_claims,
+            model=args.model,
+            score_model=args.score_model,
+            format=args.format,
         )
-        append_topic_bank(OUT / "topic-bank.md", scored)
-
-        lines = [
-            "# Пастуро · Черный · shortlist B1",
-            "",
-            f"Модель A2/B1: `{args.model}` / `{args.score_model or args.model}`",
-            f"Тем: {len(scored)}",
-            "",
-            "| verdict | total | topic_id | one_line |",
-            "|---|---:|---|---|",
-        ]
-        for item in scored:
-            safe = item.one_line.replace("|", "\\|")
-            lines.append(
-                f"| {item.verdict} | {item.total:.3f} | `{item.topic_id}` | {safe} |"
-            )
-        (OUT / "THEME_SHORTLIST.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-        produce = [x for x in scored if x.verdict == "produce"]
-        print(
-            f"B1 done: produce={len(produce)} "
-            f"bank={sum(1 for x in scored if x.verdict == 'bank')} "
-            f"drop={sum(1 for x in scored if x.verdict == 'drop')}"
-        )
-        for item in scored[:15]:
-            print(f"  {item.verdict:7} {item.total:5.3f}  {item.topic_id}")
     return 0
 
 
