@@ -26,11 +26,24 @@ def _as_critique(base: dict, script, *, pass_retell: bool) -> dict:
 
 def test_a2_only_graph(fashion_source):
     segment = fashion_source.segments[0]
-    llm = FakeLLM([_good_card(segment)])
+    card = _good_card(segment)
+    axes = {
+        "topic_id": card["claim_id"],
+        "showable": {"value": 3, "why": "Есть архивные кадры платья."},
+        "surprise": {"value": 4, "why": "Сервис важнее статуса."},
+        "recognizable": {"value": 5, "why": "LBD узнаваем."},
+        "social_currency": {"value": 4, "why": "Хочется переслать коллеге."},
+        "arguable": {"value": 3, "why": "Спор статус vs сервис."},
+        "supersystem": {"value": 4, "why": "Уход как скрытый драйвер моды."},
+    }
+    llm = FakeLLM(queue=[[card], [axes]])
     graph = build_a2_only_graph(llm=llm)
     out = graph.invoke({"source_map": fashion_source})
     assert len(out["claims"]) == 1
     assert out["claims"][0].kind is ClaimKind.causal
+    assert out["topic_candidates"][0].topic_id == card["claim_id"]
+    assert out["scored_topics"][0].verdict == "produce"
+    assert out["scored_topics"][0].total > 3
 
 
 def test_e2_only_graph_blocks_weak(script_weak):

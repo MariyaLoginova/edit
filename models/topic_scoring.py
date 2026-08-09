@@ -14,9 +14,15 @@ class TopicCandidate(BaseModel):
     one_line: str = Field(..., min_length=1, max_length=400)
     naive_expectation: str = Field(..., min_length=1, max_length=300)
     source_conclusion_quote: str = Field(
-        "", max_length=700, description="Дословный вывод автора; пусто → gate drop."
+        "",
+        max_length=700,
+        description="Цитата из источника (если есть). Не гейт: пусто не отсекает тему.",
     )
-    visual_examples: list[str] = Field(default_factory=list, max_length=12)
+    visual_examples: list[str] = Field(
+        default_factory=list,
+        max_length=12,
+        description="Возможные визуальные опоры. Мало примеров не отсекает тему.",
+    )
     format: Literal["excursion", "narrative", "argument"] = "excursion"
     source_locator: str = ""
 

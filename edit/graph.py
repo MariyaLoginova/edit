@@ -8,7 +8,7 @@ from langgraph.graph import END, START, StateGraph
 
 from edit.a2_claim_miner import mine_claims
 from edit.b1_scoring import score_claims
-from edit.b1_topic_scoring import score_topics
+from edit.b1_topic_scoring import claims_to_topic_candidates, score_topics
 from edit.c1_material import collect_material
 from edit.c1_research_enricher import enrich_material
 from edit.c2_images import collect_images
@@ -36,7 +36,12 @@ from models import SoftFactcheckResult
 
 
 def node_a2_mine(state: EditState, *, llm: Any = None) -> dict:
-    return {"claims": mine_claims(state["source_map"], llm=llm)}
+    claims = mine_claims(state["source_map"], llm=llm)
+    # Первый проход: темы сразу готовы к B1-оценке привлекательности.
+    return {
+        "claims": claims,
+        "topic_candidates": claims_to_topic_candidates(claims),
+    }
 
 
 def node_b1_score(state: EditState) -> dict:
@@ -47,12 +52,15 @@ def node_b1_score(state: EditState) -> dict:
 def node_b1_score_topics(state: EditState, *, llm: Any = None) -> dict:
     """EDIT-B1: пакетный тематический скоринг; не выбирает тему вместо человека."""
     topics = state.get("topic_candidates") or []
+    if not topics and state.get("claims"):
+        topics = claims_to_topic_candidates(state["claims"])
     produced = {
         item.topic_id
         for item in (state.get("scored_topics") or [])
         if item.verdict == "produce"
     }
-    return {"scored_topics": score_topics(topics, produced_topic_ids=produced, llm=llm)}
+    scored = score_topics(topics, produced_topic_ids=produced, llm=llm)
+    return {"topic_candidates": topics, "scored_topics": scored}
 
 
 def node_b2_select_stub(state: EditState) -> dict:
@@ -661,10 +669,13 @@ def build_edit_graph(
 
 
 def build_a2_only_graph(*, llm: Any = None):
+    """A2 → B1 topic scoring: темы + оценка привлекательности за один проход."""
     g = StateGraph(EditState)
     g.add_node("a2_mine", lambda s: node_a2_mine(s, llm=llm))
+    g.add_node("b1_score_topics", lambda s: node_b1_score_topics(s, llm=llm))
     g.add_edge(START, "a2_mine")
-    g.add_edge("a2_mine", END)
+    g.add_edge("a2_mine", "b1_score_topics")
+    g.add_edge("b1_score_topics", END)
     return g.compile()
 
 

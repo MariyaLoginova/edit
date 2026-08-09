@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 
@@ -12,7 +11,7 @@ from edit.audience import load_audience
 from edit.config import ROOT
 from edit.llm import ChatModel, content_text, parse_json_payload
 from edit.model_routing import get_personal_story_model
-from models import AxisScore, ScoredTopic, TopicCandidate
+from models import AxisScore, ClaimCard, ScoredTopic, TopicCandidate
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "b1_topic_scoring.txt"
 _UNIVERSAL = re.compile(r"(?i)\b(любой|все|всегда|каждый)\b")
@@ -35,18 +34,46 @@ def _axis(value: int, why: str) -> AxisScore:
     return AxisScore(value=value, why=why)
 
 
+def claim_to_topic_candidate(
+    claim: ClaimCard,
+    *,
+    format: str = "narrative",
+) -> TopicCandidate:
+    """A2 ClaimCard → TopicCandidate для первого прохода по книге."""
+    visuals: list[str] = []
+    for item in (
+        claim.visual_hint,
+        claim.object_anchor,
+        claim.contrast_pair.state_a,
+        claim.contrast_pair.state_b,
+    ):
+        text = (item or "").strip()
+        if text and text not in visuals:
+            visuals.append(text)
+    return TopicCandidate(
+        topic_id=claim.claim_id,
+        one_line=claim.claim,
+        naive_expectation=claim.counter_expectation,
+        source_conclusion_quote=claim.citation.quote,
+        visual_examples=visuals[:12],
+        format=format if format in {"excursion", "narrative", "argument"} else "narrative",
+        source_locator=claim.citation.locator,
+    )
+
+
+def claims_to_topic_candidates(
+    claims: list[ClaimCard],
+    *,
+    format: str = "narrative",
+) -> list[TopicCandidate]:
+    return [claim_to_topic_candidate(claim, format=format) for claim in claims]
+
+
 def gate_topic(
     topic: TopicCandidate, *, produced_topic_ids: set[str] | None = None
 ) -> list[str]:
-    """Дешёвые, объяснимые отсевы до LLM-вызова."""
+    """Дешёвые отсевы до LLM. Авторская цитата и визуалы не гейтят."""
     failures: list[str] = []
-    if not topic.source_conclusion_quote.strip():
-        failures.append("нет дословного вывода автора в источнике")
-    minimum = 6 if topic.format in {"excursion", "narrative"} else 3
-    if len(topic.visual_examples) < minimum:
-        failures.append(
-            f"нечего показать: {len(topic.visual_examples)}<{minimum} визуальных экземпляров"
-        )
     if _UNIVERSAL.search(topic.one_line):
         failures.append("универсальная формулировка: любой/все/всегда/каждый")
     if topic.topic_id in (produced_topic_ids or set()):
@@ -112,13 +139,21 @@ def score_topics(
                                 "audience": load_audience(),
                                 "topics": [topic.model_dump(mode="json") for topic in accepted],
                                 "metrics_map": {
-                                    "showable": "middle retention",
-                                    "surprise": "3-second retention",
+                                    "social_currency": "shares / saves / forward to colleague",
+                                    "surprise": "unusual fact vs naive expectation",
                                     "recognizable": "early retention / reach",
-                                    "social_currency": "shares and saves",
                                     "arguable": "comments",
                                     "supersystem": "reach outside core",
+                                    "showable": "optional visual richness (secondary)",
                                 },
+                                "priority": [
+                                    "social_currency",
+                                    "surprise",
+                                    "recognizable",
+                                    "arguable",
+                                    "supersystem",
+                                    "showable",
+                                ],
                             }
                         ),
                     },
@@ -133,6 +168,7 @@ def score_topics(
     by_id = {topic.topic_id: topic for topic in accepted}
     weights = {str(k): float(v) for k, v in (cfg.get("weights") or {}).items()}
     min_axis = int(cfg.get("min_axis_for_production", 2))
+    soft_axes = {str(x) for x in (cfg.get("soft_axes") or ["showable"])}
     produce_threshold = float(cfg.get("produce_threshold", 3.4))
     scored: list[ScoredTopic] = []
     for item in raw:
@@ -149,13 +185,29 @@ def score_topics(
             one_line=topic.one_line,
         )
         total = _total(candidate, weights)
-        low_axis = any(getattr(candidate, axis).value < min_axis for axis in _AXES)
+        hard_axes = [axis for axis in _AXES if axis not in soft_axes]
+        low_axis = any(getattr(candidate, axis).value < min_axis for axis in hard_axes)
         verdict = "produce" if total >= produce_threshold and not low_axis else "bank"
         scored.append(candidate.model_copy(update={"total": total, "verdict": verdict}))
     # Нет ответа на тему — не производить молча.
     for topic in by_id.values():
         dropped.append(_drop(topic, ["скорер не вернул оценку темы"]))
     return sorted([*scored, *dropped], key=lambda x: (-x.total, x.topic_id))
+
+
+def score_mined_claims(
+    claims: list[ClaimCard],
+    *,
+    format: str = "narrative",
+    produced_topic_ids: set[str] | None = None,
+    llm: ChatModel | None = None,
+) -> list[ScoredTopic]:
+    """Первый проход: A2-карточки сразу получают оценку привлекательности."""
+    return score_topics(
+        claims_to_topic_candidates(claims, format=format),
+        produced_topic_ids=produced_topic_ids,
+        llm=llm,
+    )
 
 
 def append_topic_bank(path: Path, topics: list[ScoredTopic]) -> None:

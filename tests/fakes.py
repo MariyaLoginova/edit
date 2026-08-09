@@ -9,13 +9,19 @@ from edit.search import SearchHit
 class FakeLLM:
     """Детерминированный LLM для юнит-тестов: отдаёт заранее заданный JSON-текст."""
 
-    def __init__(self, payload: Any):
+    def __init__(self, payload: Any = None, *, queue: list[Any] | None = None):
         self.payload = payload
+        self._queue = list(queue) if queue is not None else None
         self.calls: list[list[dict[str, str]]] = []
 
     def invoke(self, messages: list[dict[str, str]]):
         self.calls.append(messages)
-        if callable(self.payload):
+        if self._queue is not None:
+            if not self._queue:
+                raise AssertionError("FakeLLM queue исчеркана")
+            current = self._queue.pop(0)
+            text = current if isinstance(current, str) else json.dumps(current, ensure_ascii=False)
+        elif callable(self.payload):
             text = self.payload(messages)
         elif isinstance(self.payload, str):
             text = self.payload

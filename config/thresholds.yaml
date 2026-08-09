@@ -53,18 +53,23 @@ scoring:
     evidence: 1.0
     shareability: 1.0
 
-# EDIT-B1: пакетное ранжирование тем до производства.
+# EDIT-B1: пакетное ранжирование тем на первом проходе по книге.
+# Приоритет — желания аудитории (пересылка / необычный факт), не оценка автора.
+# showable — мягкая ось: низкий балл не роняет тему в bank сам по себе.
 # Веса — гипотеза до 15–20 роликов с фактическими метриками.
 topic_scoring:
   min_axis_for_production: 2
   produce_threshold: 3.4
+  soft_axes:
+    - showable
+  require_author_conclusion: false
   weights:
-    showable: 1.2
-    surprise: 1.2
+    showable: 0.5
+    surprise: 1.5
     recognizable: 1.0
-    social_currency: 1.2
-    arguable: 1.0
-    supersystem: 1.0
+    social_currency: 1.6
+    arguable: 0.9
+    supersystem: 0.9
 
 learning:
   # После стольких роликов hypothesis=false (пока ориентир)
